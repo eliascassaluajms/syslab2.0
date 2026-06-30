@@ -1,0 +1,35 @@
+# syslab2.0/.gitignore
+
+# Dependencias e instalación local
+node_modules/
+/frontend/node_modules/
+/backend/node_modules/
+
+# Compilaciones y builds de producción
+dist/
+build/
+.next/
+out/
+
+# Variables de entorno y llaves criptográficas (CRÍTICO)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# Caché de editores y del sistema operativo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Volúmenes locales o temporales de Docker
+postgres_data/
+.docker/
