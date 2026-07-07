@@ -1,0 +1,148 @@
+// backend/prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =========================================================================
+// KAN-07: CONTROL DE ACCESOS BASE (RBAC)
+// =========================================================================
+
+model Rol {
+  id            Int          @id @default(autoincrement())
+  nombre        String       @unique @db.VarChar(50) // Ej: 'Administrador', 'Jefe de Laboratorios', 'Técnico', 'Docente'
+  descripcion   String?      @db.VarChar(255)
+  creadoEn      DateTime     @default(now()) @map("creado_en")
+  actualizadoEn DateTime     @updatedAt @map("actualizado_en")
+
+  usuarios          Usuario[]
+  rolPermisos       RolPermiso[]
+  asignacionesRoles AsignacionAmbito[]
+
+  @@map("roles")
+}
+
+model Permiso {
+  id          Int          @id @default(autoincrement())
+  codigo      String       @unique @db.VarChar(100) // Ej: 'usuarios:listar', 'laboratorios:editar', 'tickets:crear'
+  descripcion String?      @db.VarChar(255)
+  creadoEn    DateTime     @default(now()) @map("creado_en")
+
+  rolPermisos RolPermiso[]
+
+  @@map("permisos")
+}
+
+// Relación Muchos a Muchos explícita para control absoluto de asignaciones de permisos
+model RolPermiso {
+  rolId     Int @map("rol_id")
+  permisoId Int @map("permiso_id")
+
+  rol     Rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
+  permiso Permiso @relation(fields: [permisoId], references: [id], onDelete: Cascade)
+
+  @@id([rolId, permisoId])
+  @@map("rol_permisos")
+}
+
+// =========================================================================
+// KAN-08: MODELO DE USUARIOS Y PERÍMETROS INSTITUCIONALES
+// =========================================================================
+
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @db.VarChar(100)
+  correo        String   @unique @db.VarChar(150)
+  password      String   @db.VarChar(255) // Almacenará el hash seguro de Bcrypt (KAN-13)
+  activo        Boolean  @default(true)   // Validación en tiempo real (KAN-15.1)
+  rolId         Int      @map("rol_id")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  rol               Rol                @relation(fields: [rolId], references: [id], onDelete: Restrict)
+  usuarioFacultades UsuarioFacultad[]
+  usuarioCarreras   UsuarioCarrera[]
+  asignacionesRoles AsignacionAmbito[]
+
+  @@map("usuarios")
+}
+
+// Entidades estructurales de la universidad
+model Facultad {
+  id     Int     @id @default(autoincrement())
+  nombre String  @unique @db.VarChar(150) // Ej: 'Facultad de Ciencias Integradas de Yacuiba'
+  sigla  String  @unique @db.VarChar(20)  // Ej: 'FCIY'
+  activo Boolean @default(true)
+
+  carreras          Carrera[]
+  usuarioFacultades UsuarioFacultad[]
+  asignaciones      AsignacionAmbito[]
+
+  @@map("facultades")
+}
+
+model Carrera {
+  id         Int     @id @default(autoincrement())
+  nombre     String  @unique @db.VarChar(150) // Ej: 'Ingeniería Informática'
+  facultadId Int     @map("facultad_id")
+  activo     Boolean @default(true)
+
+  facultad        Facultad           @relation(fields: [facultadId], references: [id], onDelete: Cascade)
+  usuarioCarreras UsuarioCarrera[]
+  asignaciones    AsignacionAmbito[]
+
+  @@map("carreras")
+}
+
+// Tablas de asignación perimetral directa (Tablas Pivote Planificadas)
+model UsuarioFacultad {
+  usuarioId  Int @map("usuario_id")
+  facultadId Int @map("facultad_id")
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  facultad Facultad @relation(fields: [facultadId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, facultadId])
+  @@map("usuario_facultades")
+}
+
+model UsuarioCarrera {
+  usuarioId Int @map("usuario_id")
+  carreraId Int @map("carrera_id")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  carrera Carrera @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, carreraId])
+  @@map("usuario_carreras")
+}
+
+// 🔥 TABLA PIVOTE AVANZADA: CONTROL DE ÁMBITO Y GRANULARIDAD FINA
+model AsignacionAmbito {
+  id         Int  @id @default(autoincrement())
+  usuarioId  Int  @map("usuario_id")
+  rolId      Int  @map("rol_id")
+  facultadId Int? @map("facultad_id") // Opcional: Ámbito completo a nivel Facultad (Decanos)
+  carreraId  Int? @map("carrera_id")  // Opcional: Ámbito específico a nivel Carrera (Directores)
+
+  usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  rol      Rol       @relation(fields: [rolId], references: [id], onDelete: Cascade)
+  facultad Facultad? @relation(fields: [facultadId], references: [id], onDelete: Cascade)
+  carrera  Carrera?  @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+
+  // Previene duplicados exactos en la matriz de permisos
+  @@unique([usuarioId, rolId, facultadId, carreraId])
+  @@map("asignaciones_ambito")
+}
+
+// =========================================================================
+// FUTURAS ÉPICAS: ESPACIO RESERVADO PARA EXTENSIONES DEL SISTEMA
+// =========================================================================
+// Cuando implementemos los siguientes módulos, se vincularán aquí:
+// - model Laboratorio { ... } -> Relacionado con Carrera o Facultad.
+// - model Horario { ... }     -> Relacionado con Laboratorio y Usuario (Docente).
+// - model Incidencia { ... }  -> Relacionado con Laboratorio y Usuario (Técnico).
