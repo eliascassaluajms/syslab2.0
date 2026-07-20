@@ -15,7 +15,7 @@ export const LoginView: React.FC = () => {
   // Redirección reactiva: Si el usuario ya está autenticado, el Router lo lleva al dashboard de forma segura
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/usuarios', { replace: true });
     }
   }, [user, navigate]);
 

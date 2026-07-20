@@ -1,14 +1,13 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
-import authRouter from './routes/auth.routes.js'; // 👈 Importamos las nuevas rutas
+import authRouter from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js'; // 👈 Importación del router de usuarios
 import { errorHandler } from './middlewares/errorHandler.js';
 import { AppError } from './utils/appError.js';
-import userRequestsRouter from './routes/user.routes.js';
 
 const app: Application = express();
 
 const rawOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-// Removemos cualquier barra diagonal al final para evitar discrepancias estrictas
 const cleanOrigin = rawOrigin.replace(/\/$/, '');
 
 app.use(cors({
@@ -19,8 +18,8 @@ app.use(cors({
 app.use(express.json());
 
 // --- MONTAJE DE RUTAS DEL SISTEMA ---
-app.use('/api/auth', authRouter); // 👈 Registramos el endpoint /api/v1/auth/login
-app.use('/api/users', userRequestsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/usuarios', userRoutes); // 👈 Corregido a /api/usuarios (coincide con el frontend)
 
 // Ruta de Salud
 app.get('/api/health', (req: Request, res: Response) => {
@@ -30,7 +29,8 @@ app.get('/api/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString()
   });
 });
-// Manejo de Rutas No Encontradas
+
+// Manejo de Rutas No Encontradas (SIEMPRE debe ser la última ruta definida)
 app.all('*', (req: Request, res: Response, next) => {
   next(new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404));
 });
@@ -38,6 +38,3 @@ app.all('*', (req: Request, res: Response, next) => {
 app.use(errorHandler);
 
 export default app;
-
-// ... resto de sus middlewares globales
-

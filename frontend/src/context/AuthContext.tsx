@@ -1,20 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { httpClient } from '../services/httpClient'; // Eliminada extensión .js perjudicial
-
-interface Usuario {
-  id: string;
-  nombre: string;
-  correo: string;
-  rol: string;
-  ambitos: string[];
-}
-
-interface AuthContextType {
-  user: Usuario | null;
-  loading: boolean;
-  login: (correo: string, password: string) => Promise<void>;
-  logout: () => void;
-}
+import { httpClient } from '../services/httpClient';
+import { Usuario, AuthContextType } from '../interfaces/auth.interface'; // 👈 Importación limpia
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

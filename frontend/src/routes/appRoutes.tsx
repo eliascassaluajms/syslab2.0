@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginView } from '../views/login/LoginView';
 import { ForgotPasswordView } from '../views/login/ForgotPasswordView';
 import { ProtectedRoute } from './ProtectedRoute';
+import { UsuariosView } from '../views/UsuariosView'; // 👈 1. Importación de la vista
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -25,9 +26,11 @@ export const AppRoutes: React.FC = () => {
               </div>
             }
           />
+          {/* 👈 2. Nueva ruta de gestión de personal */}
+          <Route path="/usuarios" element={<UsuariosView />} />
         </Route>
 
-        {/* Cualquier ruta inválida o raíz redirige al login de manera segura */}
+        {/* Creado para redireccionar por defecto a usuarios o login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

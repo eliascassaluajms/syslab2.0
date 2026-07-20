@@ -2,6 +2,53 @@ import { prisma } from '../config/prisma.js';
 
 export class UserRepository {
   /**
+   * Obtiene la lista completa de usuarios para la gestión del panel administrativo (KAN-17 / KAN-23).
+   * Incluye roles y perímetros asignados (facultades y carreras) para su visualización en la grilla.
+   */
+  async findAll() {
+    return await prisma.usuario.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        correo: true,
+        activo: true,
+        createdAt: true,
+        rol: {
+          select: {
+            id: true,
+            nombre: true
+          }
+        },
+        usuarioFacultades: {
+          select: {
+            facultadId: true,
+            facultad: {
+              select: {
+                id: true,
+                nombre: true
+              }
+            }
+          }
+        },
+        usuarioCarreras: {
+          select: {
+            carreraId: true,
+            carrera: {
+              select: {
+                id: true,
+                nombre: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+  }
+
+  /**
    * Busca un usuario por su correo electrónico.
    * Carga el Rol, sus Permisos y la estructura perimetral completa para resolver
    * la sesión JWT (KAN-13, KAN-14) y la expansión dinámica de ámbitos (KAN-16.1).
