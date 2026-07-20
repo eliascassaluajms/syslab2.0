@@ -1,20 +1,16 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
-// URL base extraída de las variables de entorno de Vite o fallback de desarrollo
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const httpClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 segundos de tolerancia para redes de laboratorio congestionadas
+  timeout: 10000,
 });
 
-/**
- * 1. Interceptor de Peticiones: Inyección dinámica del JWT
- */
-// Modificar las secciones de error para que incluyan el tipo ': any' o ': unknown'
+// 1. Interceptor de Peticiones: Inyección dinámica del JWT
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('syslab_token');
@@ -23,20 +19,20 @@ httpClient.interceptors.request.use(
     }
     return config;
   },
-  (error: any) => {
-    return Promise.reject(error);
-  }
+  (error: any) => Promise.reject(error)
 );
 
+// 2. Interceptor de Respuestas: Manejo reactivo desacoplado
 httpClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: any) => {
-    if (error.response && error.response.status === 401) {
-      console.warn('⚠️ Sesión inválida o expirada.');
+    const esEndpointLogin = error.config?.url?.includes('/auth/login');
+
+    if (error.response && error.response.status === 401 && !esEndpointLogin) {
+      console.warn('⚠️ Sesión inválida o expirada detectada por el core.');
       localStorage.removeItem('syslab_token');
-      localStorage.removeItem('syslab_user');
+      // Emitimos el evento global, pero NO forzamos la recarga de la ventana
       window.dispatchEvent(new Event('auth_unauthorized'));
-      window.location.href = '/login';
     }
     return Promise.reject(
       error.response?.data || { message: 'Error de red o servidor no disponible.' }

@@ -12,7 +12,14 @@ export class AuthService {
   async login(correo: string, passwordPlain: string): Promise<{ token: string; usuario: Partial<IJwtPayload> }> {
     // 1. Buscar usuario con todas sus relaciones perimetrales cargadas (KAN-12)
     const user = await userRepository.findByCorreo(correo);
-
+    console.log('================ 🔍 SYSLAB DEBUG LOGIN 🔍 ================');
+    console.log('📧 Correo recibido en frontend:', correo);
+    console.log('👤 ¿Usuario encontrado en la DB?:', user ? 'SÍ' : 'NO');
+    if (user) {
+      console.log('🔑 ¿El objeto "user" contiene la propiedad "password"?:', 'password' in user ? 'SÍ' : 'NO');
+      console.log('📝 Valor exacto de "user.password":', user.password);
+    }
+    console.log('==========================================================');
     if (!user) {
       throw new AppError('Credenciales incorrectas.', 401);
     }

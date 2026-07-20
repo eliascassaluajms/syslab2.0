@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider } from './hooks/useAuth.jsx';
+import { AuthProvider } from './context/AuthContext';
 import { AppRoutes } from './routes/appRoutes.jsx';
 import './index.css'; // Asegúrese de mantener sus estilos de Tailwind aquí
 

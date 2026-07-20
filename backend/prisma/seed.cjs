@@ -1,18 +1,19 @@
-// backend/prisma/seed.js
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs'); // 👈 1. Importar la librería criptográfica
 
 // Inicialización del Driver Adapter requerido en tu entorno Docker
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// Hash seguro de Bcrypt para la contraseña genérica de pruebas: 'password123'
-const DUMMY_PASSWORD_HASH = '$2b$10$EpjXfTzVv.4B1S3wD2tGKe0I4bXNnJj8mX94Xj1mO3N4O2O2O2O2O'; 
+// 👈 2. Generar el Hash dinámico y real para 'password123'
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('password123', 10); 
 
 async function main() {
   console.log('🌱 Iniciando el proceso de Seeding (Datos Maestros SysLab 2.0)...');
+  // ... (el resto del código de su función main permanece exactamente igual)
 
   // =========================================================================
   // 1. LIMPIEZA DE TABLAS (En orden inverso para evitar fallos de claves foráneas)
@@ -178,7 +179,7 @@ async function main() {
   // =========================================================================
   // Administrador Global
   const userAdmin = await prisma.usuario.create({
-    data: { nombre: 'Administrador Central', correo: 'admin.syslab@uajms.edu', password: DUMMY_PASSWORD_HASH, rolId: rolAdmin.id }
+    data: { nombre: 'Administrador Central', correo: 'admin.syslab@uajms.edu.bo', password: DUMMY_PASSWORD_HASH, rolId: rolAdmin.id }
   });
   await prisma.asignacionAmbito.create({
     data: { usuarioId: userAdmin.id, rolId: rolAdmin.id } // Ámbito total, campos de facultad y carrera nulos
@@ -186,7 +187,7 @@ async function main() {
 
   // Usuario Jefe de Laboratorios (Mapeado a su contexto informático y de facultad)
   const userJefe = await prisma.usuario.create({
-    data: { nombre: 'Elias Cassal Baldiviezo', correo: 'elias.cassal@uajms.edu', password: DUMMY_PASSWORD_HASH, rolId: rolJefe.id }
+    data: { nombre: 'Elias Cassal Baldiviezo', correo: 'elias.cassal@uajms.edu.bo', password: DUMMY_PASSWORD_HASH, rolId: rolJefe.id }
   });
 
   // Inyección en la tabla pivot de granularidad fina
