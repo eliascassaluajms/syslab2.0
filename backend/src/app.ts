@@ -6,6 +6,7 @@ import { errorHandler } from './middlewares/errorHandler.js';
 import { AppError } from './utils/appError.js';
 import roleRoutes from './routes/role.routes.js';
 import catalogosRoutes from './routes/catalogos.routes.js';
+import laboratoriosRoutes from './routes/laboratorios.routes.js';
 
 // 1. Inicializar la aplicación Express PRIMERO
 const app: Application = express();
@@ -35,6 +36,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/usuarios', userRoutes); // Conecta /api/usuarios al router existente
 app.use('/api/roles', roleRoutes);
 app.use('/api/catalogos', catalogosRoutes);
+app.use('/api/laboratorios', laboratoriosRoutes);
 
 // 5. Manejo de Rutas No Encontradas (SIEMPRE debe ir al final de las rutas)
 app.all('*', (req: Request, res: Response) => {

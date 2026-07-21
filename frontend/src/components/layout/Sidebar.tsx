@@ -31,9 +31,9 @@ const menuConfig: MenuItem[] = [
   },
   {
     titulo: 'Gestión de Laboratorios',
-    ruta: '/admin/laboratorios', // 👈 Sincronizado con AppRoutes.tsx
+    ruta: '/admin/laboratorios',
     icono: '🔬',
-    permiso: 'laboratorios:ver',
+    permiso: 'laboratorios:gestionar', // Permiso para control y administración completa del módulo
   },
 ];
 

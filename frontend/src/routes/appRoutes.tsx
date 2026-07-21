@@ -13,7 +13,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout'; // 👈 Layout con
 import { CatalogosView } from '../views/CatalogosView'; // 👈 Gestión de Facultades y Carreras
 import { UsuariosView } from '../views/UsuariosView';   // 👈 Gestión de Usuarios y Perímetros
 import { GestionRolesView } from '../views/GestionRolesView'; // 👈 Gestión de Roles y Permisos
-
+import { LaboratoriosView } from '../views/LaboratoriosView';
 export const AppRoutes: React.FC = () => {
   return (
     <BrowserRouter>
@@ -39,6 +39,7 @@ export const AppRoutes: React.FC = () => {
               <Route path="catalogos" element={<CatalogosView />} />
               <Route path="usuarios" element={<UsuariosView />} />
               <Route path="roles" element={<GestionRolesView />} />
+              <Route path="laboratorios" element={<LaboratoriosView />} />
               <Route 
                 path="laboratorios" 
                 element={
@@ -55,7 +56,7 @@ export const AppRoutes: React.FC = () => {
             {/* Accesos directos compatibles */}
             <Route path="/usuarios" element={<UsuariosView />} />
             <Route path="/roles" element={<GestionRolesView />} />
-
+            <Route path="/laboratorios" element={<LaboratoriosView />} />
           </Route>
         </Route>
 

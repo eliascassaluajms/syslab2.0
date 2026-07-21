@@ -138,6 +138,23 @@ model AsignacionAmbito {
   @@unique([usuarioId, rolId, facultadId, carreraId])
   @@map("asignaciones_ambito")
 }
+// =========================================================================
+// MÓDULO DE GESTIÓN DE LABORATORIOS
+// =========================================================================
+
+model Laboratorio {
+  id            Int      @id @default(autoincrement())
+  codigo        String   @unique @db.VarChar(50)
+  nombre        String   @db.VarChar(150)
+  ubicacion     String?  @db.VarChar(255)
+  capacidad     Int      @default(0)
+  descripcion   String?  @db.VarChar(255)
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("laboratorios")
+}
 
 // =========================================================================
 // FUTURAS ÉPICAS: ESPACIO RESERVADO PARA EXTENSIONES DEL SISTEMA
