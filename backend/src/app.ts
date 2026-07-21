@@ -15,10 +15,17 @@ const app: Application = express();
 const rawOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 const cleanOrigin = rawOrigin.replace(/\/$/, '');
 
-app.use(cors({
-  origin: [cleanOrigin, `${cleanOrigin}/`],
-  credentials: true
-}));
+// ==========================================
+// CONFIGURACIÓN DE CORS
+// ==========================================
+app.use(
+  cors({
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
