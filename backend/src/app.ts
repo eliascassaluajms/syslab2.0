@@ -1,12 +1,16 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import authRouter from './routes/auth.routes.js';
-import userRoutes from './routes/user.routes.js'; // 👈 Importación del router de usuarios
+import userRoutes from './routes/user.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { AppError } from './utils/appError.js';
+import roleRoutes from './routes/role.routes.js';
+import catalogosRoutes from './routes/catalogos.routes.js';
 
+// 1. Inicializar la aplicación Express PRIMERO
 const app: Application = express();
 
+// 2. Configurar Middlewares Globales
 const rawOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 const cleanOrigin = rawOrigin.replace(/\/$/, '');
 
@@ -17,11 +21,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// --- MONTAJE DE RUTAS DEL SISTEMA ---
-app.use('/api/auth', authRouter);
-app.use('/api/usuarios', userRoutes); // 👈 Corregido a /api/usuarios (coincide con el frontend)
-
-// Ruta de Salud
+// 3. Ruta de Salud / Health Check
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
@@ -30,11 +30,18 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Manejo de Rutas No Encontradas (SIEMPRE debe ser la última ruta definida)
-app.all('*', (req: Request, res: Response, next) => {
-  next(new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404));
+// 4. Montaje de Rutas de la API
+app.use('/api/auth', authRouter);
+app.use('/api/usuarios', userRoutes); // Conecta /api/usuarios al router existente
+app.use('/api/roles', roleRoutes);
+app.use('/api/catalogos', catalogosRoutes);
+
+// 5. Manejo de Rutas No Encontradas (SIEMPRE debe ir al final de las rutas)
+app.all('*', (req: Request, res: Response) => {
+  throw new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404);
 });
 
+// 6. Middleware Global de Manejo de Errores
 app.use(errorHandler);
 
 export default app;

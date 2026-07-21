@@ -10,5 +10,14 @@ export default defineConfig({
     watch: {
       usePolling: true, // Forzar a Vite a detectar cambios de código sobre volúmenes Docker
     },
+    proxy: {
+      '/api': {
+        target: 'http://lab_backend_api:5000',
+        changeOrigin: true,
+        secure: false,
+        // 🟢 Remueve '/api' de la URL antes de enviarla a Express
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 });

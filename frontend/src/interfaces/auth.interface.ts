@@ -1,15 +1,16 @@
+export interface Rol {
+  id?: number;
+  nombre: string;
+  permisos?: string[];
+}
+
 export interface Usuario {
-  id: number | string;
+  id: number;
   nombre: string;
   correo: string;
-  rol: string;
-  activo?: boolean;
-  
-  // ⚡ Atributos de ámbitos y permisos resueltos por el JWT
-  ambitos?: string[];
-  permisos?: string[];  // Ej: ['usuarios:crear', 'laboratorios:editar']
-  carreras?: number[];  // Ej: [1, 2]
-  facultades?: number[];
+  rol?: string | Rol;
+  roles?: (string | Rol)[];
+  permisos?: string[];
 }
 
 export interface AuthContextType {
@@ -17,4 +18,5 @@ export interface AuthContextType {
   loading: boolean;
   login: (correo: string, password: string) => Promise<void>;
   logout: () => void;
+  tienePermiso: (permiso: string) => boolean;
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { httpClient } from '../services/httpClient';
-import { Usuario, AuthContextType } from '../interfaces/auth.interface'; // 👈 Importación limpia
+import { Usuario, AuthContextType } from '../interfaces/auth.interface';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -11,6 +11,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     localStorage.removeItem('syslab_token');
     setUser(null);
+  };
+
+  // Validación flexible de permisos
+  const tienePermiso = (permiso: string): boolean => {
+    if (!user) return false;
+
+    // Extracción segura del nombre de rol
+    let nombreRol = '';
+    if (typeof user.rol === 'string') {
+      nombreRol = user.rol;
+    } else if (user.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
+      nombreRol = user.rol.nombre;
+    }
+
+    // El Administrador mantiene acceso global
+    const esAdmin = nombreRol.toLowerCase().includes('admin');
+    if (esAdmin) return true;
+
+    // Verificación contra la lista de permisos
+    if (Array.isArray(user.permisos)) {
+      return user.permisos.includes(permiso);
+    }
+
+    return false;
   };
 
   useEffect(() => {
@@ -30,7 +54,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    // Escucha reactiva para cerrar la sesión de inmediato si un endpoint responde 401
     const manejarDesautenticacion = () => logout();
     window.addEventListener('auth_unauthorized', manejarDesautenticacion);
 
@@ -55,7 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, tienePermiso }}>
       {children}
     </AuthContext.Provider>
   );

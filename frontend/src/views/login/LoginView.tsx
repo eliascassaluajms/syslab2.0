@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 export const LoginView: React.FC = () => {
-  const { login, user } = useAuth(); // Importamos también 'user' del contexto
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   
   const [correo, setCorreo] = useState('');
@@ -12,10 +12,29 @@ export const LoginView: React.FC = () => {
   const [errorInfo, setErrorInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Redirección reactiva: Si el usuario ya está autenticado, el Router lo lleva al dashboard de forma segura
   useEffect(() => {
     if (user) {
-      navigate('/usuarios', { replace: true });
+      // Evaluación segura de rol Administrador para redirección
+      let esAdmin = false;
+
+      if (typeof user.rol === 'string') {
+        esAdmin = user.rol.toLowerCase().includes('admin');
+      } else if (user.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
+        esAdmin = user.rol.nombre.toLowerCase().includes('admin');
+      }
+
+      if (!esAdmin && Array.isArray(user.roles)) {
+        esAdmin = user.roles.some((r) => {
+          if (typeof r === 'string') return r.toLowerCase().includes('admin');
+          return r?.nombre?.toLowerCase().includes('admin');
+        });
+      }
+
+      if (esAdmin) {
+        navigate('/admin/catalogos', { replace: true });
+      } else {
+        navigate('/usuarios', { replace: true });
+      }
     }
   }, [user, navigate]);
 
@@ -27,12 +46,11 @@ export const LoginView: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // Solo disparamos la petición. El useEffect superior se encargará de la transición cuando el estado cambie.
       await login(correo, password);
     } catch (err: any) {
       console.error("Error capturado:", err);
       setErrorInfo(err.message || 'Error de autenticación. Intente nuevamente.');
-      setSubmitting(false); // Solo liberamos el botón si falló
+      setSubmitting(false);
     }
   };
 
@@ -44,7 +62,7 @@ export const LoginView: React.FC = () => {
             SysLab <span className="text-blue-500">2.0</span>
           </h2>
           <p className="mt-2 text-sm text-gray-400">
-            Facultad de Ingenierias de Recursos Naturales y Tecnologia - UAJMS
+            Facultad de Ingenierías de Recursos Naturales y Tecnología - UAJMS
           </p>
         </div>
 
@@ -56,7 +74,6 @@ export const LoginView: React.FC = () => {
           )}
 
           <div className="space-y-4">
-            {/* Campo: Correo */}
             <div className="flex flex-col">
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
                 Correo Institucional
@@ -71,7 +88,6 @@ export const LoginView: React.FC = () => {
               />
             </div>
 
-            {/* Campo: Contraseña */}
             <div className="flex flex-col">
               <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
                 Contraseña
@@ -104,7 +120,6 @@ export const LoginView: React.FC = () => {
                 </button>
               </div>
               
-              {/* Enlace sutil para recuperar contraseña alineado a la derecha */}
               <div className="flex justify-end mt-2">
                 <Link
                   to="/forgot-password"
@@ -120,7 +135,7 @@ export const LoginView: React.FC = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full flex justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 transition-all cursor-pointer"
+              className="w-full flex justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 transition-all cursor-pointer shadow-lg shadow-blue-600/20"
             >
               {submitting ? 'Autenticando perímetro...' : 'Ingresar al Ecosistema'}
             </button>

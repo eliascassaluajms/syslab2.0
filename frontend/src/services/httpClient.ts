@@ -1,5 +1,6 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
+// URL base para la API REST del backend (Ajustar en el .env si no usa el prefijo /api)
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const httpClient: AxiosInstance = axios.create({
@@ -10,7 +11,9 @@ export const httpClient: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
-// 1. Interceptor de Peticiones: Inyección dinámica del JWT
+// ============================================================================
+// 1. INTERCEPTOR DE PETICIONES
+// ============================================================================
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('syslab_token');
@@ -19,23 +22,27 @@ httpClient.interceptors.request.use(
     }
     return config;
   },
-  (error: any) => Promise.reject(error)
+  (error: AxiosError) => {
+    return Promise.reject(error);
+  }
 );
 
-// 2. Interceptor de Respuestas: Manejo reactivo desacoplado
+// ============================================================================
+// 2. INTERCEPTOR DE RESPUESTAS
+// ============================================================================
 httpClient.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: any) => {
+  (error: AxiosError) => {
     const esEndpointLogin = error.config?.url?.includes('/auth/login');
 
-    if (error.response && error.response.status === 401 && !esEndpointLogin) {
-      console.warn('⚠️ Sesión inválida o expirada detectada por el core.');
+    // Manejo de token expirado o no autorizado (401)
+    if (error.response?.status === 401 && !esEndpointLogin) {
+      console.warn('⚠️ Sesión inválida o expirada detectada por el sistema.');
       localStorage.removeItem('syslab_token');
-      // Emitimos el evento global, pero NO forzamos la recarga de la ventana
       window.dispatchEvent(new Event('auth_unauthorized'));
     }
-    return Promise.reject(
-      error.response?.data || { message: 'Error de red o servidor no disponible.' }
-    );
+
+    // Se retorna el objeto de error intacto de Axios
+    return Promise.reject(error);
   }
 );
