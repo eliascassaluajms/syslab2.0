@@ -1,6 +1,6 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { verificarJWT } from '../middlewares/auth.middleware.js';
-import { AppError } from '../utils/appError.js';
+import { requirePermission } from '../middlewares/authorize.middleware.js';
 import {
   obtenerRoles,
   obtenerRolPorId,
@@ -12,24 +12,50 @@ import {
 
 const router = Router();
 
-const exigirAdministrador = (req: Request, _res: Response, next: NextFunction) => {
-  if (req.user?.rol !== 'Administrador') {
-    return next(new AppError('Operación prohibida. Solo administradores pueden gestionar la matriz de roles.', 403));
-  }
-  next();
-};
+// Proteger todas las rutas del módulo con JWT
+router.use(verificarJWT);
 
-// Protección global del router
-router.use(verificarJWT, exigirAdministrador);
+// Catálogo de permisos (necesario para construir la matriz al crear/editar roles)
+router.get(
+  '/permisos',
+  requirePermission('roles:listar'),
+  obtenerPermisos
+);
 
-// Catálogo de permisos
-router.get('/permisos', obtenerPermisos);
+// CRUD de Roles con permisos granulares
+// GET /api/roles
+router.get(
+  '/',
+  requirePermission('roles:listar'),
+  obtenerRoles
+);
 
-// CRUD de Roles
-router.get('/', obtenerRoles);
-router.get('/:id', obtenerRolPorId);
-router.post('/', crearRol);
-router.put('/:id', actualizarRol);
-router.delete('/:id', eliminarRol);
+// GET /api/roles/:id
+router.get(
+  '/:id',
+  requirePermission('roles:listar'),
+  obtenerRolPorId
+);
+
+// POST /api/roles
+router.post(
+  '/',
+  requirePermission('roles:crear'),
+  crearRol
+);
+
+// PUT /api/roles/:id
+router.put(
+  '/:id',
+  requirePermission('roles:editar'),
+  actualizarRol
+);
+
+// DELETE /api/roles/:id
+router.delete(
+  '/:id',
+  requirePermission('roles:eliminar'),
+  eliminarRol
+);
 
 export default router;

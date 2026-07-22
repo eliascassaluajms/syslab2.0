@@ -14,15 +14,16 @@ export const LoginView: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      // Evaluación segura de rol Administrador para redirección
-      let esAdmin = false;
-
+      // 1. Extracción segura del nombre del rol principal
+      let nombreRol = '';
       if (typeof user.rol === 'string') {
-        esAdmin = user.rol.toLowerCase().includes('admin');
+        nombreRol = user.rol;
       } else if (user.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
-        esAdmin = user.rol.nombre.toLowerCase().includes('admin');
+        nombreRol = user.rol.nombre;
       }
 
+      // 2. Comprobación de si es Administrador
+      let esAdmin = nombreRol.toLowerCase().includes('admin');
       if (!esAdmin && Array.isArray(user.roles)) {
         esAdmin = user.roles.some((r) => {
           if (typeof r === 'string') return r.toLowerCase().includes('admin');
@@ -30,10 +31,23 @@ export const LoginView: React.FC = () => {
         });
       }
 
+      // 3. Extracción del arreglo de permisos
+      const permisos: string[] = Array.isArray(user.permisos) ? user.permisos : [];
+
+      // 🟢 4. Redirección Intuitiva y Segura basada en permisos / rol
       if (esAdmin) {
         navigate('/admin/catalogos', { replace: true });
+      } else if (
+        permisos.includes('laboratorios:listar') || 
+        nombreRol.toLowerCase().includes('jefe') || 
+        nombreRol.toLowerCase().includes('laboratorio')
+      ) {
+        navigate('/admin/laboratorios', { replace: true });
+      } else if (permisos.includes('usuarios:listar')) {
+        navigate('/admin/usuarios', { replace: true });
       } else {
-        navigate('/usuarios', { replace: true });
+        // Fallback predeterminado para roles operativos
+        navigate('/admin/laboratorios', { replace: true });
       }
     }
   }, [user, navigate]);
