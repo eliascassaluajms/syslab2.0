@@ -36,12 +36,15 @@ export interface UsuarioLista {
 }
 
 // Payload para actualización de perfil, asignación de múltiples roles y ámbitos institucionales
+// Payload para actualización de perfil, asignación de múltiples roles y ámbitos institucionales
 export interface ActualizarPerfilPayload {
-  rolIds: number[];
-  rolId?: number; // Soporte legacy/fallback
+  nombre?: string;  // <-- Añadido para permitir modificar datos básicos
+  correo?: string;  // <-- Añadido para permitir modificar datos básicos
+  rolIds?: number[];
+  rolId?: number; 
   activo?: boolean;
-  facultades: number[];
-  carreras: number[];
+  facultades?: number[];
+  carreras?: number[];
 }
 
 // Payload simplificado para registro con datos de acceso e identidades de rol opcionales
