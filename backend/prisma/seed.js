@@ -1,26 +1,27 @@
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs'); // 👈 1. Importar la librería criptográfica
+import pkg from 'pg';
+const { Pool } = pkg;
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-// Inicialización del Driver Adapter requerido en tu entorno Docker
+// Inicialización del Driver Adapter requerido en el entorno Docker
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// 👈 2. Generar el Hash dinámico y real para 'password123'
-const DUMMY_PASSWORD_HASH = bcrypt.hashSync('password123', 10); 
+// Hash dinámico y real para la contraseña por defecto 'SysLab2026*'
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('SysLab2026*', 10); 
 
 async function main() {
   console.log('🌱 Iniciando el proceso de Seeding (Datos Maestros SysLab 2.0)...');
-  // ... (el resto del código de su función main permanece exactamente igual)
 
   // =========================================================================
-  // 1. LIMPIEZA DE TABLAS (En orden inverso para evitar fallos de claves foráneas)
+  // 1. LIMPIEZA DE TABLAS (Orden inverso estricto por llaves foráneas)
   // =========================================================================
+  await prisma.incidencia.deleteMany({});
+  await prisma.equipo.deleteMany({});
+  await prisma.laboratorio.deleteMany({});
   await prisma.asignacionAmbito.deleteMany({});
-  await prisma.usuarioCarrera.deleteMany({});
-  await prisma.usuarioFacultad.deleteMany({});
   await prisma.usuario.deleteMany({});
   await prisma.rolPermiso.deleteMany({});
   await prisma.permiso.deleteMany({});
@@ -49,6 +50,11 @@ async function main() {
     { codigo: 'laboratorios:editar', descripcion: 'Permite editar la infraestructura de laboratorios' },
     { codigo: 'laboratorios:eliminar', descripcion: 'Permite eliminar registros de laboratorios' },
     { codigo: 'laboratorios:ver_estado', descripcion: 'Permite ver el estado operativo actual de los laboratorios en tiempo real' },
+
+    { codigo: 'equipos:crear', descripcion: 'Permite registrar equipos individuales o en lote' },
+    { codigo: 'equipos:listar', descripcion: 'Permite listar el inventario de equipos' },
+    { codigo: 'equipos:editar', descripcion: 'Permite modificar detalles o estado de equipos' },
+    { codigo: 'equipos:eliminar', descripcion: 'Permite dar de baja equipos del inventario' },
 
     { codigo: 'materias:crear', descripcion: 'Permite registrar asignaturas curriculares' },
     { codigo: 'materias:listar', descripcion: 'Permite listar las materias del plan de estudios' },
@@ -102,13 +108,13 @@ async function main() {
   // =========================================================================
   // 4. ASIGNACIÓN MATRIZ: ROL - PERMISO
   // =========================================================================
-  // El administrador hereda absolutamente todo el set
   for (const p of permisosCreados) {
     await prisma.rolPermiso.create({ data: { rolId: rolAdmin.id, permisoId: p.id } });
   }
 
   const codigosJefe = [
     'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:ver_estado',
+    'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
     'materias:crear', 'materias:listar', 'materias:editar',
     'horarios:crear', 'horarios:listar', 'horarios:editar',
     'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
@@ -117,6 +123,7 @@ async function main() {
   
   const codigosDocente = [
     'laboratorios:listar', 'laboratorios:ver_estado',
+    'equipos:listar',
     'horarios:listar',
     'fallas:crear', 'fallas:listar',
     'uso_laboratorios:crear', 'uso_laboratorios:listar'
@@ -133,7 +140,7 @@ async function main() {
   console.log('✅ Matriz de permisos vinculada a los roles.');
 
   // =========================================================================
-  // 5. ESTRUCTURA INSTITUCIONAL (Facultades y Carreras)
+  // 5. ESTRUCTURA INSTITUCIONAL (Facultades, Carreras y Laboratorios)
   // =========================================================================
   const facNaturales = await prisma.facultad.create({
     data: { nombre: 'Facultad de Ciencias de la Ingeniería de Recursos Naturales y Tecnologías', sigla: 'FCIRNT' }
@@ -172,25 +179,90 @@ async function main() {
     });
   }
 
-  console.log('✅ Facultades y Carreras institucionales cargadas.');
+  const lab1 = await prisma.laboratorio.create({
+    data: {
+      codigo: 'LAB-1',
+      nombre: 'Laboratorio 1 Ing Agronómica / Computación',
+      ubicacion: 'Calle Jacinto Delfín, Campus Yacuiba',
+      capacidad: 25,
+      facultadId: facNaturales.id,
+      carreraId: carreraInfoId
+    }
+  });
+
+  const lab2 = await prisma.laboratorio.create({
+    data: {
+      codigo: 'LAB-2',
+      nombre: 'Laboratorio de Redes y Computación Avanzada',
+      ubicacion: 'Campus Universitario Yacuiba',
+      capacidad: 20,
+      facultadId: facNaturales.id,
+      carreraId: carreraInfoId
+    }
+  });
+
+  console.log('✅ Facultades, Carreras y Laboratorios institucionales cargados.');
 
   // =========================================================================
-  // 6. CONFIGURACIÓN DE USUARIOS BASE Y ÁMBITOS DE GRANULARIDAD FINA (KAN-08)
+  // 6. INVENTARIO DE EQUIPOS EN LABORATORIOS
   // =========================================================================
-  // Administrador Global
+  for (let i = 1; i <= 20; i++) {
+    const numPadded = String(i).padStart(2, '0');
+    await prisma.equipo.create({
+      data: {
+        codigoInventario: `PC-LAB1-${numPadded}`,
+        nombre: 'Estación de Trabajo OptiPlex',
+        marca: 'Dell',
+        modelo: 'OptiPlex 7010',
+        laboratorioId: lab1.id,
+        estado: 'OPERATIVO',
+        especificaciones: { procesador: 'Intel Core i7', ram: '16GB', almacenamiento: 'SSD 512GB' }
+      }
+    });
+  }
+
+  for (let i = 1; i <= 10; i++) {
+    const numPadded = String(i).padStart(2, '0');
+    await prisma.equipo.create({
+      data: {
+        codigoInventario: `PC-LAB2-${numPadded}`,
+        nombre: 'Servidor / Nodo de Red',
+        marca: 'HP',
+        modelo: 'ProDesk 600',
+        laboratorioId: lab2.id,
+        estado: 'OPERATIVO',
+        especificaciones: { procesador: 'Intel Core i5', ram: '8GB', almacenamiento: 'SSD 256GB' }
+      }
+    });
+  }
+
+  console.log('✅ Inventario inicial de equipos inyectado en laboratorios.');
+
+  // =========================================================================
+  // 7. CONFIGURACIÓN DE USUARIOS Y ÁMBITOS DE GRANULARIDAD FINA
+  // =========================================================================
   const userAdmin = await prisma.usuario.create({
-    data: { nombre: 'Administrador Central', correo: 'admin.syslab@uajms.edu.bo', password: DUMMY_PASSWORD_HASH, rolId: rolAdmin.id }
+    data: { 
+      nombre: 'Administrador Central', 
+      correo: 'admin.syslab@uajms.edu.bo', 
+      password: DUMMY_PASSWORD_HASH, 
+      rolId: rolAdmin.id,
+      esGlobal: true 
+    }
   });
   await prisma.asignacionAmbito.create({
-    data: { usuarioId: userAdmin.id, rolId: rolAdmin.id } // Ámbito total, campos de facultad y carrera nulos
+    data: { usuarioId: userAdmin.id, rolId: rolAdmin.id }
   });
 
-  // Usuario Jefe de Laboratorios (Mapeado a su contexto informático y de facultad)
   const userJefe = await prisma.usuario.create({
-    data: { nombre: 'Elias Cassal Baldiviezo', correo: 'elias.cassal@uajms.edu.bo', password: DUMMY_PASSWORD_HASH, rolId: rolJefe.id }
+    data: { 
+      nombre: 'Elias Cassal Baldiviezo', 
+      correo: 'elias.cassal@uajms.edu.bo', 
+      password: DUMMY_PASSWORD_HASH, 
+      rolId: rolJefe.id,
+      esGlobal: false 
+    }
   });
-
-  // Inyección en la tabla pivot de granularidad fina
   await prisma.asignacionAmbito.create({
     data: {
       usuarioId: userJefe.id,
@@ -200,13 +272,51 @@ async function main() {
     }
   });
 
-  // Inyección en las tablas espejo de asignación perimetral directa
-  await prisma.usuarioFacultad.create({ data: { usuarioId: userJefe.id, facultadId: facNaturales.id } });
-  await prisma.usuarioCarrera.create({ data: { usuarioId: userJefe.id, carreraId: carreraInfoId } });
+  const listaDocentes = [
+    { nombre: 'Yovana Sanchez', correo: 'yovana.sanchez@uajms.edu.bo' },
+    { nombre: 'Cesar Santos', correo: 'cesar.santos@uajms.edu.bo' },
+    { nombre: 'Juan Carlos Jaramillo', correo: 'juancarlos.jaramillo@uajms.edu.bo' },
+    { nombre: 'Roberth Farfán', correo: 'roberth.farfan@uajms.edu.bo', especialidad: 'Modelado y Simulación' },
+    { nombre: 'Renzo Espinoza', correo: 'renzo.espinoza@uajms.edu.bo', especialidad: 'Sistemas de Información Geográfica / GIS' },
+    { nombre: 'Pedro Arenas', correo: 'pedro.arenas@uajms.edu.bo', especialidad: 'Programación III' },
+    { nombre: 'Ronald Cruz', correo: 'ronald.cruz@uajms.edu.bo' },
+    { nombre: 'Jhenny Castillo', correo: 'jhenny.castillo@uajms.edu.bo' },
+    { nombre: 'Jose Luis Narvaez', correo: 'jose.narvaez@uajms.edu.bo' },
+    { nombre: 'Guiver Calderon', correo: 'guiver.calderon@uajms.edu.bo' },
+    { nombre: 'Emilse Aguirre', correo: 'emilse.aguirre@uajms.edu.bo' },
+    { nombre: 'Silvia Olivera', correo: 'silvia.olivera@uajms.edu.bo' },
+    { nombre: 'Mises Huanca', correo: 'mises.huanca@uajms.edu.bo' },
+    { nombre: 'Nestor Bernal', correo: 'nestor.bernal@uajms.edu.bo' },
+    { nombre: 'Arturo Prudencio', correo: 'arturo.prudencio@uajms.edu.bo' }
+  ];
 
-  console.log('✅ Usuarios base creados con su respectivo Ámbito de Granularidad Fina.');
+  for (const doc of listaDocentes) {
+    const nombreCompleto = doc.especialidad ? `${doc.nombre} (${doc.especialidad})` : doc.nombre;
+    const docenteCreado = await prisma.usuario.create({
+      data: {
+        nombre: nombreCompleto,
+        correo: doc.correo,
+        password: DUMMY_PASSWORD_HASH,
+        rolId: rolDocente.id,
+        esGlobal: false
+      }
+    });
+
+    await prisma.asignacionAmbito.create({
+      data: {
+        usuarioId: docenteCreado.id,
+        rolId: rolDocente.id,
+        facultadId: facNaturales.id,
+        carreraId: carreraInfoId
+      }
+    });
+  }
+
+  console.log(`✅ ${listaDocentes.length + 2} Usuarios y docentes inyectados correctamente bajo el esquema unificado.`);
   console.log('🚀 ¡Seeding completado con total éxito!');
-}main()
+}
+
+main()
   .catch((e) => {
     console.error('❌ Error crítico en el proceso de seeding:', e);
     process.exit(1);

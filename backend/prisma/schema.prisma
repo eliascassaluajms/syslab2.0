@@ -13,31 +13,31 @@ generator client {
 // =========================================================================
 
 model Rol {
-  id            Int          @id @default(autoincrement())
-  nombre        String       @unique @db.VarChar(50) // Ej: 'Administrador', 'Jefe de Laboratorios', 'Técnico', 'Docente'
-  descripcion   String?      @db.VarChar(255)
-  creadoEn      DateTime     @default(now()) @map("creado_en")
-  actualizadoEn DateTime     @updatedAt @map("actualizado_en")
+  id            Int      @id @default(autoincrement())
+  nombre        String   @unique @db.VarChar(50) // Ej: 'Administrador', 'Jefe de Laboratorios', 'Técnico', 'Docente'
+  descripcion   String?  @db.VarChar(255)
+  activo        Boolean  @default(true) // 🟢 Agregado para Baja Lógica de roles
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
-  usuarios          Usuario[]
   rolPermisos       RolPermiso[]
   asignacionesRoles AsignacionAmbito[]
+  usuarios          Usuario[] // 👈 CORRECCIÓN: Relación inversa bidireccional requerida por Prisma
 
   @@map("roles")
 }
 
 model Permiso {
-  id          Int          @id @default(autoincrement())
-  codigo      String       @unique @db.VarChar(100) // Ej: 'usuarios:listar', 'laboratorios:editar', 'tickets:crear'
-  descripcion String?      @db.VarChar(255)
-  creadoEn    DateTime     @default(now()) @map("creado_en")
+  id          Int      @id @default(autoincrement())
+  codigo      String   @unique @db.VarChar(100) // Ej: 'usuarios:listar', 'laboratorios:editar'
+  descripcion String?  @db.VarChar(255)
+  creadoEn    DateTime @default(now()) @map("creado_en")
 
   rolPermisos RolPermiso[]
 
   @@map("permisos")
 }
 
-// Relación Muchos a Muchos explícita para control absoluto de asignaciones de permisos
 model RolPermiso {
   rolId     Int @map("rol_id")
   permisoId Int @map("permiso_id")
@@ -57,89 +57,68 @@ model Usuario {
   id            Int      @id @default(autoincrement())
   nombre        String   @db.VarChar(100)
   correo        String   @unique @db.VarChar(150)
-  password      String   @db.VarChar(255) // Almacenará el hash seguro de Bcrypt (KAN-13)
-  activo        Boolean  @default(true)   // Validación en tiempo real (KAN-15.1)
-  rolId         Int      @map("rol_id")
+  password      String   @db.VarChar(255)
+  esGlobal      Boolean  @default(false)
+  activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
-  rol               Rol                @relation(fields: [rolId], references: [id], onDelete: Restrict)
-  usuarioFacultades UsuarioFacultad[]
-  usuarioCarreras   UsuarioCarrera[]
+  rolId         Int?     @map("rol_id")
+  rol           Rol?     @relation(fields: [rolId], references: [id], onDelete: SetNull)
+
   asignacionesRoles AsignacionAmbito[]
+
+  incidenciasReportadas Incidencia[] @relation("IncidenciasReportadas")
+  incidenciasAsignadas  Incidencia[] @relation("IncidenciasAsignadas")
 
   @@map("usuarios")
 }
 
-// Entidades estructurales de la universidad
 model Facultad {
   id     Int     @id @default(autoincrement())
-  nombre String  @unique @db.VarChar(150) // Ej: 'Facultad de Ciencias Integradas de Yacuiba'
-  sigla  String  @unique @db.VarChar(20)  // Ej: 'FCIY'
+  nombre String  @unique @db.VarChar(150)
+  sigla  String  @unique @db.VarChar(20)
   activo Boolean @default(true)
 
-  carreras          Carrera[]
-  usuarioFacultades UsuarioFacultad[]
-  asignaciones      AsignacionAmbito[]
+  carreras     Carrera[]
+  asignaciones AsignacionAmbito[]
+  laboratorios Laboratorio[]
 
   @@map("facultades")
 }
 
 model Carrera {
   id         Int     @id @default(autoincrement())
-  nombre     String  @unique @db.VarChar(150) // Ej: 'Ingeniería Informática'
+  nombre     String  @unique @db.VarChar(150)
   facultadId Int     @map("facultad_id")
   activo     Boolean @default(true)
 
-  facultad        Facultad           @relation(fields: [facultadId], references: [id], onDelete: Cascade)
-  usuarioCarreras UsuarioCarrera[]
-  asignaciones    AsignacionAmbito[]
+  facultad     Facultad           @relation(fields: [facultadId], references: [id], onDelete: Cascade)
+  asignaciones AsignacionAmbito[]
+  laboratorios Laboratorio[]
 
   @@map("carreras")
 }
 
-// Tablas de asignación perimetral directa (Tablas Pivote Planificadas)
-model UsuarioFacultad {
-  usuarioId  Int @map("usuario_id")
-  facultadId Int @map("facultad_id")
-
-  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  facultad Facultad @relation(fields: [facultadId], references: [id], onDelete: Cascade)
-
-  @@id([usuarioId, facultadId])
-  @@map("usuario_facultades")
-}
-
-model UsuarioCarrera {
-  usuarioId Int @map("usuario_id")
-  carreraId Int @map("carrera_id")
-
-  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  carrera Carrera @relation(fields: [carreraId], references: [id], onDelete: Cascade)
-
-  @@id([usuarioId, carreraId])
-  @@map("usuario_carreras")
-}
-
-// 🔥 TABLA PIVOTE AVANZADA: CONTROL DE ÁMBITO Y GRANULARIDAD FINA
+// 🟢 FUENTE ÚNICA DE VERDAD: MATRIZ DE ROL Y ÁMBITO INSTITUCIONAL
 model AsignacionAmbito {
   id         Int  @id @default(autoincrement())
   usuarioId  Int  @map("usuario_id")
   rolId      Int  @map("rol_id")
-  facultadId Int? @map("facultad_id") // Opcional: Ámbito completo a nivel Facultad (Decanos)
-  carreraId  Int? @map("carrera_id")  // Opcional: Ámbito específico a nivel Carrera (Directores)
+  facultadId Int? @map("facultad_id") // Nullable: Ámbito global/general
+  carreraId  Int? @map("carrera_id")  // Nullable: Ámbito específico de Carrera
 
   usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   rol      Rol       @relation(fields: [rolId], references: [id], onDelete: Cascade)
-  facultad Facultad? @relation(fields: [facultadId], references: [id], onDelete: Cascade)
-  carrera  Carrera?  @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+  facultad Facultad? @relation(fields: [facultadId], references: [id], onDelete: SetNull)
+  carrera  Carrera?  @relation(fields: [carreraId], references: [id], onDelete: SetNull)
 
-  // Previene duplicados exactos en la matriz de permisos
   @@unique([usuarioId, rolId, facultadId, carreraId])
   @@map("asignaciones_ambito")
 }
+
 // =========================================================================
-// MÓDULO DE GESTIÓN DE LABORATORIOS
+// MÓDULO DE GESTIÓN DE LABORATORIOS Y RECURSOS
 // =========================================================================
 
 model Laboratorio {
@@ -153,13 +132,91 @@ model Laboratorio {
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
+  facultadId    Int      @map("facultad_id")
+  facultad      Facultad @relation(fields: [facultadId], references: [id], onDelete: Restrict)
+
+  carreraId     Int?     @map("carrera_id")
+  carrera       Carrera? @relation(fields: [carreraId], references: [id], onDelete: SetNull)
+
+  equipos       Equipo[]
+
   @@map("laboratorios")
 }
 
-// =========================================================================
-// FUTURAS ÉPICAS: ESPACIO RESERVADO PARA EXTENSIONES DEL SISTEMA
-// =========================================================================
-// Cuando implementemos los siguientes módulos, se vincularán aquí:
-// - model Laboratorio { ... } -> Relacionado con Carrera o Facultad.
-// - model Horario { ... }     -> Relacionado con Laboratorio y Usuario (Docente).
-// - model Incidencia { ... }  -> Relacionado con Laboratorio y Usuario (Técnico).
+// ==========================================
+// ENUMS DEL MÓDULO DE INCIDENCIAS Y EQUIPOS
+// ==========================================
+
+enum EstadoEquipo {
+  OPERATIVO
+  EN_MANTENIMIENTO
+  CON_FALLA
+  FUERA_DE_SERVICIO
+}
+
+enum EstadoIncidencia {
+  REPORTADA
+  EN_DIAGNOSTICO
+  EN_REPARACION
+  RESUELTA
+  CERRADA
+  CANCELADA
+}
+
+enum PrioridadIncidencia {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+// ==========================================
+// MODELOS DE EQUIPOS E INCIDENCIAS
+// ==========================================
+
+model Equipo {
+  id               Int           @id @default(autoincrement())
+  codigoInventario String        @unique @map("codigo_inventario")
+  nombre           String
+  marca            String?
+  modelo           String?
+  numSerie         String?       @map("num_serie")
+  especificaciones Json?
+  estado           EstadoEquipo  @default(OPERATIVO)
+
+  laboratorioId    Int           @map("laboratorio_id")
+  laboratorio      Laboratorio   @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+
+  incidencias      Incidencia[]
+
+  creadoEn         DateTime      @default(now()) @map("creado_en")
+  actualizadoEn    DateTime      @updatedAt @map("actualizado_en")
+
+  @@map("equipos")
+}
+
+model Incidencia {
+  id              Int                 @id @default(autoincrement())
+  codigo          String              @unique
+  titulo          String
+  descripcion     String              @db.Text
+  prioridad       PrioridadIncidencia @default(MEDIA)
+  estado          EstadoIncidencia    @default(REPORTADA)
+
+  equipoId        Int                 @map("equipo_id")
+  equipo          Equipo              @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+
+  reportadoPorId  Int                 @map("reportado_por_id")
+  reportadoPor    Usuario             @relation("IncidenciasReportadas", fields: [reportadoPorId], references: [id])
+
+  asignadoAId     Int?                @map("asignado_a_id")
+  asignadoA       Usuario?            @relation("IncidenciasAsignadas", fields: [asignadoAId], references: [id])
+
+  solucion        String?             @db.Text
+  fechaResolucion DateTime?           @map("fecha_resolucion")
+
+  creadoEn        DateTime            @default(now()) @map("creado_en")
+  actualizadoEn   DateTime            @updatedAt @map("actualizado_en")
+
+  @@map("incidencias")
+}

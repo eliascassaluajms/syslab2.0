@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
-import { userRepository } from '../repositories/user.repository.js';
 
-export const verificarJWT = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const verificarJWT = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
     let token: string | undefined;
     const authHeader = req.headers.authorization;
@@ -29,21 +29,25 @@ export const verificarJWT = async (req: Request, res: Response, next: NextFuncti
       throw new AppError('Token inválido o corrupto. Acceso denegado.', 401);
     }
 
-    // Validación en tiempo real del estado de la cuenta en base de datos
-    const usuarioDb = await userRepository.findById(Number(decoded.id));
+    // Validación de la cuenta en base de datos
+    const usuarioDb = await prisma.usuario.findUnique({
+      where: { id: Number(decoded.id) },
+      select: { id: true, activo: true },
+    });
 
     if (!usuarioDb || !usuarioDb.activo) {
       throw new AppError('Acceso denegado. La cuenta no existe o ha sido desactivada.', 401);
     }
 
-    // Inyección segura del contexto de usuario (mitiga conflictos ts(2322))
+    // Inyección contextual limpia
     (req as any).user = {
       id: Number(decoded.id),
       nombre: String(decoded.nombre),
       correo: String(decoded.correo),
-      rol: String(decoded.rol),
+      esGlobal: Boolean(decoded.esGlobal),
+      roles: Array.isArray(decoded.roles) ? decoded.roles : [decoded.rol],
       permisos: decoded.permisos || [],
-      carreras: decoded.carreras || []
+      carreras: decoded.carreras || [],
     };
 
     next();

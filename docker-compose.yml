@@ -29,17 +29,19 @@ services:
     container_name: lab_backend_api
     restart: always
     ports:               
-      - "5000:5000"      # CORREGIDO: Sincronizado al puerto real del server.ts y httpClient.ts
+      - "5000:5000"      
     env_file:          
       - ./backend/.env
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Obliga a vigilar cambios en volúmenes de Docker
     depends_on:
       postgres-db:
-        condition: service_healthy # Asegura que la DB esté lista antes de levantar Node
+        condition: service_healthy 
     volumes:
       - ./backend:/usr/src/app
-      - /usr/src/app/node_modules # Evita que los nodos locales pisen los del contenedor
+      - /usr/src/app/node_modules 
     networks:            
-      - lab_network      
+      - lab_network
 
   # 3. Interfaz de Usuario (React + Vite en Puerto 5173)
   frontend-app:

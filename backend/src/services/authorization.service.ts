@@ -6,44 +6,35 @@ export interface ScopeFilter {
 }
 
 export class AuthorizationService {
-  /**
-   * Verifica dinámicamente en BD si el usuario posee un permiso específico
-   * dentro del ámbito (Facultad/Carrera) especificado.
-   */
   async tienePermiso(
     usuarioId: number,
     codigoPermiso: string,
     scope?: ScopeFilter
   ): Promise<boolean> {
+    // 1. Verificar si el usuario tiene acceso Global (SuperAdmin)
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: { esGlobal: true, activo: true },
+    });
+
+    if (!usuario || !usuario.activo) return false;
+    if (usuario.esGlobal) return true; // Bypass directo si es Admin Global
+
     const { facultadId, carreraId } = scope || {};
 
-    // Construcción de condiciones de ámbito (Jerarquía de permisos)
-    const condicionesAmbito: Array<object> = [
-      // 1. Permiso otorgado a nivel GLOBAL (Sin restricción de facultad ni carrera)
-      { facultadId: null, carreraId: null }
-    ];
+    const condicionesAmbito: Array<object> = [{ facultadId: null, carreraId: null }];
 
-    if (facultadId) {
-      // 2. Permiso otorgado a nivel de la FACULTAD especificada
-      condicionesAmbito.push({ facultadId, carreraId: null });
-    }
+    if (facultadId) condicionesAmbito.push({ facultadId, carreraId: null });
+    if (carreraId) condicionesAmbito.push({ carreraId });
 
-    if (carreraId) {
-      // 3. Permiso otorgado a nivel de la CARRERA especificada
-      condicionesAmbito.push({ carreraId });
-    }
-
-    // Consulta relacional directa en la capa de persistencia
     const asignacion = await prisma.asignacionAmbito.findFirst({
       where: {
         usuarioId,
-        usuario: { activo: true },
         rol: {
+          activo: true,
           rolPermisos: {
             some: {
-              permiso: {
-                codigo: codigoPermiso,
-              },
+              permiso: { codigo: codigoPermiso },
             },
           },
         },

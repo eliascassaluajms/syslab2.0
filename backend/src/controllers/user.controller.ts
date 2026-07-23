@@ -4,7 +4,7 @@ import { userRepository } from '../repositories/user.repository.js';
 import { AppError } from '../utils/appError.js';
 import { prisma } from '../config/prisma.js';
 
-// 1. Obtener lista de usuarios registrados con sus múltiples roles y ámbitos perimetrales
+// 1. Obtener lista de usuarios registrados con sus roles y ámbitos perimetrales
 export const obtenerUsuarios = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const usuarios = await prisma.usuario.findMany({
@@ -13,42 +13,57 @@ export const obtenerUsuarios = async (req: Request, res: Response, next: NextFun
         nombre: true,
         correo: true,
         activo: true,
+        esGlobal: true,
         rolId: true,
         rol: { select: { id: true, nombre: true } },
-        // ✅ CORREGIDO: Usamos la relación oficial asignacionesRoles de schema.prisma
         asignacionesRoles: {
           select: {
-            rol: { select: { id: true, nombre: true } }
+            id: true, // ID de la asignación útil para eliminar si es necesario
+            rolId: true,
+            facultadId: true,
+            carreraId: true,
+            rol: { select: { id: true, nombre: true } },
+            facultad: { select: { id: true, nombre: true, sigla: true } },
+            carrera: { select: { id: true, nombre: true } }
           }
-        },
-        usuarioCarreras: { select: { carreraId: true } },
-        usuarioFacultades: { select: { facultadId: true } }
+        }
       },
       orderBy: { id: 'desc' }
     });
 
-    // Formatear respuesta para simplificar consumo en Frontend
     const resultado = usuarios.map((u: any) => {
-      // Mapear los roles asignados en el ámbito
       const rolesExtraidos = Array.isArray(u.asignacionesRoles)
-        ? u.asignacionesRoles.map((ar: any) => ar.rol).filter(Boolean)
+        ? u.asignacionesRoles.map((a: any) => a.rol).filter(Boolean)
         : [];
 
-      // Unificar el rol principal con los asignados evitando duplicados
-      if (u.rol && !rolesExtraidos.some((r: any) => r.id === u.rol.id)) {
-        rolesExtraidos.unshift(u.rol);
+      const rolesUnicos = Array.from(
+        new Map(rolesExtraidos.map((r: any) => [r.id, r])).values()
+      );
+
+      if (u.rol && !rolesUnicos.some((r: any) => r.id === u.rol.id)) {
+        rolesUnicos.unshift(u.rol);
       }
+
+      const facultadesIds = Array.isArray(u.asignacionesRoles)
+        ? Array.from(new Set(u.asignacionesRoles.map((a: any) => a.facultadId).filter(Boolean)))
+        : [];
+
+      const carrerasIds = Array.isArray(u.asignacionesRoles)
+        ? Array.from(new Set(u.asignacionesRoles.map((a: any) => a.carreraId).filter(Boolean)))
+        : [];
 
       return {
         id: u.id,
         nombre: u.nombre,
         correo: u.correo,
         activo: u.activo,
+        esGlobal: u.esGlobal,
         rolId: u.rolId,
         rol: u.rol,
-        roles: rolesExtraidos.length > 0 ? rolesExtraidos : (u.rol ? [u.rol] : []),
-        facultades: Array.isArray(u.usuarioFacultades) ? u.usuarioFacultades.map((uf: any) => uf.facultadId) : [],
-        carreras: Array.isArray(u.usuarioCarreras) ? u.usuarioCarreras.map((uc: any) => uc.carreraId) : []
+        roles: rolesUnicos.length > 0 ? rolesUnicos : (u.rol ? [u.rol] : []),
+        asignacionesRoles: u.asignacionesRoles, // Detalle completo para la interfaz
+        facultades: facultadesIds,
+        carreras: carrerasIds
       };
     });
 
@@ -58,17 +73,15 @@ export const obtenerUsuarios = async (req: Request, res: Response, next: NextFun
   }
 };
 
-// 2. Registrar usuario (Soporta asignación múltiple de roles con rol base por defecto)
+// 2. Registrar usuario básico con asignación múltiple inicial
 export const crearUsuarioBasico = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { nombre, correo, password, rolIds, rolId } = req.body;
 
-    // Validación de campos obligatorios
     if (!nombre || !correo || !password) {
       throw new AppError('El nombre, correo y contraseña son campos obligatorios.', 400);
     }
 
-    // Verificar si el correo ya está registrado
     const usuarioExistente = await prisma.usuario.findUnique({
       where: { correo: correo.trim().toLowerCase() }
     });
@@ -77,7 +90,6 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
       throw new AppError('El correo electrónico ya se encuentra registrado.', 400);
     }
 
-    // Normalizar arreglo de roles (Soporta 'rolIds' como array o 'rolId' individual)
     let idsRolesFinales: number[] = [];
     if (Array.isArray(rolIds) && rolIds.length > 0) {
       idsRolesFinales = rolIds.map((id: any) => parseInt(id, 10)).filter((id) => !isNaN(id));
@@ -86,7 +98,6 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
       if (!isNaN(parsedRol)) idsRolesFinales.push(parsedRol);
     }
 
-    // ROL POR DEFECTO: Si no se especifica ningún rol, asigna el rol base del sistema
     if (idsRolesFinales.length === 0) {
       const rolDefecto = await prisma.rol.findFirst({
         where: { nombre: { in: ['Docente', 'Usuario', 'Personal'] } }
@@ -98,10 +109,8 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
       idsRolesFinales.push(rolDefecto.id);
     }
 
-    // Hash de contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Creación transaccional del usuario con sus relaciones
     const nuevoUsuario = await prisma.$transaction(async (tx) => {
       const user = await tx.usuario.create({
         data: {
@@ -109,11 +118,11 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
           correo: correo.trim().toLowerCase(),
           password: hashedPassword,
           rolId: idsRolesFinales[0],
-          activo: true
+          activo: true,
+          esGlobal: false // Por defecto perimetralizado
         }
       });
 
-      // ✅ CORREGIDO: Insertar relaciones en asignacionAmbito
       const asignaciones = idsRolesFinales.map((rId) => ({
         usuarioId: user.id,
         rolId: rId
@@ -127,49 +136,17 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
       return user;
     });
 
-    // Consultar usuario completo recién creado
-    const usuarioCreado: any = await prisma.usuario.findUnique({
-      where: { id: nuevoUsuario.id },
-      select: {
-        id: true,
-        nombre: true,
-        correo: true,
-        activo: true,
-        rol: { select: { id: true, nombre: true } },
-        asignacionesRoles: {
-          select: {
-            rol: { select: { id: true, nombre: true } }
-          }
-        }
-      }
-    });
-
-    const rolesFormateados = Array.isArray(usuarioCreado?.asignacionesRoles)
-      ? usuarioCreado.asignacionesRoles.map((ar: any) => ar.rol).filter(Boolean)
-      : [];
-
-    if (usuarioCreado?.rol && !rolesFormateados.some((r: any) => r.id === usuarioCreado.rol.id)) {
-      rolesFormateados.unshift(usuarioCreado.rol);
-    }
-
     res.status(201).json({
       status: 'success',
       message: 'Usuario registrado exitosamente.',
-      data: {
-        id: usuarioCreado?.id,
-        nombre: usuarioCreado?.nombre,
-        correo: usuarioCreado?.correo,
-        activo: usuarioCreado?.activo,
-        rol: usuarioCreado?.rol,
-        roles: rolesFormateados
-      }
+      data: nuevoUsuario
     });
   } catch (error) {
     next(error);
   }
 };
 
-// 3. Modificar perfil, roles múltiples y asignaciones perimetrales (Facultades y Carreras)
+// 3. Modificar perfil, roles múltiples y ámbitos perimetrales masivos
 export const modificarUsuarioYPerimetros = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -180,7 +157,6 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
       throw new AppError('El identificador del usuario debe ser un número entero válido.', 400);
     }
 
-    // Normalizar roles recibidos
     let idsRolesNumericos: number[] = [];
     if (Array.isArray(rolIds)) {
       idsRolesNumericos = rolIds.map((r: any) => parseInt(r, 10)).filter((r) => !isNaN(r));
@@ -193,12 +169,8 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
       throw new AppError('Debe asignar al menos un rol al usuario.', 400);
     }
 
-    if (!Array.isArray(facultades) || !Array.isArray(carreras)) {
-      throw new AppError('Se requieren arreglos válidos para facultades y carreras.', 400);
-    }
-
-    const idsFacultades = facultades.map((f: any) => parseInt(f, 10)).filter((f) => !isNaN(f));
-    const idsCarreras = carreras.map((c: any) => parseInt(c, 10)).filter((c) => !isNaN(c));
+    const idsFacultades = Array.isArray(facultades) ? facultades.map((f: any) => parseInt(f, 10)).filter((f) => !isNaN(f)) : [];
+    const idsCarreras = Array.isArray(carreras) ? carreras.map((c: any) => parseInt(c, 10)).filter((c) => !isNaN(c)) : [];
 
     await userRepository.actualizarPerfilYPerimetros(usuarioIdNumerico, {
       rolId: idsRolesNumericos[0],
@@ -217,7 +189,41 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
   }
 };
 
-// 4. Habilitar / Inhabilitar estado de usuario
+// 4. Endpoint específico para añadir un nuevo rol/cargo con el botón '+' (Asignación granular)
+export const agregarRolAmbitoAdicional = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuarioId = parseInt(req.params.id, 10);
+    const { rolId, facultadId, carreraId } = req.body;
+
+    if (isNaN(usuarioId) || !rolId) {
+      throw new AppError('El ID de usuario y el rolId son obligatorios.', 400);
+    }
+
+    const nuevaAsignacion = await prisma.asignacionAmbito.create({
+      data: {
+        usuarioId,
+        rolId: parseInt(rolId, 10),
+        facultadId: facultadId ? parseInt(facultadId, 10) : null,
+        carreraId: carreraId ? parseInt(carreraId, 10) : null
+      },
+      include: {
+        rol: true,
+        facultad: true,
+        carrera: true
+      }
+    });
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Cargo o rol adicional asignado correctamente.',
+      data: nuevaAsignacion
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 5. Habilitar / Inhabilitar estado de usuario
 export const cambiarEstadoUsuario = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;

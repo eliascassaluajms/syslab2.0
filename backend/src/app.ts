@@ -7,6 +7,9 @@ import { AppError } from './utils/appError.js';
 import roleRoutes from './routes/role.routes.js';
 import catalogosRoutes from './routes/catalogos.routes.js';
 import laboratoriosRoutes from './routes/laboratorios.routes.js';
+import equiposRoutes from './routes/equipos.routes.js';
+import incidenciasRoutes from './routes/incidencias.routes.js';
+
 
 // 1. Inicializar la aplicación Express PRIMERO
 const app: Application = express();
@@ -44,7 +47,8 @@ app.use('/api/usuarios', userRoutes); // Conecta /api/usuarios al router existen
 app.use('/api/roles', roleRoutes);
 app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/laboratorios', laboratoriosRoutes);
-
+app.use('/api/equipos', equiposRoutes);
+app.use('/api/incidencias', incidenciasRoutes);
 // 5. Manejo de Rutas No Encontradas (SIEMPRE debe ir al final de las rutas)
 app.all('*', (req: Request, res: Response) => {
   throw new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404);

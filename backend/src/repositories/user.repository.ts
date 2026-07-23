@@ -2,8 +2,7 @@ import { prisma } from '../config/prisma.js';
 
 export class UserRepository {
   /**
-   * Obtiene la lista completa de usuarios para la gestión del panel administrativo (KAN-17 / KAN-23).
-   * Incluye roles y perímetros asignados (facultades y carreras) para su visualización en la grilla.
+   * Obtiene la lista completa de usuarios para la gestión del panel administrativo.
    */
   async findAll() {
     return await prisma.usuario.findMany({
@@ -12,33 +11,21 @@ export class UserRepository {
         nombre: true,
         correo: true,
         activo: true,
-        createdAt: true,
+        creadoEn: true,
         rol: {
           select: {
             id: true,
             nombre: true
           }
         },
-        usuarioFacultades: {
+        asignacionesRoles: {
           select: {
+            rolId: true,
             facultadId: true,
-            facultad: {
-              select: {
-                id: true,
-                nombre: true
-              }
-            }
-          }
-        },
-        usuarioCarreras: {
-          select: {
             carreraId: true,
-            carrera: {
-              select: {
-                id: true,
-                nombre: true
-              }
-            }
+            rol: { select: { id: true, nombre: true } },
+            facultad: { select: { id: true, nombre: true, sigla: true } },
+            carrera: { select: { id: true, nombre: true } }
           }
         }
       },
@@ -49,9 +36,7 @@ export class UserRepository {
   }
 
   /**
-   * Busca un usuario por su correo electrónico.
-   * Carga el Rol, sus Permisos y la estructura perimetral completa para resolver
-   * la sesión JWT (KAN-13, KAN-14) y la expansión dinámica de ámbitos (KAN-16.1).
+   * Busca un usuario por su correo electrónico con su estructura perimetral.
    */
   async findByCorreo(correo: string) {
     return await prisma.usuario.findUnique({
@@ -68,22 +53,15 @@ export class UserRepository {
             }
           }
         },
-        // Mapeo perimetral para usuarios asignados a facultades completas
-        usuarioFacultades: {
+        asignacionesRoles: {
           include: {
+            rol: true,
             facultad: {
               include: {
-                carreras: {
-                  select: { id: true }
-                }
+                carreras: { select: { id: true } }
               }
-            }
-          }
-        },
-        // Mapeo perimetral directo para usuarios asignados a carreras específicas
-        usuarioCarreras: {
-          select: {
-            carreraId: true
+            },
+            carrera: true
           }
         }
       }
@@ -92,7 +70,6 @@ export class UserRepository {
 
   /**
    * Busca un usuario por su ID numérico.
-   * Utilizado por el middleware de seguridad perimetral para validar el estado activo en tiempo real (KAN-15.1).
    */
   async findById(id: number) {
     return await prisma.usuario.findUnique({
@@ -108,8 +85,7 @@ export class UserRepository {
   }
 
   /**
-   * Modifica los datos de control del usuario.
-   * Utilizado por el controlador de administración de personal (ABM - KAN-17).
+   * Modifica los datos básicos de control del usuario.
    */
   async update(id: number, data: { rolId?: number; activo?: boolean; nombre?: string }) {
     return await prisma.usuario.update({
@@ -126,15 +102,14 @@ export class UserRepository {
   }
 
   /**
-   * Modifica el rol, estado e inserta/elimina de golpe los registros perimetrales (ABM - KAN-17).
-   * Ejecuta una operación atómica para garantizar la consistencia en el ecosistema SysLab.
+   * Modifica el rol, estado y reconfigura los ámbitos perimetrales de forma atómica.
    */
   async actualizarPerfilYPerimetros(
     usuarioId: number, 
-    data: { rolId: number; activo?: boolean; facultades: number[]; carreras: number[] }
+    data: { rolId: number; rolIds?: number[]; activo?: boolean; facultades: number[]; carreras: number[] }
   ) {
     return await prisma.$transaction(async (tx) => {
-      // A. Actualizar datos base del Usuario
+      // 1. Actualizar datos base del Usuario
       const usuarioActualizado = await tx.usuario.update({
         where: { id: usuarioId },
         data: {
@@ -143,19 +118,46 @@ export class UserRepository {
         }
       });
 
-      // B. Reconfigurar Ámbitos de Facultades
-      await tx.usuarioFacultad.deleteMany({ where: { usuarioId } });
-      if (data.facultades.length > 0) {
-        await tx.usuarioFacultad.createMany({
-          data: data.facultades.map(facultadId => ({ usuarioId, facultadId }))
-        });
+      // 2. Limpiar las asignaciones perimetrales anteriores
+      await tx.asignacionAmbito.deleteMany({ where: { usuarioId } });
+
+      // 3. Determinar los roles finales a aplicar
+      const idsRolesFinales = data.rolIds && data.rolIds.length > 0 ? data.rolIds : [data.rolId];
+      const nuevasAsignaciones: any[] = [];
+
+      // 4. Construir las combinaciones de roles con facultades y carreras
+      if (data.facultades.length > 0 || data.carreras.length > 0) {
+        for (const rId of idsRolesFinales) {
+          const facultadesLista = data.facultades.length > 0 ? data.facultades : [null];
+          const carrerasLista = data.carreras.length > 0 ? data.carreras : [null];
+
+          for (const facultadId of facultadesLista) {
+            for (const carreraId of carrerasLista) {
+              nuevasAsignaciones.push({
+                usuarioId,
+                rolId: rId,
+                facultadId,
+                carreraId
+              });
+            }
+          }
+        }
+      } else {
+        for (const rId of idsRolesFinales) {
+          nuevasAsignaciones.push({
+            usuarioId,
+            rolId: rId,
+            facultadId: null,
+            carreraId: null
+          });
+        }
       }
 
-      // C. Reconfigurar Ámbitos de Carreras
-      await tx.usuarioCarrera.deleteMany({ where: { usuarioId } });
-      if (data.carreras.length > 0) {
-        await tx.usuarioCarrera.createMany({
-          data: data.carreras.map(carreraId => ({ usuarioId, carreraId }))
+      // 5. Insertar masivamente las nuevas asignaciones evitando duplicados
+      if (nuevasAsignaciones.length > 0) {
+        await tx.asignacionAmbito.createMany({
+          data: nuevasAsignaciones,
+          skipDuplicates: true
         });
       }
 

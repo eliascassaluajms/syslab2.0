@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { httpClient as api } from '../services/httpClient';
+import { ModalEquipos } from '../components/laboratorios/ModalEquipos'; // Importación añadida
 
 interface Laboratorio {
   id: number;
@@ -16,9 +17,13 @@ export const LaboratoriosView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados Modal
+  // Estados Modal Laboratorio (Crear / Editar)
   const [modalAbierto, setModalAbierto] = useState<boolean>(false);
   const [labEditar, setLabEditar] = useState<Laboratorio | null>(null);
+
+  // Estados Modal Equipos (NUEVO)
+  const [modalEquiposAbierto, setModalEquiposAbierto] = useState<boolean>(false);
+  const [labSeleccionadoEquipos, setLabSeleccionadoEquipos] = useState<Laboratorio | null>(null);
   
   // Campos del Formulario
   const [codigo, setCodigo] = useState<string>('');
@@ -46,7 +51,13 @@ export const LaboratoriosView: React.FC = () => {
     cargarLaboratorios();
   }, []);
 
-  // Abrir Modal para Crear o Modificar
+  // Abrir Modal de Equipos (NUEVO)
+  const handleGestionarEquipos = (lab: Laboratorio) => {
+    setLabSeleccionadoEquipos(lab);
+    setModalEquiposAbierto(true);
+  };
+
+  // Abrir Modal para Crear o Modificar Laboratorio
   const handleAbrirModal = (lab?: Laboratorio) => {
     if (lab) {
       setLabEditar(lab);
@@ -89,7 +100,7 @@ export const LaboratoriosView: React.FC = () => {
     }
   };
 
-  // 🟢 ELIMINACIÓN LÓGICA / CAMBIO DE ESTADO (Activo <-> Inactivo)
+  // ELIMINACIÓN LÓGICA / CAMBIO DE ESTADO
   const handleToggleEstado = async (lab: Laboratorio) => {
     const accion = lab.activo ? 'desactivar (eliminar lógicamente)' : 'reactivar';
     const confirmacion = window.confirm(`¿Está seguro de ${accion} el laboratorio "${lab.nombre}"?`);
@@ -181,6 +192,14 @@ export const LaboratoriosView: React.FC = () => {
 
                   {/* Acciones */}
                   <td className="py-4 px-6 text-center space-x-2">
+                    {/* Botón Gestión de Equipos (NUEVO) */}
+                    <button
+                      onClick={() => handleGestionarEquipos(lab)}
+                      className="px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 rounded-lg transition-all cursor-pointer"
+                    >
+                      🖥️ Equipos
+                    </button>
+
                     <button
                       onClick={() => handleAbrirModal(lab)}
                       className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/10 border border-blue-500/30 rounded-lg transition-all cursor-pointer"
@@ -211,7 +230,7 @@ export const LaboratoriosView: React.FC = () => {
         </table>
       </div>
 
-      {/* Modal Crear / Modificar */}
+      {/* Modal Crear / Modificar Laboratorio */}
       {modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg space-y-4 text-white">
@@ -306,6 +325,13 @@ export const LaboratoriosView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Gestión de Equipos (NUEVO) */}
+      <ModalEquipos
+        modalAbierto={modalEquiposAbierto}
+        onClose={() => setModalEquiposAbierto(false)}
+        laboratorio={labSeleccionadoEquipos}
+      />
     </div>
   );
 };

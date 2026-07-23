@@ -1,83 +1,69 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { userRepository } from '../repositories/user.repository.js';
+import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
-import { IJwtPayload } from '../interfaces/auth.interface.js';
+import { ScopeService } from './scope.service.js';
 
 export class AuthService {
-  /**
-   * Ejecuta la lógica de negocio para la autenticación de usuarios.
-   * Resuelve jerárquicamente los ámbitos y genera el JWT encapsulado.
-   */
-  async login(correo: string, passwordPlain: string): Promise<{ token: string; usuario: Partial<IJwtPayload> }> {
-    // 1. Buscar usuario con todas sus relaciones perimetrales cargadas (KAN-12)
-    const user = await userRepository.findByCorreo(correo);
-    console.log('================ 🔍 SYSLAB DEBUG LOGIN 🔍 ================');
-    console.log('📧 Correo recibido en frontend:', correo);
-    console.log('👤 ¿Usuario encontrado en la DB?:', user ? 'SÍ' : 'NO');
-    if (user) {
-      console.log('🔑 ¿El objeto "user" contiene la propiedad "password"?:', 'password' in user ? 'SÍ' : 'NO');
-      console.log('📝 Valor exacto de "user.password":', user.password);
-    }
-    console.log('==========================================================');
+  async login(correo: string, passwordPlain: string) {
+    const user = await prisma.usuario.findUnique({
+      where: { correo },
+      include: {
+        asignacionesRoles: {
+          include: {
+            rol: {
+              include: {
+                rolPermisos: {
+                  include: { permiso: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
     if (!user) {
       throw new AppError('Credenciales incorrectas.', 401);
     }
 
-    // 2. Verificar ciclo de vida inmediato
     if (!user.activo) {
       throw new AppError('Esta cuenta se encuentra suspendida. Contacte al Administrador.', 403);
     }
 
-    // 3. Validar el Hash de la contraseña con Bcrypt (KAN-13)
     const isPasswordValid = await bcrypt.compare(passwordPlain, user.password);
     if (!isPasswordValid) {
       throw new AppError('Credenciales incorrectas.', 401);
     }
 
-    // 4. Aplanar el arreglo de permisos del Rol
-    const permisosFlaten = user.rol.rolPermisos.map(rp => rp.permiso.codigo);
+    const rolesSet = new Set<string>();
+    const permisosSet = new Set<string>();
 
-    // 5. 🔥 RESOLUCIÓN JERÁRQUICA DE ÁMBITOS (KAN-16.1)
-    const carrerasAmbitoSet = new Set<number>();
+    user.asignacionesRoles.forEach((asig) => {
+      if (asig.rol) {
+        rolesSet.add(asig.rol.nombre);
+        asig.rol.rolPermisos.forEach((rp) => {
+          if (rp.permiso) permisosSet.add(rp.permiso.codigo);
+        });
+      }
+    });
 
-    // A) Inyectar carreras directas
-    if (user.usuarioCarreras) {
-      user.usuarioCarreras.forEach(uc => carrerasAmbitoSet.add(uc.carreraId));
-    }
+    const carrerasPlanas = await ScopeService.obtenerCarrerasAccesiblesPorUsuario(user.id);
 
-    // B) Expandir dinámicamente Facultades completas a sus Carreras asociadas
-    if (user.usuarioFacultades) {
-      user.usuarioFacultades.forEach(uf => {
-        if (uf.facultad && uf.facultad.carreras) {
-          uf.facultad.carreras.forEach(carrera => {
-            carrerasAmbitoSet.add(carrera.id);
-          });
-        }
-      });
-    }
-
-    const carrerasPlanas = Array.from(carrerasAmbitoSet);
-
-    // 6. Construir el Payload del JWT
     const tokenPayload = {
-      id: Number(user.id),
-      nombre: String(user.nombre),
-      correo: String(user.correo),
-      rol: String(user.rol.nombre),
-      permisos: permisosFlaten,
-      carreras: carrerasPlanas
-    };
-
-    // 7. Generar Firma del JWT mitigando la sobrecarga ts(2769)
-    const opcionesFirma: jwt.SignOptions = {
-      expiresIn: (process.env.JWT_EXPIRES_IN || '8h') as any
+      id: user.id,
+      nombre: user.nombre,
+      correo: user.correo,
+      esGlobal: user.esGlobal,
+      roles: Array.from(rolesSet),
+      permisos: Array.from(permisosSet),
+      carreras: carrerasPlanas,
     };
 
     const token = jwt.sign(
       tokenPayload,
       process.env.JWT_SECRET || 'syslab_secreto_super_seguro_uajms',
-      opcionesFirma
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '8h') as any }
     );
 
     return {
@@ -85,9 +71,11 @@ export class AuthService {
       usuario: {
         id: tokenPayload.id,
         nombre: tokenPayload.nombre,
-        rol: tokenPayload.rol,
-        permisos: tokenPayload.permisos
-      }
+        correo: tokenPayload.correo,
+        esGlobal: tokenPayload.esGlobal,
+        roles: tokenPayload.roles,
+        permisos: tokenPayload.permisos,
+      },
     };
   }
 }
