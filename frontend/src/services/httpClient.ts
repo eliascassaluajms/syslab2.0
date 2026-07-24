@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 // URL base para la API REST del backend (Ajustar en el .env si no usa el prefijo /api)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.100.8:5000/api';
 
 export const httpClient: AxiosInstance = axios.create({
   baseURL: API_URL,

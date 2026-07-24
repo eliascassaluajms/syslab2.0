@@ -17,13 +17,19 @@ const app: Application = express();
 // 2. Configurar Middlewares Globales
 const rawOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 const cleanOrigin = rawOrigin.replace(/\/$/, '');
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  cleanOrigin,
+  'http://0.0.0.0:5173',
+];
 
 // ==========================================
 // CONFIGURACIÓN DE CORS
 // ==========================================
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
