@@ -15,21 +15,17 @@ const DUMMY_PASSWORD_HASH = bcrypt.hashSync('SysLab2026*', 10);
 async function main() {
   console.log('🌱 Iniciando el proceso de Seeding (Datos Maestros SysLab 2.0)...');
 
-  // =========================================================================
-  // 1. LIMPIEZA DE TABLAS (Orden inverso estricto por llaves foráneas)
-  // =========================================================================
-  await prisma.incidencia.deleteMany({});
-  await prisma.equipo.deleteMany({});
-  await prisma.laboratorio.deleteMany({});
-  await prisma.asignacionAmbito.deleteMany({});
-  await prisma.usuario.deleteMany({});
-  await prisma.rolPermiso.deleteMany({});
-  await prisma.permiso.deleteMany({});
-  await prisma.rol.deleteMany({});
-  await prisma.carrera.deleteMany({});
-  await prisma.facultad.deleteMany({});
+  const [rolesExistentes, usuariosExistentes, permisosExistentes] = await Promise.all([
+    prisma.rol.count(),
+    prisma.usuario.count(),
+    prisma.permiso.count(),
+  ]);
 
-  console.log('🧹 Base de datos limpia de registros previos.');
+  const tieneDatosBase = rolesExistentes > 0 || usuariosExistentes > 0 || permisosExistentes > 0;
+  if (tieneDatosBase) {
+    console.log('🧱 La base de datos ya tiene datos base. Se omite el seeding para no sobrescribir información existente.');
+    return;
+  }
 
   // =========================================================================
   // 2. INYECCIÓN DE PERMISOS MAESTROS (KAN-07)
