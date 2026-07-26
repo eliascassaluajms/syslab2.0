@@ -36,6 +36,12 @@ const menuConfig: MenuItem[] = [
         icono: '🏛️',
         permiso: ['facultades:listar', 'carreras:listar'],
       },
+      {
+        titulo: 'Planes y Materias',
+        ruta: '/admin/planes-materias', // Ruta correspondiente a la vista planesMateriasView
+        icono: '📋',
+        permiso: ['planes:listar', 'materias:listar'], // Ajusta los permisos según tu backend
+      },
     ],
   },
   {
@@ -63,7 +69,6 @@ const menuConfig: MenuItem[] = [
     icono: '🔬',
     ruta: '/admin/laboratorios',
     permiso: 'laboratorios:listar',
-    // Si en el futuro agregas subpáginas como 'Equipos' o 'Mantenimientos', puedes convertirlos en subItems aquí.
   },
 ];
 

@@ -1,12 +1,10 @@
 // backend/prisma.config.ts
 import { defineConfig } from '@prisma/config';
 
-// Provide a minimal declaration for `process` so TypeScript does not complain
-declare const process: { env: { DATABASE_URL?: string } };
-
 export default defineConfig({
   datasource: {
-    url: process.env.DATABASE_URL,
+    // Si la variable de entorno no está definida, usa esta cadena de conexión directa del contenedor
+    url: process.env.DATABASE_URL || 'postgresql://admin_syslab:SecretPassword2026@postgres-db:5432/syslab_db?schema=public',
   },
   migrations: {
     seed: 'node ./prisma/seed.js',

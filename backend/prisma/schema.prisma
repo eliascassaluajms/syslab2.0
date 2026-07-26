@@ -16,13 +16,13 @@ model Rol {
   id            Int      @id @default(autoincrement())
   nombre        String   @unique @db.VarChar(50) // Ej: 'Administrador', 'Jefe de Laboratorios', 'Técnico', 'Docente'
   descripcion   String?  @db.VarChar(255)
-  activo        Boolean  @default(true) // 🟢 Agregado para Baja Lógica de roles
+  activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   rolPermisos       RolPermiso[]
   asignacionesRoles AsignacionAmbito[]
-  usuarios          Usuario[] // 👈 CORRECCIÓN: Relación inversa bidireccional requerida por Prisma
+  usuarios          Usuario[]
 
   @@map("roles")
 }
@@ -58,7 +58,7 @@ model Usuario {
   nombre        String   @db.VarChar(100)
   correo        String   @unique @db.VarChar(150)
   password      String   @db.VarChar(255)
-  esGlobal      Boolean  @default(false)
+  esGlobal      Boolean  @default(false) @map("es_global")
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
@@ -70,6 +70,7 @@ model Usuario {
 
   incidenciasReportadas Incidencia[] @relation("IncidenciasReportadas")
   incidenciasAsignadas  Incidencia[] @relation("IncidenciasAsignadas")
+  horariosDocente       Horario[]    @relation("HorariosDocente")
 
   @@map("usuarios")
 }
@@ -88,14 +89,16 @@ model Facultad {
 }
 
 model Carrera {
-  id         Int     @id @default(autoincrement())
-  nombre     String  @unique @db.VarChar(150)
-  facultadId Int     @map("facultad_id")
-  activo     Boolean @default(true)
+  id          Int     @id @default(autoincrement())
+  nombre      String  @unique @db.VarChar(150)
+  descripcion String? @db.Text
+  facultadId  Int     @map("facultad_id")
+  activo      Boolean @default(true)
 
-  facultad     Facultad           @relation(fields: [facultadId], references: [id], onDelete: Cascade)
-  asignaciones AsignacionAmbito[]
-  laboratorios Laboratorio[]
+  facultad      Facultad           @relation(fields: [facultadId], references: [id], onDelete: Cascade)
+  asignaciones  AsignacionAmbito[]
+  laboratorios  Laboratorio[]
+  planesEstudio PlanEstudio[]
 
   @@map("carreras")
 }
@@ -105,8 +108,8 @@ model AsignacionAmbito {
   id         Int  @id @default(autoincrement())
   usuarioId  Int  @map("usuario_id")
   rolId      Int  @map("rol_id")
-  facultadId Int? @map("facultad_id") // Nullable: Ámbito global/general
-  carreraId  Int? @map("carrera_id")  // Nullable: Ámbito específico de Carrera
+  facultadId Int? @map("facultad_id") 
+  carreraId  Int? @map("carrera_id")  
 
   usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   rol      Rol       @relation(fields: [rolId], references: [id], onDelete: Cascade)
@@ -118,7 +121,38 @@ model AsignacionAmbito {
 }
 
 // =========================================================================
-// MÓDULO DE GESTIÓN DE LABORATORIOS Y RECURSOS
+// MÓDULO DE GESTIÓN DE PLANES DE ESTUDIO Y MATERIAS
+// =========================================================================
+
+model PlanEstudio {
+  id          Int      @id @default(autoincrement())
+  carreraId   Int      @map("carrera_id")
+  gestion     Int      // Ej: 2024
+  descripcion String?  @db.VarChar(100) // Ej: "INF-2024" o "Técnico Superior"
+  activo      Boolean  @default(true)
+  
+  carrera     Carrera  @relation(fields: [carreraId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  materias    Materia[]
+
+  @@map("planes_estudio")
+}
+
+model Materia {
+  id          Int      @id @default(autoincrement())
+  codigo      String   @unique @db.VarChar(20) // Ej: "DIC112"
+  nombre      String   @db.VarChar(100)
+  planId      Int      @map("plan_id")
+  tipoPeriodo String   @default("Semestral") @map("tipo_periodo") // 'Semestral' o 'Anual'
+  semestre    Int
+  
+  planEstudio PlanEstudio @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  horarios    Horario[]
+
+  @@map("materias")
+}
+
+// =========================================================================
+// MÓDULO DE GESTIÓN DE LABORATORIOS Y HORARIOS
 // =========================================================================
 
 model Laboratorio {
@@ -139,12 +173,31 @@ model Laboratorio {
   carrera       Carrera? @relation(fields: [carreraId], references: [id], onDelete: SetNull)
 
   equipos       Equipo[]
+  horarios      Horario[]
 
   @@map("laboratorios")
 }
 
+model Horario {
+  id            Int      @id @default(autoincrement())
+  laboratorioId Int      @map("laboratorio_id")
+  materiaId     Int      @map("materia_id")
+  docenteId     Int      @map("docente_id")
+  diaSemana     String   @map("dia_semana") // 'Lunes', 'Martes', 'Miércoles', etc.
+  horaInicio    String   @map("hora_inicio") @db.VarChar(10) // Formato "HH:MM"
+  horaFin       String   @map("hora_fin") @db.VarChar(10)       // Formato "HH:MM"
+  semestre      Int
+  gestion       Int      // Ej: 2026
+
+  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+  materia       Materia     @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  docente       Usuario     @relation("HorariosDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+
+  @@map("horarios")
+}
+
 // ==========================================
-// ENUMS DEL MÓDULO DE INCIDENCIAS Y EQUIPOS
+// ENUMS Y MODELOS DE EQUIPOS E INCIDENCIAS
 // ==========================================
 
 enum EstadoEquipo {
@@ -169,10 +222,6 @@ enum PrioridadIncidencia {
   ALTA
   CRITICA
 }
-
-// ==========================================
-// MODELOS DE EQUIPOS E INCIDENCIAS
-// ==========================================
 
 model Equipo {
   id               Int           @id @default(autoincrement())

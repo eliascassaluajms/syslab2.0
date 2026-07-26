@@ -5,7 +5,8 @@ import roleRouter from './role.routes.js';
 import laboratoriosRouter from './laboratorios.routes.js';
 import catalogosRouter from './catalogos.routes.js';
 import equiposRoutes from './equipos.routes.js';
-
+import planEstudioRouter from './planEstudio.routes.js';
+import materiaRouter from './materia.routes.js';
 // ...
 export const router = Router();
 
@@ -15,3 +16,5 @@ router.use('/roles', roleRouter);
 router.use('/laboratorios', laboratoriosRouter);
 router.use('/catalogos', catalogosRouter);
 router.use('/equipos', equiposRoutes);
+router.use('/planes-estudio', planEstudioRouter);
+router.use('/materias', materiaRouter);

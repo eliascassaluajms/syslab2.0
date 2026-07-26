@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 import { userRepository } from '../repositories/user.repository.js';
 import { AppError } from '../utils/appError.js';
 import { prisma } from '../config/prisma.js';
@@ -111,7 +112,7 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const nuevoUsuario = await prisma.$transaction(async (tx) => {
+    const nuevoUsuario = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.usuario.create({
         data: {
           nombre: nombre.trim(),
@@ -149,17 +150,19 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
 // 3. Modificar perfil, roles múltiples y ámbitos perimetrales masivos
 export const modificarUsuarioYPerimetros = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const { rolIds, rolId, activo, facultades, carreras } = req.body;
-
-    const usuarioIdNumerico = parseInt(id, 10);
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    
+    const usuarioIdNumerico = parseInt(idStr, 10);
     if (isNaN(usuarioIdNumerico)) {
       throw new AppError('El identificador del usuario debe ser un número entero válido.', 400);
     }
 
+    const { nombre, correo, rolIds, rolId, activo, facultades, carreras } = req.body;
+
     let idsRolesNumericos: number[] = [];
     if (Array.isArray(rolIds)) {
-      idsRolesNumericos = rolIds.map((r: any) => parseInt(r, 10)).filter((r) => !isNaN(r));
+      idsRolesNumericos = rolIds.map((r: any) => parseInt(r, 10)).filter((r: number) => !isNaN(r));
     } else if (rolId) {
       const parsed = parseInt(rolId, 10);
       if (!isNaN(parsed)) idsRolesNumericos.push(parsed);
@@ -169,16 +172,21 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
       throw new AppError('Debe asignar al menos un rol al usuario.', 400);
     }
 
-    const idsFacultades = Array.isArray(facultades) ? facultades.map((f: any) => parseInt(f, 10)).filter((f) => !isNaN(f)) : [];
-    const idsCarreras = Array.isArray(carreras) ? carreras.map((c: any) => parseInt(c, 10)).filter((c) => !isNaN(c)) : [];
+    const idsFacultades = Array.isArray(facultades) ? facultades.map((f: any) => parseInt(f, 10)).filter((f: number) => !isNaN(f)) : [];
+    const idsCarreras = Array.isArray(carreras) ? carreras.map((c: any) => parseInt(c, 10)).filter((c: number) => !isNaN(c)) : [];
+
+    const nombreStr = typeof nombre === 'string' ? nombre.trim() : undefined;
+    const correoStr = typeof correo === 'string' ? correo.trim().toLowerCase() : undefined;
 
     await userRepository.actualizarPerfilYPerimetros(usuarioIdNumerico, {
+      nombre: nombreStr,
+      correo: correoStr,
       rolId: idsRolesNumericos[0],
       rolIds: idsRolesNumericos,
       activo: activo !== undefined ? Boolean(activo) : undefined,
       facultades: idsFacultades,
       carreras: idsCarreras
-    } as any);
+    });
 
     res.status(200).json({
       status: 'success',
@@ -192,7 +200,10 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
 // 4. Endpoint específico para añadir un nuevo rol/cargo con el botón '+' (Asignación granular)
 export const agregarRolAmbitoAdicional = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const usuarioId = parseInt(req.params.id, 10);
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const usuarioId = parseInt(idStr, 10);
+    
     const { rolId, facultadId, carreraId } = req.body;
 
     if (isNaN(usuarioId) || !rolId) {
@@ -226,10 +237,12 @@ export const agregarRolAmbitoAdicional = async (req: Request, res: Response, nex
 // 5. Habilitar / Inhabilitar estado de usuario
 export const cambiarEstadoUsuario = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const usuarioIdNumerico = parseInt(idStr, 10);
+
     const { activo } = req.body;
 
-    const usuarioIdNumerico = parseInt(id, 10);
     if (isNaN(usuarioIdNumerico)) {
       throw new AppError('El identificador del usuario debe ser un número entero válido.', 400);
     }

@@ -1,13 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider } from './context/AuthContext';
-import { AppRoutes } from './routes/appRoutes.jsx';
-import './index.css'; // Asegúrese de mantener sus estilos de Tailwind aquí
+import App from './App'; // 👈 Importa el componente raíz App en lugar de AppRoutes directamente[cite: 11, 12]
+import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <App />
   </React.StrictMode>
 );

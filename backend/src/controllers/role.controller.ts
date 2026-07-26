@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client'; // <-- Importación añadida para las transacciones
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
 
@@ -25,13 +26,13 @@ export const obtenerRoles = async (req: Request, res: Response, next: NextFuncti
       orderBy: { id: 'asc' },
     });
 
-    // Formatear respuesta para simplificar el consumo en Frontend
-    const resultado = roles.map((r) => ({
+    // Formatear respuesta solucionando los tipos implícitos 'any'
+    const resultado = roles.map((r: any) => ({
       id: r.id,
       nombre: r.nombre,
       descripcion: r.descripcion,
       totalUsuarios: r._count.usuarios,
-      permisos: r.rolPermisos.map((rp) => rp.permiso),
+      permisos: r.rolPermisos.map((rp: any) => rp.permiso),
     }));
 
     res.status(200).json({ status: 'success', data: resultado });
@@ -43,8 +44,10 @@ export const obtenerRoles = async (req: Request, res: Response, next: NextFuncti
 // 2. Obtener un rol por ID
 export const obtenerRolPorId = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const rolId = parseInt(id, 10);
+    // Corrección para evitar el error string | string[]
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const rolId = parseInt(idStr, 10);
 
     if (isNaN(rolId)) {
       throw new AppError('El ID del rol debe ser un número entero válido.', 400);
@@ -72,8 +75,9 @@ export const obtenerRolPorId = async (req: Request, res: Response, next: NextFun
         id: rol.id,
         nombre: rol.nombre,
         descripcion: rol.descripcion,
-        permisoIds: rol.rolPermisos.map((rp) => rp.permisoId),
-        permisos: rol.rolPermisos.map((rp) => rp.permiso),
+        // Corrección de tipos implícitos 'any'
+        permisoIds: rol.rolPermisos.map((rp: any) => rp.permisoId),
+        permisos: rol.rolPermisos.map((rp: any) => rp.permiso),
       },
     });
   } catch (error) {
@@ -99,8 +103,8 @@ export const crearRol = async (req: Request, res: Response, next: NextFunction) 
       throw new AppError(`Ya existe un rol con el nombre "${nombre}".`, 400);
     }
 
-    // Creación transaccional con asignación de permisos
-    const nuevoRol = await prisma.$transaction(async (tx) => {
+    // Creación transaccional tipando 'tx' como Prisma.TransactionClient
+    const nuevoRol = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const rol = await tx.rol.create({
         data: {
           nombre: nombre.trim(),
@@ -135,9 +139,12 @@ export const crearRol = async (req: Request, res: Response, next: NextFunction) 
 // 4. Actualizar Rol y sincronizar matriz de permisos
 export const actualizarRol = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    // Corrección para evitar el error string | string[]
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const rolId = parseInt(idStr, 10);
+    
     const { nombre, descripcion, permisoIds } = req.body;
-    const rolId = parseInt(id, 10);
 
     if (isNaN(rolId)) {
       throw new AppError('El ID del rol debe ser un número entero válido.', 400);
@@ -153,7 +160,8 @@ export const actualizarRol = async (req: Request, res: Response, next: NextFunct
       throw new AppError('No se puede cambiar el nombre del rol Administrador del sistema.', 400);
     }
 
-    await prisma.$transaction(async (tx) => {
+    // Tipando 'tx' como Prisma.TransactionClient
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Actualizar datos básicos
       await tx.rol.update({
         where: { id: rolId },
@@ -193,8 +201,10 @@ export const actualizarRol = async (req: Request, res: Response, next: NextFunct
 // 5. Eliminar Rol
 export const eliminarRol = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const rolId = parseInt(id, 10);
+    // Corrección para evitar el error string | string[]
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const rolId = parseInt(idStr, 10);
 
     if (isNaN(rolId)) {
       throw new AppError('El ID del rol debe ser un número entero válido.', 400);

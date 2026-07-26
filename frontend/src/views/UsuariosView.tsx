@@ -1,88 +1,57 @@
 import React, { useState } from 'react';
-import { useUsuarios, ActualizarPerfilPayload } from '../hooks/useUsuarios';
+import { useUsuarios } from '../hooks/useUsuarios';
 import { UsuarioLista } from '../interfaces/usuario.js';
 import { Can } from '../components/common/Can';
 import { ModalAsignarAmbito } from '../components/usuario/ModalAsignarAmbito.js';
+import { ModalModificarUsuario } from '../components/usuario/ModalModificarUsuario.js';
+import { ModalEliminarUsuario } from '../components/usuario/ModalEliminarUsuario.js';
+import { ModalCrearUsuario } from '../components/usuario/ModalCrearUsuario.js';
+import { useToast } from '../context/ToastContext';
 
 export const UsuariosView: React.FC = () => {
   const { usuarios, loading, error, cambiarEstado, actualizarUsuario, crearUsuarioBasico, recargarUsuarios } = useUsuarios() as any;
+  const { mostrarToast } = useToast();
+
+  // Estados para Filtros y Búsqueda
+  const [filtroBusqueda, setFiltroBusqueda] = useState<string>('');
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
 
   // Estados para Modales
   const [usuarioEditarAmbito, setUsuarioEditarAmbito] = useState<UsuarioLista | null>(null);
   const [usuarioModificarDatos, setUsuarioModificarDatos] = useState<UsuarioLista | null>(null);
+  const [usuarioEliminarLogico, setUsuarioEliminarLogico] = useState<UsuarioLista | null>(null);
   const [mostrarModalCrear, setMostrarModalCrear] = useState<boolean>(false);
-
-  // Estados temporales para edición de datos básicos
-  const [editNombre, setEditNombre] = useState<string>('');
-  const [editCorreo, setEditCorreo] = useState<string>('');
-
-  // Estados para Registro
-  const [nuevoNombre, setNuevoNombre] = useState<string>('');
-  const [nuevoCorreo, setNuevoCorreo] = useState<string>('');
-  const [nuevaPassword, setNuevaPassword] = useState<string>('');
-  const [guardando, setGuardando] = useState<boolean>(false);
-
-  // Abrir Modal de Modificar Datos Básicos
-  const abrirModalModificar = (usuario: UsuarioLista) => {
-    setUsuarioModificarDatos(usuario);
-    setEditNombre(usuario.nombre);
-    setEditCorreo(usuario.correo);
-  };
 
   const cerrarModales = () => {
     setUsuarioEditarAmbito(null);
     setUsuarioModificarDatos(null);
+    setUsuarioEliminarLogico(null);
     setMostrarModalCrear(false);
   };
 
-  // Guardar Modificación de Datos Básicos
-  const handleGuardarDatosBasicos = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!usuarioModificarDatos) return;
-    setGuardando(true);
-    try {
-      const payload: ActualizarPerfilPayload = {
-        nombre: editNombre,
-        correo: editCorreo,
-      };
-      await actualizarUsuario(usuarioModificarDatos.id, payload);
-      cerrarModales();
-    } catch (err) {
-      // Manejado en hook
-    } finally {
-      setGuardando(false);
-    }
-  };
+  // Filtrado computado de usuarios en tiempo real
+  const usuariosFiltrados = usuarios.filter((u: UsuarioLista) => {
+    const coincideTexto = 
+      u.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) || 
+      u.correo.toLowerCase().includes(filtroBusqueda.toLowerCase());
+    
+    const coincideEstado = 
+      filtroEstado === 'todos' ? true :
+      filtroEstado === 'activos' ? u.activo : !u.activo;
 
-  // Crear Usuario (Solo Datos Básicos)
-  const handleCrearUsuarioBasico = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setGuardando(true);
-    try {
-      await crearUsuarioBasico({
-        nombre: nuevoNombre,
-        correo: nuevoCorreo,
-        password: nuevaPassword,
-      });
-      setNuevoNombre('');
-      setNuevoCorreo('');
-      setNuevaPassword('');
-      setMostrarModalCrear(false);
-    } catch (err) {
-      // Manejado en hook
-    } finally {
-      setGuardando(false);
-    }
-  };
+    return coincideTexto && coincideEstado;
+  });
 
-  // Eliminación Lógica
-  const handleEliminarLogico = async (usuario: UsuarioLista) => {
-    if (window.confirm(`¿Estás seguro de realizar la eliminación lógica (desactivar) al usuario ${usuario.nombre}?`)) {
-      try {
-        await cambiarEstado(usuario.id, false);
-      } catch (err) {
-        // Manejado en hook
+  // Manejador seguro para cambio de estado directo en la tabla
+  const handleCambiarEstadoDirecto = async (id: number, nuevoEstado: boolean) => {
+    try {
+      await cambiarEstado(id, nuevoEstado);
+      mostrarToast(`Usuario ${nuevoEstado ? 'activado' : 'desactivado'} correctamente.`, 'success');
+      if (typeof recargarUsuarios === 'function') {
+        recargarUsuarios();
       }
+    } catch (err: any) {
+      mostrarToast(err?.message || 'Error al actualizar el estado del usuario.', 'error');
     }
   };
 
@@ -110,7 +79,6 @@ export const UsuariosView: React.FC = () => {
           </p>
         </div>
 
-        {/* Botón para Abrir Modal de Registro */}
         <Can permiso="usuarios:crear">
           <button
             onClick={() => setMostrarModalCrear(true)}
@@ -121,13 +89,43 @@ export const UsuariosView: React.FC = () => {
         </Can>
       </div>
 
-      {/* Alerta de Error */}
       {error && (
         <div className="rounded-xl bg-red-500/10 p-4 border border-red-500/20 text-sm font-medium text-red-400 flex items-center gap-3">
           <span>⚠️</span>
           <span>{error}</span>
         </div>
       )}
+
+      {/* Barra de Búsqueda y Filtros Rápidos */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Input de Búsqueda */}
+        <div className="relative w-full md:w-96">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-500">
+            🔍
+          </span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre o correo institucional..."
+            value={filtroBusqueda}
+            onChange={(e) => setFiltroBusqueda(e.target.value)}
+            className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+
+        {/* Filtro Rápido por Estado */}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Estado:</span>
+          <select
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+            className="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors cursor-pointer"
+          >
+            <option value="todos">Todos los registros</option>
+            <option value="activos">Solo Activos</option>
+            <option value="inactivos">Solo Inactivos</option>
+          </select>
+        </div>
+      </div>
 
       {/* Tabla de Usuarios */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
@@ -143,249 +141,174 @@ export const UsuariosView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60 text-sm">
-              {usuarios.map((u: UsuarioLista) => (
-                <tr key={u.id} className="hover:bg-gray-800/40 transition-colors group">
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <div className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                      {u.nombre}
-                    </div>
-                    <div className="text-xs text-gray-400 font-mono mt-0.5">{u.correo}</div>
-                  </td>
-
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {u.roles && u.roles.length > 0 ? (
-                        u.roles.map((r) => (
-                          <span
-                            key={`r-${r.id}`}
-                            className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                          >
-                            {r.nombre}
-                          </span>
-                        ))
-                      ) : u.rol ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                          {u.rol.nombre}
-                        </span>
-                      ) : (
-                        <span className="text-xs italic text-gray-500">Sin Rol</span>
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-6">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {u.usuarioFacultades?.map((f) => (
-                        <span key={`f-${f.facultadId}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          Facultad #{f.facultadId}
-                        </span>
-                      ))}
-                      {u.usuarioCarreras?.map((c) => (
-                        <span key={`c-${c.carreraId}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                          Carrera #{c.carreraId}
-                        </span>
-                      ))}
-                      {(!u.usuarioFacultades || u.usuarioFacultades.length === 0) &&
-                       (!u.usuarioCarreras || u.usuarioCarreras.length === 0) && (
-                        <span className="text-xs italic text-gray-500">Global / Sin restricción</span>
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="py-4 px-6 whitespace-nowrap text-center">
-                    <button
-                      onClick={() => cambiarEstado(u.id, !u.activo)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                        u.activo
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                          : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
-                      }`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${u.activo ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                      {u.activo ? 'Activo' : 'Inactivo'}
-                    </button>
-                  </td>
-
-                  <td className="py-4 px-6 whitespace-nowrap text-right text-sm">
-                    <div className="flex items-center justify-end gap-2">
-                      <Can permiso="usuarios:editar">
-                        <button
-                          onClick={() => abrirModalModificar(u)}
-                          title="Modificar Datos"
-                          className="text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                        >
-                          ✏️ Modificar
-                        </button>
-                        <button
-                          onClick={() => setUsuarioEditarAmbito(u)}
-                          title="Asignar Roles y Ámbito"
-                          className="text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                        >
-                          🛡️ Roles y Ámbito
-                        </button>
-                        <button
-                          onClick={() => handleEliminarLogico(u)}
-                          title="Eliminación Lógica"
-                          className="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                        >
-                          🗑️ Eliminar
-                        </button>
-                      </Can>
-                    </div>
+              {usuariosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-gray-500 text-xs italic">
+                    No se encontraron usuarios que coincidan con los filtros aplicados.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                usuariosFiltrados.map((u: UsuarioLista) => (
+                  <tr key={u.id} className="hover:bg-gray-800/40 transition-colors group">
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                        {u.nombre}
+                      </div>
+                      <div className="text-xs text-gray-400 font-mono mt-0.5">{u.correo}</div>
+                    </td>
+
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {u.roles && u.roles.length > 0 ? (
+                          u.roles.map((r) => (
+                            <span key={`r-${r.id}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                              {r.nombre}
+                            </span>
+                          ))
+                        ) : u.rol ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            {u.rol.nombre}
+                          </span>
+                        ) : (
+                          <span className="text-xs italic text-gray-500">Sin Rol</span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-6">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {u.usuarioFacultades?.map((f) => (
+                          <span key={`f-${f.facultadId}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Facultad #{f.facultadId}
+                          </span>
+                        ))}
+                        {u.usuarioCarreras?.map((c) => (
+                          <span key={`c-${c.carreraId}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            Carrera #{c.carreraId}
+                          </span>
+                        ))}
+                        {(!u.usuarioFacultades || u.usuarioFacultades.length === 0) &&
+                         (!u.usuarioCarreras || u.usuarioCarreras.length === 0) && (
+                          <span className="text-xs italic text-gray-500">Global / Sin restricción</span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-6 whitespace-nowrap text-center">
+                      <button
+                        onClick={() => handleCambiarEstadoDirecto(u.id, !u.activo)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                          u.activo
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                            : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                        }`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${u.activo ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                        {u.activo ? 'Activo' : 'Inactivo'}
+                      </button>
+                    </td>
+
+                    <td className="py-4 px-6 whitespace-nowrap text-right text-sm">
+                      <div className="flex items-center justify-end gap-2">
+                        <Can permiso="usuarios:editar">
+                          <button
+                            onClick={() => setUsuarioModificarDatos(u)}
+                            title="Modificar Datos"
+                            className="text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                          >
+                            ✏️ Modificar
+                          </button>
+                          <button
+                            onClick={() => setUsuarioEditarAmbito(u)}
+                            title="Asignar Roles y Ámbito"
+                            className="text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                          >
+                            🛡️ Roles y Ámbito
+                          </button>
+                          <button
+                            onClick={() => setUsuarioEliminarLogico(u)}
+                            title="Eliminación Lógica"
+                            className="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        </Can>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* MODAL 1: REGISTRO DE NUEVO USUARIO */}
-      {mostrarModalCrear && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 text-white">
-            <div className="border-b border-gray-800 pb-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>👤</span> Registrar Nuevo Usuario
-              </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Ingrese la información básica de identidad y acceso.
-              </p>
-            </div>
-
-            <form onSubmit={handleCrearUsuarioBasico} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Ing. Carlos Mendoza"
-                  value={nuevoNombre}
-                  onChange={(e) => setNuevoNombre(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Correo Institucional
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="usuario@uajms.edu.bo"
-                  value={nuevoCorreo}
-                  onChange={(e) => setNuevoCorreo(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Contraseña Inicial
-                </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={nuevaPassword}
-                  onChange={(e) => setNuevaPassword(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-800">
-                <button
-                  type="button"
-                  onClick={cerrarModales}
-                  className="px-4 py-2 text-xs font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={guardando}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg transition-all cursor-pointer shadow-lg shadow-blue-600/20"
-                >
-                  {guardando ? 'Guardando...' : 'Guardar Usuario'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ModalCrearUsuario
+        modalAbierto={mostrarModalCrear}
+        onClose={cerrarModales}
+        onCrear={async (payload) => {
+          try {
+            await crearUsuarioBasico(payload);
+            mostrarToast('Usuario registrado exitosamente.', 'success');
+            cerrarModales();
+            if (typeof recargarUsuarios === 'function') {
+              recargarUsuarios();
+            }
+          } catch (err: any) {
+            mostrarToast(err?.message || 'Error al registrar el usuario.', 'error');
+          }
+        }}
+      />
 
       {/* MODAL 2: MODIFICAR DATOS BÁSICOS */}
-      {usuarioModificarDatos && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 text-white">
-            <div className="border-b border-gray-800 pb-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>✏️</span> Modificar Datos de Usuario
-              </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Actualice el nombre o correo institucional.
-              </p>
-            </div>
+      <ModalModificarUsuario
+        modalAbierto={Boolean(usuarioModificarDatos)}
+        onClose={cerrarModales}
+        usuario={usuarioModificarDatos}
+        onActualizar={async (id, payload) => {
+          try {
+            await actualizarUsuario(id, payload);
+            mostrarToast('Datos del usuario actualizados correctamente.', 'success');
+            cerrarModales();
+            if (typeof recargarUsuarios === 'function') {
+              recargarUsuarios();
+            }
+          } catch (err: any) {
+            mostrarToast(err?.message || 'Error al actualizar los datos.', 'error');
+          }
+        }}
+      />
 
-            <form onSubmit={handleGuardarDatosBasicos} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editNombre}
-                  onChange={(e) => setEditNombre(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Correo Institucional
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={editCorreo}
-                  onChange={(e) => setEditCorreo(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-800">
-                <button
-                  type="button"
-                  onClick={cerrarModales}
-                  className="px-4 py-2 text-xs font-semibold text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={guardando}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg transition-all cursor-pointer shadow-lg shadow-blue-600/20"
-                >
-                  {guardando ? 'Guardando...' : 'Actualizar Datos'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: ASIGNAR ROLES Y ÁMBITO (COMPONENTIZADO) */}
+      {/* MODAL 3: ASIGNAR ROLES Y ÁMBITO */}
       <ModalAsignarAmbito
         modalAbierto={Boolean(usuarioEditarAmbito)}
         onClose={cerrarModales}
         usuario={usuarioEditarAmbito}
         onActualizado={() => {
+          mostrarToast('Ámbito y roles asignados correctamente.', 'success');
+          cerrarModales();
           if (typeof recargarUsuarios === 'function') {
             recargarUsuarios();
+          }
+        }}
+      />
+
+      {/* MODAL 4: ELIMINACIÓN LÓGICA */}
+      <ModalEliminarUsuario
+        modalAbierto={Boolean(usuarioEliminarLogico)}
+        onClose={cerrarModales}
+        usuario={usuarioEliminarLogico}
+        onConfirmarEliminacion={async (id) => {
+          try {
+            await cambiarEstado(id, false);
+            mostrarToast('Usuario desactivado lógicamente.', 'success');
+            cerrarModales();
+            if (typeof recargarUsuarios === 'function') {
+              recargarUsuarios();
+            }
+          } catch (err: any) {
+            mostrarToast(err?.message || 'Error al procesar la eliminación.', 'error');
           }
         }}
       />

@@ -45,10 +45,15 @@ export const reportarIncidencia = async (req: Request, res: Response, next: Next
   try {
     const { equipoId, titulo, descripcion, prioridad } = req.body;
     const usuario = (req as any).user;
+    const equipoIdNumerico = Number(equipoId);
+
+    if (isNaN(equipoIdNumerico)) {
+      throw new AppError('El ID del equipo debe ser numérico.', 400);
+    }
 
     // Verificar existencia del equipo y validar ámbito
     const equipo = await prisma.equipo.findUnique({
-      where: { id: Number(equipoId) },
+      where: { id: equipoIdNumerico },
       include: { laboratorio: true },
     });
 
@@ -84,13 +89,13 @@ export const reportarIncidencia = async (req: Request, res: Response, next: Next
           titulo,
           descripcion,
           prioridad: (prioridad as PrioridadIncidencia) || PrioridadIncidencia.MEDIA,
-          equipoId: Number(equipoId),
+          equipoId: equipoIdNumerico,
           reportadoPorId: Number(usuario.id),
           estado: EstadoIncidencia.REPORTADA,
         },
       }),
       prisma.equipo.update({
-        where: { id: Number(equipoId) },
+        where: { id: equipoIdNumerico },
         data: { estado: EstadoEquipo.CON_FALLA },
       }),
     ]);
@@ -104,13 +109,21 @@ export const reportarIncidencia = async (req: Request, res: Response, next: Next
 // PATCH /api/incidencias/:id/atender-resolver
 export const actualizarEstadoIncidencia = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    // 1. Corrección del tipado del ID que viene por los parámetros de la URL
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const incidenciaId = parseInt(idStr, 10);
+
+    if (isNaN(incidenciaId)) {
+      throw new AppError('El identificador de la incidencia debe ser un número válido.', 400);
+    }
+
     const { estado, solucion, asignadoAId } = req.body;
     const usuario = (req as any).user;
 
     // Verificar existencia e inspeccionar el ámbito de la incidencia
     const incidenciaExistente = await prisma.incidencia.findUnique({
-      where: { id: Number(id) },
+      where: { id: incidenciaId },
       include: { equipo: { include: { laboratorio: true } } },
     });
 
@@ -140,7 +153,7 @@ export const actualizarEstadoIncidencia = async (req: Request, res: Response, ne
     if (estado === EstadoIncidencia.RESUELTA) dataUpdate.fechaResolucion = new Date();
 
     const incidencia = await prisma.incidencia.update({
-      where: { id: Number(id) },
+      where: { id: incidenciaId },
       data: dataUpdate,
       include: { equipo: true },
     });

@@ -1,3 +1,4 @@
+// backend/src/app.ts
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import authRouter from './routes/auth.routes.js';
@@ -9,7 +10,8 @@ import catalogosRoutes from './routes/catalogos.routes.js';
 import laboratoriosRoutes from './routes/laboratorios.routes.js';
 import equiposRoutes from './routes/equipos.routes.js';
 import incidenciasRoutes from './routes/incidencias.routes.js';
-
+import planEstudioRouter from './routes/planEstudio.routes.js';
+import materiaRouter from './routes/materia.routes.js';
 
 // 1. Inicializar la aplicación Express PRIMERO
 const app: Application = express();
@@ -49,12 +51,15 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 // 4. Montaje de Rutas de la API
 app.use('/api/auth', authRouter);
-app.use('/api/usuarios', userRoutes); // Conecta /api/usuarios al router existente
+app.use('/api/usuarios', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/laboratorios', laboratoriosRoutes);
 app.use('/api/equipos', equiposRoutes);
 app.use('/api/incidencias', incidenciasRoutes);
+app.use('/api/planes-estudio', planEstudioRouter);
+app.use('/api/materias', materiaRouter);
+
 // 5. Manejo de Rutas No Encontradas (SIEMPRE debe ir al final de las rutas)
 app.all('*', (req: Request, res: Response) => {
   throw new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404);

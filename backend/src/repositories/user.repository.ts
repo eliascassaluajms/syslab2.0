@@ -2,7 +2,7 @@ import { prisma } from '../config/prisma.js';
 
 export class UserRepository {
   /**
-   * Obtiene la lista completa de usuarios para la gestión del panel administrativo.
+   * Obtiene la lista completa de usuarios para la gestión del panel administrativo.[cite: 13]
    */
   async findAll() {
     return await prisma.usuario.findMany({
@@ -36,7 +36,7 @@ export class UserRepository {
   }
 
   /**
-   * Busca un usuario por su correo electrónico con su estructura perimetral.
+   * Busca un usuario por su correo electrónico con su estructura perimetral.[cite: 13]
    */
   async findByCorreo(correo: string) {
     return await prisma.usuario.findUnique({
@@ -69,7 +69,7 @@ export class UserRepository {
   }
 
   /**
-   * Busca un usuario por su ID numérico.
+   * Busca un usuario por su ID numérico.[cite: 13]
    */
   async findById(id: number) {
     return await prisma.usuario.findUnique({
@@ -85,9 +85,9 @@ export class UserRepository {
   }
 
   /**
-   * Modifica los datos básicos de control del usuario.
+   * Modifica los datos básicos de control del usuario.[cite: 13]
    */
-  async update(id: number, data: { rolId?: number; activo?: boolean; nombre?: string }) {
+  async update(id: number, data: { rolId?: number; activo?: boolean; nombre?: string; correo?: string }) {
     return await prisma.usuario.update({
       where: { id },
       data,
@@ -102,17 +102,28 @@ export class UserRepository {
   }
 
   /**
-   * Modifica el rol, estado y reconfigura los ámbitos perimetrales de forma atómica.
+   * Modifica el rol, estado, datos básicos y reconfigura los ámbitos perimetrales de forma atómica.[cite: 13]
    */
   async actualizarPerfilYPerimetros(
     usuarioId: number, 
-    data: { rolId: number; rolIds?: number[]; activo?: boolean; facultades: number[]; carreras: number[] }
+    data: { 
+      nombre?: string; 
+      correo?: string; 
+      rolId: number; 
+      rolIds?: number[]; 
+      activo?: boolean; 
+      facultades?: number[]; 
+      carreras?: number[]; 
+    }
   ) {
-    return await prisma.$transaction(async (tx) => {
+    // Tipado explícito de 'tx' para evitar el error de tipo implícito 'any'[cite: 13]
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Actualizar datos base del Usuario
       const usuarioActualizado = await tx.usuario.update({
         where: { id: usuarioId },
         data: {
+          ...(data.nombre !== undefined && { nombre: data.nombre }),
+          ...(data.correo !== undefined && { correo: data.correo }),
           rolId: data.rolId,
           activo: data.activo !== undefined ? data.activo : undefined
         }
@@ -125,11 +136,14 @@ export class UserRepository {
       const idsRolesFinales = data.rolIds && data.rolIds.length > 0 ? data.rolIds : [data.rolId];
       const nuevasAsignaciones: any[] = [];
 
+      const facultadesArr = data.facultades || [];
+      const carrerasArr = data.carreras || [];
+
       // 4. Construir las combinaciones de roles con facultades y carreras
-      if (data.facultades.length > 0 || data.carreras.length > 0) {
+      if (facultadesArr.length > 0 || carrerasArr.length > 0) {
         for (const rId of idsRolesFinales) {
-          const facultadesLista = data.facultades.length > 0 ? data.facultades : [null];
-          const carrerasLista = data.carreras.length > 0 ? data.carreras : [null];
+          const facultadesLista = facultadesArr.length > 0 ? facultadesArr : [null];
+          const carrerasLista = carrerasArr.length > 0 ? carrerasArr : [null];
 
           for (const facultadId of facultadesLista) {
             for (const carreraId of carrerasLista) {
