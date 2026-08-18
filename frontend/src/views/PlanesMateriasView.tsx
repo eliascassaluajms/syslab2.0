@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
+// frontend/src/views/PlanesMateriasView.tsx
+import React, { useState } from 'react';
+import { usePlanesMaterias } from '../hooks/usePlanesMaterias';
 import { planesMateriasService } from '../services/planesMaterias.service';
 import { FormPlanEstudioModal } from '../components/planes/FormPlanEstudioModal';
 import { FormMateriaModal } from '../components/materias/FormMateriaModal';
 import { ModalConfirmarEliminacion } from '../components/common/ModalConfirmarEliminacion';
-// Asumiendo que usas un hook o contexto de notificaciones tipo toast global:
-// import { useToast } from '../context/ToastContext';
 
 export const PlanesMateriasView: React.FC = () => {
-  // const { showToast } = useToast();
-  const [carreraIdSeleccionada] = useState<number>(1); // Dinámico según el ámbito del usuario
-  const [planes, setPlanes] = useState<any[]>([]);
-  const [planSeleccionado, setPlanSeleccionado] = useState<any | null>(null);
-  const [materias, setMaterias] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const {
+    facultades,
+    carrerasFiltradas,
+    facultadIdSeleccionada,
+    carreraIdSeleccionada,
+    seleccionarFacultad,
+    setCarreraIdSeleccionada,
+    planes,
+    planSeleccionado,
+    setPlanSeleccionado,
+    materias,
+    loading,
+    recargarPlanes,
+    recargarMaterias
+  } = usePlanesMaterias();
 
   // Estados de Modales
   const [modalPlanAbierto, setModalPlanAbierto] = useState(false);
@@ -24,64 +33,24 @@ export const PlanesMateriasView: React.FC = () => {
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
   const [elementoAEliminar, setElementoAEliminar] = useState<{ tipo: 'plan' | 'materia'; id: number; nombre: string } | null>(null);
 
-  useEffect(() => {
-    cargarPlanes(carreraIdSeleccionada);
-  }, [carreraIdSeleccionada]);
-
-  useEffect(() => {
-    if (planSeleccionado) {
-      cargarMaterias(planSeleccionado.id);
-    } else {
-      setMaterias([]);
-    }
-  }, [planSeleccionado]);
-
-  const cargarPlanes = async (carreraId: number) => {
-    try {
-      setLoading(true);
-      const data = await planesMateriasService.listarPlanesPorCarrera(carreraId);
-      setPlanes(data);
-      if (data.length > 0 && !planSeleccionado) {
-        setPlanSeleccionado(data[0]);
-      }
-    } catch (error) {
-      console.error('Error al cargar planes', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cargarMaterias = async (planId: number) => {
-    try {
-      const data = await planesMateriasService.listarMateriasPorPlan(planId);
-      setMaterias(data);
-    } catch (error) {
-      console.error('Error al cargar materias', error);
-    }
-  };
-
   // Manejadores unificados para Planes
   const handleGuardarPlan = async (payload: any, id?: number) => {
     if (id) {
       await planesMateriasService.actualizarPlanEstudio(id, payload);
-      // showToast('Plan actualizado exitosamente', 'success');
     } else {
-      await planesMateriasService.crearPlanEstudio(payload);
-      // showToast('Plan creado exitosamente', 'success');
+      await planesMateriasService.crearPlanEstudio({ ...payload, carreraId: Number(carreraIdSeleccionada) });
     }
-    cargarPlanes(carreraIdSeleccionada);
+    recargarPlanes();
   };
 
   // Manejadores unificados para Materias
   const handleGuardarMateria = async (payload: any, id?: number) => {
     if (id) {
       await planesMateriasService.actualizarMateria(id, payload);
-      // showToast('Materia actualizada exitosamente', 'success');
     } else {
-      await planesMateriasService.crearMateria(payload);
-      // showToast('Materia registrada exitosamente', 'success');
+      await planesMateriasService.crearMateria({ ...payload, planId: planSeleccionado.id });
     }
-    if (planSeleccionado) cargarMaterias(planSeleccionado.id);
+    recargarMaterias();
   };
 
   // Ejecución de Eliminación
@@ -89,22 +58,54 @@ export const PlanesMateriasView: React.FC = () => {
     if (!elementoAEliminar) return;
     if (elementoAEliminar.tipo === 'plan') {
       await planesMateriasService.eliminarPlanEstudio(elementoAEliminar.id);
-      // showToast('Plan eliminado correctamente', 'info');
-      cargarPlanes(carreraIdSeleccionada);
+      recargarPlanes();
       setPlanSeleccionado(null);
     } else {
       await planesMateriasService.eliminarMateria(elementoAEliminar.id);
-      // showToast('Materia eliminada correctamente', 'info');
-      if (planSeleccionado) cargarMaterias(planSeleccionado.id);
+      recargarMaterias();
     }
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto text-white">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <span>📋</span> Gestión de Planes de Estudio y Mallas Curriculares
         </h1>
+
+        {/* SELECTORES EN CASCADA (Facultad -> Carrera) */}
+        <div className="flex flex-wrap gap-3 items-center bg-gray-900 border border-gray-800 p-3 rounded-2xl shadow-lg">
+          <div className="flex flex-col">
+            <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Facultad</label>
+            <select
+              value={facultadIdSeleccionada}
+              onChange={(e) => seleccionarFacultad(e.target.value ? Number(e.target.value) : '')}
+              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+            >
+              {facultades.map((fac) => (
+                <option key={fac.id} value={fac.id}>
+                  {fac.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Carrera</label>
+            <select
+              value={carreraIdSeleccionada}
+              onChange={(e) => setCarreraIdSeleccionada(e.target.value ? Number(e.target.value) : '')}
+              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+              disabled={carrerasFiltradas.length === 0}
+            >
+              {carrerasFiltradas.map((car) => (
+                <option key={car.id} value={car.id}>
+                  {car.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -113,12 +114,14 @@ export const PlanesMateriasView: React.FC = () => {
         <div className="bg-gray-900 border border-gray-800 p-5 rounded-2xl shadow-xl space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-base font-semibold text-gray-200">Planes de Estudio</h2>
-            <button
-              onClick={() => { setPlanAEditar(null); setModalPlanAbierto(true); }}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shadow-md shadow-blue-600/20"
-            >
-              + Nuevo Plan
-            </button>
+            {carreraIdSeleccionada && (
+              <button
+                onClick={() => { setPlanAEditar(null); setModalPlanAbierto(true); }}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shadow-md shadow-blue-600/20"
+              >
+                + Nuevo Plan
+              </button>
+            )}
           </div>
 
           <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -154,6 +157,9 @@ export const PlanesMateriasView: React.FC = () => {
                 </div>
               </div>
             ))}
+            {planes.length === 0 && !loading && (
+              <p className="text-center py-10 text-gray-500 text-xs">No hay planes para esta carrera.</p>
+            )}
           </div>
         </div>
 
@@ -221,7 +227,7 @@ export const PlanesMateriasView: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-gray-500 text-xs">
               <span>👈</span>
-              <p className="mt-2">Seleccione un plan de estudio en el panel izquierdo para gestionar su malla.</p>
+              <p className="mt-2">Seleccione una facultad, carrera y un plan de estudio para gestionar su malla.</p>
             </div>
           )}
         </div>
@@ -229,13 +235,15 @@ export const PlanesMateriasView: React.FC = () => {
       </div>
 
       {/* Renderizado de Modales */}
-      <FormPlanEstudioModal
-        modalAbierto={modalPlanAbierto}
-        onClose={() => setModalPlanAbierto(false)}
-        planAEditar={planAEditar}
-        carreraId={carreraIdSeleccionada}
-        onGuardar={handleGuardarPlan}
-      />
+      {carreraIdSeleccionada && (
+        <FormPlanEstudioModal
+          modalAbierto={modalPlanAbierto}
+          onClose={() => setModalPlanAbierto(false)}
+          planAEditar={planAEditar}
+          carreraId={Number(carreraIdSeleccionada)}
+          onGuardar={handleGuardarPlan}
+        />
+      )}
 
       {planSeleccionado && (
         <FormMateriaModal
