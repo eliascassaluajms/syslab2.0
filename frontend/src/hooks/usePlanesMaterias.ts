@@ -1,5 +1,4 @@
-// frontend/src/hooks/usePlanesMaterias.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { planesMateriasService } from '../services/planesMaterias.service';
 import { useCatalogos } from './useCatalogos';
 
@@ -14,23 +13,31 @@ export const usePlanesMaterias = () => {
   const [materias, setMaterias] = useState<any[]>([]);
   const [loadingDatos, setLoadingDatos] = useState<boolean>(false);
 
-  // Carreras filtradas según la facultad seleccionada en cascada
-  const carrerasFiltradas = facultadIdSeleccionada 
-    ? carreras.filter(c => c.facultadId === Number(facultadIdSeleccionada))
-    : [];
+  // Memoizar carrerasFiltradas para evitar bucles de renderizado por cambio de referencias
+  const carrerasFiltradas = useMemo(() => {
+    if (!facultadIdSeleccionada) return [];
+    return carreras.filter(c => Number(c.facultadId) === Number(facultadIdSeleccionada));
+  }, [carreras, facultadIdSeleccionada]);
 
-  // Autoseleccionar la primera facultad y carrera por defecto si están vacías
+  // Autoseleccionar la primera facultad disponible
   useEffect(() => {
     if (facultades.length > 0 && !facultadIdSeleccionada) {
       setFacultadIdSeleccionada(facultades[0].id);
     }
   }, [facultades, facultadIdSeleccionada]);
 
+  // Autoseleccionar la primera carrera de la facultad activa
   useEffect(() => {
-    if (carrerasFiltradas.length > 0 && (!carreraIdSeleccionada || !carrerasFiltradas.some(c => c.id === carreraIdSeleccionada))) {
-      setCarreraIdSeleccionada(carrerasFiltradas[0].id);
-    } else if (carrerasFiltradas.length === 0) {
+    if (carrerasFiltradas.length > 0) {
+      const existeSeleccion = carrerasFiltradas.some(c => Number(c.id) === Number(carreraIdSeleccionada));
+      if (!carreraIdSeleccionada || !existeSeleccion) {
+        setCarreraIdSeleccionada(carrerasFiltradas[0].id);
+      }
+    } else {
       setCarreraIdSeleccionada('');
+      setPlanes([]);
+      setPlanSeleccionado(null);
+      setMaterias([]);
     }
   }, [carrerasFiltradas, carreraIdSeleccionada]);
 
@@ -39,9 +46,11 @@ export const usePlanesMaterias = () => {
     try {
       setLoadingDatos(true);
       const data = await planesMateriasService.listarPlanesPorCarrera(carreraId);
-      setPlanes(data);
-      if (data.length > 0) {
-        setPlanSeleccionado(data[0]);
+      const planesLista = Array.isArray(data) ? data : [];
+      setPlanes(planesLista);
+      
+      if (planesLista.length > 0) {
+        setPlanSeleccionado(planesLista[0]);
       } else {
         setPlanSeleccionado(null);
         setMaterias([]);
@@ -50,6 +59,7 @@ export const usePlanesMaterias = () => {
       console.error('Error al cargar planes de estudio:', error);
       setPlanes([]);
       setPlanSeleccionado(null);
+      setMaterias([]);
     } finally {
       setLoadingDatos(false);
     }
@@ -69,7 +79,7 @@ export const usePlanesMaterias = () => {
   const cargarMaterias = useCallback(async (planId: number) => {
     try {
       const data = await planesMateriasService.listarMateriasPorPlan(planId);
-      setMaterias(data);
+      setMaterias(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error al cargar materias:', error);
       setMaterias([]);
@@ -77,7 +87,7 @@ export const usePlanesMaterias = () => {
   }, []);
 
   useEffect(() => {
-    if (planSeleccionado) {
+    if (planSeleccionado?.id) {
       cargarMaterias(planSeleccionado.id);
     } else {
       setMaterias([]);
@@ -87,6 +97,9 @@ export const usePlanesMaterias = () => {
   const seleccionarFacultad = (id: number | '') => {
     setFacultadIdSeleccionada(id);
     setCarreraIdSeleccionada('');
+    setPlanes([]);
+    setPlanSeleccionado(null);
+    setMaterias([]);
   };
 
   return {
@@ -102,6 +115,6 @@ export const usePlanesMaterias = () => {
     materias,
     loading: loadingCatalogos || loadingDatos,
     recargarPlanes: () => carreraIdSeleccionada && cargarPlanes(Number(carreraIdSeleccionada)),
-    recargarMaterias: () => planSeleccionado && cargarMaterias(planSeleccionado.id)
+    recargarMaterias: () => planSeleccionado?.id && cargarMaterias(planSeleccionado.id)
   };
 };

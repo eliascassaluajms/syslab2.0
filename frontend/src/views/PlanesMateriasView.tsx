@@ -1,4 +1,3 @@
-// frontend/src/views/PlanesMateriasView.tsx
 import React, { useState } from 'react';
 import { usePlanesMaterias } from '../hooks/usePlanesMaterias';
 import { planesMateriasService } from '../services/planesMaterias.service';
@@ -78,10 +77,11 @@ export const PlanesMateriasView: React.FC = () => {
           <div className="flex flex-col">
             <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Facultad</label>
             <select
-              value={facultadIdSeleccionada}
+              value={facultadIdSeleccionada ?? ''}
               onChange={(e) => seleccionarFacultad(e.target.value ? Number(e.target.value) : '')}
-              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
             >
+              <option value="">-- Seleccionar Facultad --</option>
               {facultades.map((fac) => (
                 <option key={fac.id} value={fac.id}>
                   {fac.nombre}
@@ -93,11 +93,18 @@ export const PlanesMateriasView: React.FC = () => {
           <div className="flex flex-col">
             <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Carrera</label>
             <select
-              value={carreraIdSeleccionada}
+              value={carreraIdSeleccionada ?? ''}
               onChange={(e) => setCarreraIdSeleccionada(e.target.value ? Number(e.target.value) : '')}
-              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
-              disabled={carrerasFiltradas.length === 0}
+              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!facultadIdSeleccionada || carrerasFiltradas.length === 0}
             >
+              <option value="">
+                {!facultadIdSeleccionada
+                  ? '-- Elija Facultad primero --'
+                  : carrerasFiltradas.length === 0
+                  ? 'Sin carreras registradas'
+                  : '-- Seleccionar Carrera --'}
+              </option>
               {carrerasFiltradas.map((car) => (
                 <option key={car.id} value={car.id}>
                   {car.nombre}
@@ -157,8 +164,11 @@ export const PlanesMateriasView: React.FC = () => {
                 </div>
               </div>
             ))}
-            {planes.length === 0 && !loading && (
-              <p className="text-center py-10 text-gray-500 text-xs">No hay planes para esta carrera.</p>
+            {carreraIdSeleccionada && planes.length === 0 && !loading && (
+              <p className="text-center py-10 text-gray-500 text-xs">No hay planes registrados para esta carrera.</p>
+            )}
+            {!carreraIdSeleccionada && (
+              <p className="text-center py-10 text-gray-500 text-xs">Seleccione una facultad y carrera para ver sus planes.</p>
             )}
           </div>
         </div>

@@ -34,11 +34,11 @@ export const useCatalogos = () => {
     setError(null);
     try {
       const [resFac, resCar] = await Promise.all([
-        httpClient.get('/facultades'),
-        httpClient.get('/carreras'),
+        httpClient.get('/catalogos/facultades'),
+        httpClient.get('/catalogos/carreras'),
       ]);
-      setFacultades(resFac.data.data || resFac.data || []);
-      setCarreras(resCar.data.data || resCar.data || []);
+      setFacultades(resFac.data.data?.facultades || resFac.data.data || resFac.data || []);
+      setCarreras(resCar.data.data?.carreras || resCar.data.data || resCar.data || []);
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al cargar catálogos institucionales.';
       setError(mensaje);
@@ -55,7 +55,7 @@ export const useCatalogos = () => {
   const crearFacultad = async (nombre: string, codigo?: string) => {
     setError(null);
     try {
-      await httpClient.post('/facultades', { nombre, codigo });
+      await httpClient.post('/catalogos/facultades', { nombre, codigo });
       await cargarCatalogos();
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al crear la facultad.';
@@ -67,7 +67,7 @@ export const useCatalogos = () => {
   const actualizarFacultad = async (id: number, nombre: string, codigo?: string) => {
     setError(null);
     try {
-      await httpClient.put(`/facultades/${id}`, { nombre, codigo });
+      await httpClient.put(`/catalogos/facultades/${id}`, { nombre, codigo });
       await cargarCatalogos();
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al actualizar la facultad.';
@@ -79,7 +79,7 @@ export const useCatalogos = () => {
   const eliminarFacultad = async (id: number) => {
     setError(null);
     try {
-      await httpClient.delete(`/facultades/${id}`);
+      await httpClient.delete(`/catalogos/facultades/${id}`);
       await cargarCatalogos();
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al eliminar la facultad.';
@@ -92,7 +92,7 @@ export const useCatalogos = () => {
   const crearCarrera = async (nombre: string, facultadId: number) => {
     setError(null);
     try {
-      await httpClient.post('/carreras', { nombre, facultadId });
+      await httpClient.post('/catalogos/carreras', { nombre, facultadId });
       await cargarCatalogos();
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al crear la carrera.';
@@ -104,7 +104,7 @@ export const useCatalogos = () => {
   const actualizarCarrera = async (id: number, nombre: string, facultadId: number) => {
     setError(null);
     try {
-      await httpClient.put(`/carreras/${id}`, { nombre, facultadId });
+      await httpClient.put(`/catalogos/carreras/${id}`, { nombre, facultadId });
       await cargarCatalogos();
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al actualizar la carrera.';
@@ -116,7 +116,7 @@ export const useCatalogos = () => {
   const eliminarCarrera = async (id: number) => {
     setError(null);
     try {
-      await httpClient.delete(`/carreras/${id}`);
+      await httpClient.delete(`/catalogos/carreras/${id}`);
       await cargarCatalogos();
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al eliminar la carrera.';
