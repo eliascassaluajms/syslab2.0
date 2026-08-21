@@ -1,20 +1,30 @@
+// frontend/src/views/PlanesMateriasView.tsx
 import React, { useState } from 'react';
 import { usePlanesMaterias } from '../hooks/usePlanesMaterias';
 import { planesMateriasService } from '../services/planesMaterias.service';
-import { httpClient } from '../services/httpClient';
 import { FormPlanEstudioModal } from '../components/planes/FormPlanEstudioModal';
 import { FormMateriaModal } from '../components/materias/FormMateriaModal';
 import { ModalConfirmarEliminacion } from '../components/common/ModalConfirmarEliminacion';
 
 export const PlanesMateriasView: React.FC = () => {
-  // const { showToast } = useToast();
-  const [carreraIdSeleccionada] = useState<number>(1); // Dinámico según el ámbito del usuario
-  const [planes, setPlanes] = useState<any[]>([]);
-  const [planSeleccionado, setPlanSeleccionado] = useState<any | null>(null);
-  const [materias, setMaterias] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  // ✅ Usar únicamente el custom hook encapsulado
+  const {
+    facultades,
+    carrerasFiltradas,
+    facultadIdSeleccionada,
+    carreraIdSeleccionada,
+    seleccionarFacultad,
+    setCarreraIdSeleccionada,
+    planes,
+    planSeleccionado,
+    setPlanSeleccionado,
+    materias,
+    loading,
+    recargarPlanes,
+    recargarMaterias
+  } = usePlanesMaterias();
 
-  // --- ESTADOS DE MODALES ---
+  // Estados de Modales
   const [modalPlanAbierto, setModalPlanAbierto] = useState(false);
   const [planAEditar, setPlanAEditar] = useState<any | null>(null);
 
@@ -24,81 +34,87 @@ export const PlanesMateriasView: React.FC = () => {
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
   const [elementoAEliminar, setElementoAEliminar] = useState<{ tipo: 'plan' | 'materia'; id: number; nombre: string } | null>(null);
 
-  useEffect(() => {
-    cargarPlanes(carreraIdSeleccionada);
-  }, [carreraIdSeleccionada]);
-
-  useEffect(() => {
-    if (planSeleccionado) {
-      cargarMaterias(planSeleccionado.id);
-    } else {
-      setMaterias([]);
-    }
-  }, [planSeleccionado]);
-
-  const cargarPlanes = async (carreraId: number) => {
-    try {
-      setLoading(true);
-      const data = await planesMateriasService.listarPlanesPorCarrera(carreraId);
-      setPlanes(data);
-      if (data.length > 0 && !planSeleccionado) {
-        setPlanSeleccionado(data[0]);
-      }
-    } catch (error) {
-      console.error('Error al cargar planes', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cargarMaterias = async (planId: number) => {
-    try {
-      const data = await planesMateriasService.listarMateriasPorPlan(planId);
-      setMaterias(data);
-    } catch (error) {
-      console.error('Error al cargar materias', error);
-    }
-  };
-
+  // Manejadores unificados para Planes
   const handleGuardarPlan = async (payload: any, id?: number) => {
     if (id) {
       await planesMateriasService.actualizarPlanEstudio(id, payload);
     } else {
       await planesMateriasService.crearPlanEstudio({ ...payload, carreraId: Number(carreraIdSeleccionada) });
     }
-    cargarPlanes(carreraIdSeleccionada);
+    recargarPlanes();
   };
 
+  // Manejadores unificados para Materias
   const handleGuardarMateria = async (payload: any, id?: number) => {
     if (id) {
       await planesMateriasService.actualizarMateria(id, payload);
     } else {
-      await planesMateriasService.crearMateria(payload);
-      // showToast('Materia registrada exitosamente', 'success');
+      await planesMateriasService.crearMateria({ ...payload, planId: planSeleccionado.id });
     }
     recargarMaterias();
   };
 
+  // Ejecución de Eliminación
   const confirmarEliminacion = async () => {
     if (!elementoAEliminar) return;
     if (elementoAEliminar.tipo === 'plan') {
       await planesMateriasService.eliminarPlanEstudio(elementoAEliminar.id);
-      // showToast('Plan eliminado correctamente', 'info');
-      cargarPlanes(carreraIdSeleccionada);
+      recargarPlanes();
       setPlanSeleccionado(null);
     } else {
       await planesMateriasService.eliminarMateria(elementoAEliminar.id);
-      // showToast('Materia eliminada correctamente', 'info');
-      if (planSeleccionado) cargarMaterias(planSeleccionado.id);
+      recargarMaterias();
     }
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto text-white">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <span>📋</span> Gestión de Planes de Estudio y Mallas Curriculares
         </h1>
+
+        {/* SELECTORES EN CASCADA (Facultad -> Carrera) */}
+        <div className="flex flex-wrap gap-3 items-center bg-gray-900 border border-gray-800 p-3 rounded-2xl shadow-lg">
+          <div className="flex flex-col">
+            <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Facultad</label>
+            <select
+              value={facultadIdSeleccionada ?? ''}
+              onChange={(e) => seleccionarFacultad(e.target.value ? Number(e.target.value) : '')}
+              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              <option value="">-- Seleccionar Facultad --</option>
+              {facultades.map((fac) => (
+                <option key={fac.id} value={fac.id}>
+                  {fac.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Carrera</label>
+            <select
+              value={carreraIdSeleccionada ?? ''}
+              onChange={(e) => setCarreraIdSeleccionada(e.target.value ? Number(e.target.value) : '')}
+              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!facultadIdSeleccionada || carrerasFiltradas.length === 0}
+            >
+              <option value="">
+                {!facultadIdSeleccionada
+                  ? '-- Elija Facultad primero --'
+                  : carrerasFiltradas.length === 0
+                  ? 'Sin carreras registradas'
+                  : '-- Seleccionar Carrera --'}
+              </option>
+              {carrerasFiltradas.map((car) => (
+                <option key={car.id} value={car.id}>
+                  {car.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -150,6 +166,12 @@ export const PlanesMateriasView: React.FC = () => {
                 </div>
               </div>
             ))}
+            {carreraIdSeleccionada && planes.length === 0 && !loading && (
+              <p className="text-center py-10 text-gray-500 text-xs">No hay planes registrados para esta carrera.</p>
+            )}
+            {!carreraIdSeleccionada && (
+              <p className="text-center py-10 text-gray-500 text-xs">Seleccione una facultad y carrera para ver sus planes.</p>
+            )}
           </div>
         </div>
 
@@ -225,13 +247,15 @@ export const PlanesMateriasView: React.FC = () => {
       </div>
 
       {/* Renderizado de Modales */}
-      <FormPlanEstudioModal
-        modalAbierto={modalPlanAbierto}
-        onClose={() => setModalPlanAbierto(false)}
-        planAEditar={planAEditar}
-        carreraId={carreraIdSeleccionada}
-        onGuardar={handleGuardarPlan}
-      />
+      {carreraIdSeleccionada && (
+        <FormPlanEstudioModal
+          modalAbierto={modalPlanAbierto}
+          onClose={() => setModalPlanAbierto(false)}
+          planAEditar={planAEditar}
+          carreraId={Number(carreraIdSeleccionada)}
+          onGuardar={handleGuardarPlan}
+        />
+      )}
 
       {planSeleccionado && (
         <FormMateriaModal
