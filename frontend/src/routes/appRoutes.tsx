@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Rutas Públicas
+import { LandingFIRNTView } from '../views/LandingFIRNTView';
 import { LoginView } from '../views/login/LoginView';
 import { ForgotPasswordView } from '../views/login/ForgotPasswordView';
 
@@ -21,6 +22,7 @@ export const AppRoutes: React.FC = () => {
       {/* ========================================== */}
       {/* RUTAS PÚBLICAS                              */}
       {/* ========================================== */}
+      <Route path="/" element={<LandingFIRNTView />} />
       <Route path="/login" element={<LoginView />} />
       <Route path="/forgot-password" element={<ForgotPasswordView />} />
 

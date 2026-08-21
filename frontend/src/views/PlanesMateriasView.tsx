@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { usePlanesMaterias } from '../hooks/usePlanesMaterias';
 import { planesMateriasService } from '../services/planesMaterias.service';
 import { httpClient } from '../services/httpClient';
 import { FormPlanEstudioModal } from '../components/planes/FormPlanEstudioModal';
@@ -6,15 +7,8 @@ import { FormMateriaModal } from '../components/materias/FormMateriaModal';
 import { ModalConfirmarEliminacion } from '../components/common/ModalConfirmarEliminacion';
 
 export const PlanesMateriasView: React.FC = () => {
-  // --- ESTADOS DE CATÁLOGOS EN CASCADA ---
-  const [facultades, setFacultades] = useState<any[]>([]);
-  const [carreras, setCarreras] = useState<any[]>([]);
-  const [carrerasFiltradas, setCarrerasFiltradas] = useState<any[]>([]);
-  
-  const [facultadIdSeleccionada, setFacultadIdSeleccionada] = useState<number | ''>('');
-  const [carreraIdSeleccionada, setCarreraIdSeleccionada] = useState<number | ''>('');
-
-  // --- ESTADOS DE PLANES Y MATERIAS ---
+  // const { showToast } = useToast();
+  const [carreraIdSeleccionada] = useState<number>(1); // Dinámico según el ámbito del usuario
   const [planes, setPlanes] = useState<any[]>([]);
   const [planSeleccionado, setPlanSeleccionado] = useState<any | null>(null);
   const [materias, setMaterias] = useState<any[]>([]);
@@ -30,63 +24,10 @@ export const PlanesMateriasView: React.FC = () => {
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
   const [elementoAEliminar, setElementoAEliminar] = useState<{ tipo: 'plan' | 'materia'; id: number; nombre: string } | null>(null);
 
-  // 1. Cargar Facultades y Carreras al montar el componente
   useEffect(() => {
-    const cargarCatalogos = async () => {
-      try {
-        const [resFac, resCar] = await Promise.all([
-          httpClient.get('/catalogos/facultades'),
-          httpClient.get('/catalogos/carreras')
-        ]);
-        
-        const listaFacultades = resFac.data.data || [];
-        const listaCarreras = resCar.data.data || [];
-
-        setFacultades(listaFacultades);
-        setCarreras(listaCarreras);
-
-        // Si hay facultades, seleccionar la primera por defecto opcionalmente
-        if (listaFacultades.length > 0) {
-          setFacultadIdSeleccionada(listaFacultades[0].id);
-        }
-      } catch (error) {
-        console.error('Error al cargar facultades y carreras:', error);
-      }
-    };
-
-    cargarCatalogos();
-  }, []);
-
-  // 2. Filtrar carreras cuando cambia la facultad seleccionada
-  useEffect(() => {
-    if (facultadIdSeleccionada !== '') {
-      const filtradas = carreras.filter((c: any) => c.facultadId === Number(facultadIdSeleccionada));
-      setCarrerasFiltradas(filtradas);
-      
-      if (filtradas.length > 0) {
-        setCarreraIdSeleccionada(filtradas[0].id);
-      } else {
-        setCarreraIdSeleccionada('');
-        setPlanes([]);
-        setPlanSeleccionado(null);
-      }
-    } else {
-      setCarrerasFiltradas([]);
-      setCarreraIdSeleccionada('');
-    }
-  }, [facultadIdSeleccionada, carreras]);
-
-  // 3. Cargar Planes cuando cambia la carrera seleccionada
-  useEffect(() => {
-    if (carreraIdSeleccionada !== '') {
-      cargarPlanes(Number(carreraIdSeleccionada));
-    } else {
-      setPlanes([]);
-      setPlanSeleccionado(null);
-    }
+    cargarPlanes(carreraIdSeleccionada);
   }, [carreraIdSeleccionada]);
 
-  // 4. Cargar Materias cuando cambia el plan seleccionado
   useEffect(() => {
     if (planSeleccionado) {
       cargarMaterias(planSeleccionado.id);
@@ -100,15 +41,11 @@ export const PlanesMateriasView: React.FC = () => {
       setLoading(true);
       const data = await planesMateriasService.listarPlanesPorCarrera(carreraId);
       setPlanes(data);
-      if (data.length > 0) {
+      if (data.length > 0 && !planSeleccionado) {
         setPlanSeleccionado(data[0]);
-      } else {
-        setPlanSeleccionado(null);
       }
     } catch (error) {
       console.error('Error al cargar planes', error);
-      setPlanes([]);
-      setPlanSeleccionado(null);
     } finally {
       setLoading(false);
     }
@@ -120,7 +57,6 @@ export const PlanesMateriasView: React.FC = () => {
       setMaterias(data);
     } catch (error) {
       console.error('Error al cargar materias', error);
-      setMaterias([]);
     }
   };
 
@@ -130,7 +66,7 @@ export const PlanesMateriasView: React.FC = () => {
     } else {
       await planesMateriasService.crearPlanEstudio({ ...payload, carreraId: Number(carreraIdSeleccionada) });
     }
-    if (carreraIdSeleccionada) cargarPlanes(Number(carreraIdSeleccionada));
+    cargarPlanes(carreraIdSeleccionada);
   };
 
   const handleGuardarMateria = async (payload: any, id?: number) => {
@@ -138,65 +74,31 @@ export const PlanesMateriasView: React.FC = () => {
       await planesMateriasService.actualizarMateria(id, payload);
     } else {
       await planesMateriasService.crearMateria(payload);
+      // showToast('Materia registrada exitosamente', 'success');
     }
-    if (planSeleccionado) cargarMaterias(planSeleccionado.id);
+    recargarMaterias();
   };
 
   const confirmarEliminacion = async () => {
     if (!elementoAEliminar) return;
     if (elementoAEliminar.tipo === 'plan') {
       await planesMateriasService.eliminarPlanEstudio(elementoAEliminar.id);
-      if (carreraIdSeleccionada) cargarPlanes(Number(carreraIdSeleccionada));
+      // showToast('Plan eliminado correctamente', 'info');
+      cargarPlanes(carreraIdSeleccionada);
       setPlanSeleccionado(null);
     } else {
       await planesMateriasService.eliminarMateria(elementoAEliminar.id);
+      // showToast('Materia eliminada correctamente', 'info');
       if (planSeleccionado) cargarMaterias(planSeleccionado.id);
     }
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto text-white">
-      {/* Cabecera y Selectores Dinámicos en Cascada */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <span>📋</span> Gestión de Planes de Estudio y Mallas Curriculares
         </h1>
-
-        {/* Selectores de Facultad y Carrera (Esquina Superior Derecha) */}
-        <div className="flex items-center gap-3 bg-gray-900/80 p-2.5 rounded-2xl border border-gray-800 shadow-lg">
-          <div>
-            <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 px-1">Facultad</label>
-            <select
-              value={facultadIdSeleccionada}
-              onChange={(e) => setFacultadIdSeleccionada(e.target.value ? Number(e.target.value) : '')}
-              className="bg-gray-950 text-gray-200 border border-gray-700 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-500"
-            >
-              <option value="">Seleccione Facultad</option>
-              {facultades.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.sigla} - {f.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1 px-1">Carrera</label>
-            <select
-              value={carreraIdSeleccionada}
-              onChange={(e) => setCarreraIdSeleccionada(e.target.value ? Number(e.target.value) : '')}
-              disabled={!facultadIdSeleccionada}
-              className="bg-gray-950 text-gray-200 border border-gray-700 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-500 disabled:opacity-50"
-            >
-              <option value="">Seleccione Carrera</option>
-              {carrerasFiltradas.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -248,12 +150,6 @@ export const PlanesMateriasView: React.FC = () => {
                 </div>
               </div>
             ))}
-            {planes.length === 0 && carreraIdSeleccionada && !loading && (
-              <p className="text-center py-6 text-gray-500 text-xs">No hay planes registrados para esta carrera.</p>
-            )}
-            {!carreraIdSeleccionada && (
-              <p className="text-center py-6 text-gray-500 text-xs">Seleccione una facultad y carrera arriba.</p>
-            )}
           </div>
         </div>
 
@@ -321,7 +217,7 @@ export const PlanesMateriasView: React.FC = () => {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-gray-500 text-xs">
               <span>👈</span>
-              <p className="mt-2">Seleccione un plan de estudio en el panel izquierdo para gestionar su malla.</p>
+              <p className="mt-2">Seleccione una facultad, carrera y un plan de estudio para gestionar su malla.</p>
             </div>
           )}
         </div>
@@ -333,7 +229,7 @@ export const PlanesMateriasView: React.FC = () => {
         modalAbierto={modalPlanAbierto}
         onClose={() => setModalPlanAbierto(false)}
         planAEditar={planAEditar}
-        carreraId={Number(carreraIdSeleccionada)}
+        carreraId={carreraIdSeleccionada}
         onGuardar={handleGuardarPlan}
       />
 
