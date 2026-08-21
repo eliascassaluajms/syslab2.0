@@ -9,12 +9,20 @@ import {
   crearLaboratorio,
   actualizarLaboratorio,
   cambiarEstadoLaboratorio,
+  obtenerEstadoLaboratoriosReal, // 🟢 1. Importar la función de tiempo real
 } from '../controllers/laboratorios.controller.js';
 
 const router = Router();
 
 // Proteger todas las rutas del módulo con verificación de sesión JWT
 router.use(verificarJWT);
+
+// GET /api/laboratorios/estado-actual - Estado en tiempo real (DEBE IR ANTES de /:id)
+router.get(
+  '/estado-actual',
+  requirePermission('laboratorios:ver_estado'), // 🟢 2. Proteger con el permiso maestro inyectado en el seed
+  obtenerEstadoLaboratoriosReal
+);
 
 // GET /api/laboratorios - Listar laboratorios
 router.get(

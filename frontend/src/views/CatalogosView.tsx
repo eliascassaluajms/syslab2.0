@@ -13,7 +13,7 @@ interface Facultad {
 interface Carrera {
   id: number;
   nombre: string;
-  sigla: string;
+  sigla?: string;
   facultadId: number;
   facultad?: { id: number; nombre: string; sigla: string };
 }
@@ -39,9 +39,8 @@ export const CatalogosView: React.FC = () => {
   const [nombreFacultad, setNombreFacultad] = useState<string>('');
   const [siglaFacultad, setSiglaFacultad] = useState<string>('');
 
-  // Formulario Carrera
+  // Formulario Carrera (Sin campo sigla para evitar errores con la base de datos)
   const [nombreCarrera, setNombreCarrera] = useState<string>('');
-  const [siglaCarrera, setSiglaCarrera] = useState<string>('');
   const [facultadIdSeleccionada, setFacultadIdSeleccionada] = useState<number | ''>('');
 
   // Cargar Catálogos según Permisos
@@ -119,12 +118,10 @@ export const CatalogosView: React.FC = () => {
     try {
       await api.post('/catalogos/carreras', {
         nombre: nombreCarrera,
-        sigla: siglaCarrera,
         facultadId: Number(facultadIdSeleccionada),
       });
 
       setNombreCarrera('');
-      setSiglaCarrera('');
       setFacultadIdSeleccionada('');
       setModalCarrera(false);
       await cargarCatalogos();
@@ -287,7 +284,6 @@ export const CatalogosView: React.FC = () => {
                   <tr className="bg-gray-950/60 border-b border-gray-800 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                     <th className="py-4 px-6">ID</th>
                     <th className="py-4 px-6">Nombre de Carrera</th>
-                    <th className="py-4 px-6">Sigla</th>
                     <th className="py-4 px-6">Facultad Perteneciente</th>
                   </tr>
                 </thead>
@@ -299,7 +295,6 @@ export const CatalogosView: React.FC = () => {
                         <tr key={c.id} className="hover:bg-gray-800/40 transition-colors">
                           <td className="py-4 px-6 text-gray-500 font-mono text-xs">#{c.id}</td>
                           <td className="py-4 px-6 font-semibold text-white">{c.nombre}</td>
-                          <td className="py-4 px-6 font-mono text-xs text-purple-400 font-bold">{c.sigla || '-'}</td>
                           <td className="py-4 px-6">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                               {facultad ? facultad.nombre : `Facultad #${c.facultadId}`}
@@ -310,7 +305,7 @@ export const CatalogosView: React.FC = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-gray-500 text-xs italic">
+                      <td colSpan={3} className="py-8 text-center text-gray-500 text-xs italic">
                         No hay carreras registradas. Asegúrate de tener al menos una Facultad antes de crear Carreras.
                       </td>
                     </tr>
@@ -427,19 +422,6 @@ export const CatalogosView: React.FC = () => {
                   placeholder="Ej. Ingeniería Informática"
                   value={nombreCarrera}
                   onChange={(e) => setNombreCarrera(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Sigla de Carrera
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej. INF"
-                  value={siglaCarrera}
-                  onChange={(e) => setSiglaCarrera(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
                 />
               </div>

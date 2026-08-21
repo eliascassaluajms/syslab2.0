@@ -59,11 +59,10 @@ export const obtenerCarreras = async (req: Request, res: Response, next: NextFun
 // POST /api/catalogos/carreras
 export const crearCarrera = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, sigla, facultadId } = req.body;
+    const { nombre, facultadId } = req.body; // Se quita 'sigla'
     const nuevaCarrera = await prisma.carrera.create({
       data: {
         nombre,
-        sigla,
         facultadId: Number(facultadId),
       },
       include: {

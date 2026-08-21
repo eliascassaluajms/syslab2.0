@@ -31,13 +31,13 @@ export const UsuariosView: React.FC = () => {
 
   // Filtrado computado de usuarios en tiempo real
   const usuariosFiltrados = usuarios.filter((u: UsuarioLista) => {
-    const coincideTexto = 
-      u.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) || 
+    const coincideTexto =
+      u.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
       u.correo.toLowerCase().includes(filtroBusqueda.toLowerCase());
-    
-    const coincideEstado = 
+
+    const coincideEstado =
       filtroEstado === 'todos' ? true :
-      filtroEstado === 'activos' ? u.activo : !u.activo;
+        filtroEstado === 'activos' ? u.activo : !u.activo;
 
     return coincideTexto && coincideEstado;
   });
@@ -177,18 +177,24 @@ export const UsuariosView: React.FC = () => {
 
                     <td className="py-4 px-6">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        {u.usuarioFacultades?.map((f) => (
-                          <span key={`f-${f.facultadId}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            Facultad #{f.facultadId}
-                          </span>
-                        ))}
-                        {u.usuarioCarreras?.map((c) => (
-                          <span key={`c-${c.carreraId}`} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                            Carrera #{c.carreraId}
-                          </span>
-                        ))}
-                        {(!u.usuarioFacultades || u.usuarioFacultades.length === 0) &&
-                         (!u.usuarioCarreras || u.usuarioCarreras.length === 0) && (
+                        {u.asignacionesRoles && u.asignacionesRoles.length > 0 ? (
+                          u.asignacionesRoles.map((a: any, idx: number) => (
+                            <React.Fragment key={`amb-${idx}-${a.id || idx}`}>
+                              {a.facultad && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  Facultad: {a.facultad.sigla || a.facultad.nombre}
+                                </span>
+                              )}
+                              {a.carrera && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                  Carrera: {a.carrera.nombre}
+                                </span>
+                              )}
+                            </React.Fragment>
+                          ))
+                        ) : null}
+
+                        {(!u.asignacionesRoles || u.asignacionesRoles.length === 0) && (
                           <span className="text-xs italic text-gray-500">Global / Sin restricción</span>
                         )}
                       </div>
@@ -197,11 +203,10 @@ export const UsuariosView: React.FC = () => {
                     <td className="py-4 px-6 whitespace-nowrap text-center">
                       <button
                         onClick={() => handleCambiarEstadoDirecto(u.id, !u.activo)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                          u.activo
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                            : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
-                        }`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${u.activo
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                          : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                          }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${u.activo ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
                         {u.activo ? 'Activo' : 'Inactivo'}

@@ -82,7 +82,12 @@ async function main() {
     { codigo: 'uso_laboratorios:crear', descripcion: 'Permite abrir bitácoras de uso de laboratorios' },
     { codigo: 'uso_laboratorios:listar', descripcion: 'Permite listar el histórico de ocupación' },
     { codigo: 'uso_laboratorios:editar', descripcion: 'Permite modificar registros de uso' },
-    { codigo: 'uso_laboratorios:eliminar', descripcion: 'Permite eliminar registros de bitácora' }
+    { codigo: 'uso_laboratorios:eliminar', descripcion: 'Permite eliminar registros de bitácora' },
+
+    { codigo: 'planes_estudio:crear', descripcion: 'Permite registrar nuevos planes de estudio' },
+    { codigo: 'planes_estudio:listar', descripcion: 'Permite listar los planes de estudio de una carrera' },
+    { codigo: 'planes_estudio:editar', descripcion: 'Permite modificar datos de los planes de estudio' },
+    { codigo: 'planes_estudio:eliminar', descripcion: 'Permite eliminar planes de estudio' }
   ];
 
   const permisosCreados = [];
@@ -115,7 +120,9 @@ async function main() {
     'materias:crear', 'materias:listar', 'materias:editar',
     'horarios:crear', 'horarios:listar', 'horarios:editar',
     'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
-    'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar'
+    'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 
+    'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 
+    'planes_estudio:eliminar'
   ];
   
   const codigosDocente = [

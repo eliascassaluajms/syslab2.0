@@ -134,3 +134,92 @@ export const cambiarEstadoLaboratorio = async (req: Request, res: Response, next
     next(error);
   }
 };
+// ==========================================
+// 5. OBTENER ESTADO ACTUAL EN TIEMPO REAL (CON ÁMBITO)
+// ==========================================
+export const obtenerEstadoLaboratoriosReal = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const usuario = (req as any).user;
+    let whereCondition: any = { activo: true };
+
+    // Aplicar el mismo filtro de ámbito institucional
+    if (usuario && !usuario.esGlobal) {
+      if (usuario.ambitoId && usuario.tipoAmbito) {
+        const carreraIds = await ScopeService.resolverCarrerasPorAmbito(
+          usuario.ambitoId,
+          usuario.tipoAmbito
+        );
+
+        whereCondition.OR = [
+          { carreraId: { in: carreraIds } },
+          { facultadId: usuario.facultadId, carreraId: null },
+        ];
+      } else if (usuario.facultadId) {
+        whereCondition.facultadId = usuario.facultadId;
+      }
+    }
+
+    // Obtener la fecha/hora actual del servidor
+    const ahora = new Date();
+    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const diaActual = diasSemana[ahora.getDay()];
+
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    const horaActualStr = `${horas}:${minutos}`;
+
+    // Consultar laboratorios filtrados con sus horarios activos
+    const laboratorios = await prisma.laboratorio.findMany({
+      where: whereCondition,
+      include: {
+        facultad: { select: { nombre: true, sigla: true } },
+        carrera: { select: { nombre: true } },
+        horarios: {
+          where: {
+            diaSemana: diaActual,
+            horaInicio: { lte: horaActualStr },
+            horaFin: { gte: horaActualStr }
+          },
+          include: {
+            materia: { select: { nombre: true, codigo: true } },
+            docente: { select: { nombre: true } }
+          }
+        }
+      },
+      orderBy: { id: 'asc' }
+    });
+
+    // Mapear al formato requerido por el frontend
+    const estadoLabs = laboratorios.map(lab => {
+      const claseEnCurso = (lab.horarios as any[])[0];
+
+      if (claseEnCurso) {
+        const materiaNombre = claseEnCurso?.materia?.nombre ?? 'Materia desconocida';
+        const materiaCodigo = claseEnCurso?.materia?.codigo ?? '';
+        const docenteNombre = claseEnCurso?.docente?.nombre ?? 'Docente no asignado';
+
+        return {
+          id: lab.id,
+          nombre: lab.nombre,
+          ubicacion: lab.ubicacion || 'Campus Universitario',
+          carrera: lab.carrera?.nombre || 'General / Facultad',
+          estado: 'Occupied',
+          actividadActual: `Clase: ${materiaNombre}${materiaCodigo ? ` (${materiaCodigo})` : ''} - Doc: ${docenteNombre}`
+        };
+      }
+
+      return {
+        id: lab.id,
+        nombre: lab.nombre,
+        ubicacion: lab.ubicacion || 'Campus Universitario',
+        carrera: lab.carrera?.nombre || 'General / Facultad',
+        estado: 'Available',
+        actividadActual: 'Sin actividades programadas en este momento.'
+      };
+    });
+
+    res.status(200).json({ status: 'success', data: estadoLabs });
+  } catch (error) {
+    next(error);
+  }
+};
