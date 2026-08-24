@@ -30,11 +30,16 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
     setError(null);
 
     try {
-      // Payload robusto que incluye los datos básicos y preserva los roles/ámbitos actuales 
-      // para evitar el 400 Bad Request por validación estricta del backend.
       const rolIds = usuario.roles?.map(r => r.id) || (usuario.rol ? [usuario.rol.id] : []);
-      const facultades = usuario.usuarioFacultades?.map(f => f.facultadId) || [];
-      const carreras = usuario.usuarioCarreras?.map(c => c.carreraId) || [];
+
+      // Mapeo corregido para leer facultades y carreras desde las propiedades reales del objeto
+      const facultades = usuario.facultades 
+        ?? usuario.asignacionesRoles?.map(a => a.facultadId).filter(Boolean) 
+        ?? [];
+
+      const carreras = usuario.carreras 
+        ?? usuario.asignacionesRoles?.map(a => a.carreraId).filter(Boolean) 
+        ?? [];
 
       const payload = {
         nombre: editNombre,

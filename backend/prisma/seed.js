@@ -75,21 +75,37 @@ async function main() {
     { codigo: 'planes_estudio:crear', descripcion: 'Permite registrar nuevos planes de estudio' },
     { codigo: 'planes_estudio:listar', descripcion: 'Permite listar los planes de estudio de una carrera' },
     { codigo: 'planes_estudio:editar', descripcion: 'Permite modificar datos de los planes de estudio' },
-    { codigo: 'planes_estudio:eliminar', descripcion: 'Permite eliminar planes de estudio' }
+    { codigo: 'planes_estudio:eliminar', descripcion: 'Permite eliminar planes de estudio' },
+
+    // --- MÓDULO DE ACTIVIDADES ACADÉMICAS ---
+    { codigo: 'actividades:categorias_listar', descripcion: 'Permite ver y consultar las categorías de actividades académicas' },
+    { codigo: 'actividades:categorias_crear', descripcion: 'Permite crear nuevas categorías de actividades académicas' },
+    { codigo: 'actividades:categorias_editar', descripcion: 'Permite modificar categorías de actividades académicas' },
+    { codigo: 'actividades:categorias_eliminar', descripcion: 'Permite eliminar categorías de actividades académicas' },
+
+    { codigo: 'actividades:listar', descripcion: 'Permite listar las actividades académicas programadas' },
+    { codigo: 'actividades:crear', descripcion: 'Permite registrar y organizar actividades académicas' },
+    { codigo: 'actividades:editar', descripcion: 'Permite modificar datos de actividades académicas' },
+    { codigo: 'actividades:eliminar', descripcion: 'Permite dar de baja o cancelar actividades académicas' },
+
+    { codigo: 'actividades:participantes_listar', descripcion: 'Permite consultar la lista de participantes inscritos' },
+    { codigo: 'actividades:participantes_registrar', descripcion: 'Permite registrar la inscripción de participantes' },
+
+    { codigo: 'actividades:pagos_registrar', descripcion: 'Permite registrar el comprobante o pago de inscripción' },
+    { codigo: 'actividades:pagos_validar', descripcion: 'Permite validar, aprobar o rechazar pagos de inscripción' }
   ];
 
   const permisosCreados = [];
   for (const p of listaPermisos) {
     const permiso = await prisma.permiso.upsert({
       where: { codigo: p.codigo },
-      update: {},
+      update: { descripcion: p.descripcion },
       create: p,
     });
     permisosCreados.push(permiso);
   }
   console.log(`✅ ${permisosCreados.length} Permisos maestros procesados.`);
-
-  // =========================================================================
+ // =========================================================================
   // 3. CREACIÓN DE ROLES BASE (Estructura correcta de upsert con create)
   // =========================================================================
   const rolAdmin = await prisma.rol.upsert({
@@ -97,27 +113,92 @@ async function main() {
     update: {},
     create: { nombre: 'Administrador', descripcion: 'Acceso total global' }
   });
+
+  const rolRector = await prisma.rol.upsert({
+    where: { nombre: 'Rector' },
+    update: {},
+    create: { nombre: 'Rector', descripcion: 'Máxima autoridad universitaria con supervisión global' }
+  });
+
+  const rolVicerrector = await prisma.rol.upsert({
+    where: { nombre: 'Vicerrector' },
+    update: {},
+    create: { nombre: 'Vicerrector', descripcion: 'Autoridad académica central y supervisión de eventos' }
+  });
+
+  const rolDecano = await prisma.rol.upsert({
+    where: { nombre: 'Decano' },
+    update: {},
+    create: { nombre: 'Decano', descripcion: 'Máxima autoridad facultativa y supervisión perimetral' }
+  });
+
+  const rolVicedecano = await prisma.rol.upsert({
+    where: { nombre: 'Vicedecano' },
+    update: {},
+    create: { nombre: 'Vicedecano', descripcion: 'Autoridad académica facultativa y gestión perimetral' }
+  });
+
+  const rolDirectorCarrera = await prisma.rol.upsert({
+    where: { nombre: 'Director de Carrera' },
+    update: {},
+    create: { nombre: 'Director de Carrera', descripcion: 'Gestión académica y supervisión a nivel de carrera' }
+  });
+
   const rolJefe = await prisma.rol.upsert({
     where: { nombre: 'Jefe de Laboratorios' },
     update: {},
     create: { nombre: 'Jefe de Laboratorios', descripcion: 'Gestión operativa perimetralizada' }
   });
+
   const rolTecnico = await prisma.rol.upsert({
     where: { nombre: 'Técnico' },
     update: {},
     create: { nombre: 'Técnico', descripcion: 'Soporte e incidencias' }
   });
+
   const rolDocente = await prisma.rol.upsert({
     where: { nombre: 'Docente' },
     update: {},
     create: { nombre: 'Docente', descripcion: 'Reserva y uso de ambientes' }
   });
 
+  const rolOperadorEventos = await prisma.rol.upsert({
+    where: { nombre: 'Operador de Eventos' },
+    update: {},
+    create: { nombre: 'Operador de Eventos', descripcion: 'Gestión, logística y control de actividades académicas' }
+  });
+
+  const rolUnadef = await prisma.rol.upsert({
+    where: { nombre: 'UNADEF' },
+    update: {},
+    create: { nombre: 'UNADEF', descripcion: 'Validación y fiscalización financiera de pagos de inscripción' }
+  });
+
+  const rolUnada = await prisma.rol.upsert({
+    where: { nombre: 'UNADA' },
+    update: {},
+    create: { nombre: 'UNADA', descripcion: 'Control, verificación y admisión académica' }
+  });
+
+  const rolParticipante = await prisma.rol.upsert({
+    where: { nombre: 'Participante de Eventos' },
+    update: {},
+    create: { nombre: 'Participante de Eventos', descripcion: 'Inscripción y participación en actividades académicas' }
+  });
+
+  const rolEstudiante = await prisma.rol.upsert({
+    where: { nombre: 'Estudiante' },
+    update: {},
+    create: { nombre: 'Estudiante', descripcion: 'Acceso básico, consulta de horarios y eventos' }
+  });
+
   console.log('✅ Roles base procesados con éxito.');
 
-  // =========================================================================
+// =========================================================================
   // 4. ASIGNACIÓN MATRIZ: ROL - PERMISO
   // =========================================================================
+
+  // 1. El rol Administrador recibe TODOS los permisos maestros
   for (const p of permisosCreados) {
     await prisma.rolPermiso.upsert({
       where: { rolId_permisoId: { rolId: rolAdmin.id, permisoId: p.id } },
@@ -126,42 +207,122 @@ async function main() {
     });
   }
 
-  const codigosJefe = [
-    'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:ver_estado',
-    'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
-    'materias:crear', 'materias:listar', 'materias:editar',
-    'horarios:crear', 'horarios:listar', 'horarios:editar',
-    'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
-    'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 
-    'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 
-    'planes_estudio:eliminar'
-  ];
-  
-  const codigosDocente = [
-    'laboratorios:listar', 'laboratorios:ver_estado',
-    'equipos:listar',
-    'horarios:listar',
-    'fallas:crear', 'fallas:listar',
-    'uso_laboratorios:crear', 'uso_laboratorios:listar'
+  // 2. Definición de matriz de permisos por rol
+  const asignacionesPermisos = [
+    {
+      rolId: rolRector.id,
+      codigos: [
+        'facultades:listar', 'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+      ]
+    },
+    {
+      rolId: rolVicerrector.id,
+      codigos: [
+        'facultades:listar', 'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+      ]
+    },
+    {
+      rolId: rolDecano.id,
+      codigos: [
+        'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+      ]
+    },
+    {
+      rolId: rolVicedecano.id,
+      codigos: [
+        'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+      ]
+    },
+    {
+      rolId: rolDirectorCarrera.id,
+      codigos: [
+        'materias:listar', 'materias:editar', 'planes_estudio:listar', 'horarios:listar',
+        'laboratorios:listar', 'laboratorios:ver_estado', 'fallas:crear', 'fallas:listar',
+        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:participantes_listar'
+      ]
+    },
+    {
+      rolId: rolJefe.id,
+      codigos: [
+        'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:ver_estado',
+        'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
+        'materias:crear', 'materias:listar', 'materias:editar',
+        'horarios:crear', 'horarios:listar', 'horarios:editar',
+        'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
+        'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 
+        'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
+        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:participantes_listar'
+      ]
+    },
+    {
+      rolId: rolTecnico.id,
+      codigos: [
+        'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'equipos:editar',
+        'fallas:crear', 'fallas:listar', 'fallas:editar', 'uso_laboratorios:listar'
+      ]
+    },
+    {
+      rolId: rolDocente.id,
+      codigos: [
+        'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'horarios:listar',
+        'fallas:crear', 'fallas:listar', 'uso_laboratorios:crear', 'uso_laboratorios:listar',
+        'actividades:listar', 'actividades:participantes_registrar'
+      ]
+    },
+    {
+      rolId: rolOperadorEventos.id,
+      codigos: [
+        'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
+        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
+        'actividades:participantes_listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar'
+      ]
+    },
+    {
+      rolId: rolUnadef.id,
+      codigos: [
+        'actividades:listar', 'actividades:participantes_listar',
+        'actividades:pagos_registrar', 'actividades:pagos_validar'
+      ]
+    },
+    {
+      rolId: rolUnada.id,
+      codigos: [
+        'actividades:listar', 'actividades:participantes_listar', 'actividades:participantes_registrar'
+      ]
+    },
+    {
+      rolId: rolParticipante.id,
+      codigos: [
+        'actividades:listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar'
+      ]
+    },
+    {
+      rolId: rolEstudiante.id,
+      codigos: [
+        'laboratorios:listar', 'laboratorios:ver_estado', 'horarios:listar',
+        'actividades:listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar'
+      ]
+    }
   ];
 
-  for (const p of permisosCreados) {
-    if (codigosJefe.includes(p.codigo)) {
-      await prisma.rolPermiso.upsert({
-        where: { rolId_permisoId: { rolId: rolJefe.id, permisoId: p.id } },
-        update: {},
-        create: { rolId: rolJefe.id, permisoId: p.id }
-      });
-    }
-    if (codigosDocente.includes(p.codigo)) {
-      await prisma.rolPermiso.upsert({
-        where: { rolId_permisoId: { rolId: rolDocente.id, permisoId: p.id } },
-        update: {},
-        create: { rolId: rolDocente.id, permisoId: p.id }
-      });
+  // 3. Ejecución de la vinculación idempotente
+  for (const asignacion of asignacionesPermisos) {
+    for (const p of permisosCreados) {
+      if (asignacion.codigos.includes(p.codigo)) {
+        await prisma.rolPermiso.upsert({
+          where: { rolId_permisoId: { rolId: asignacion.rolId, permisoId: p.id } },
+          update: {},
+          create: { rolId: asignacion.rolId, permisoId: p.id }
+        });
+      }
     }
   }
-  console.log('✅ Matriz de permisos vinculada a los roles.');
+
+  console.log('✅ Matriz de permisos vinculada exitosamente a todos los roles.');
 
   // =========================================================================
   // 5. ESTRUCTURA INSTITUCIONAL (Facultades, Carreras y 7 Laboratorios)
@@ -616,9 +777,9 @@ async function main() {
     { nombre: 'Yovana Sanchez', correo: 'yovana.sanchez@uajms.edu.bo' },
     { nombre: 'Cesar Santos', correo: 'cesar.santos@uajms.edu.bo' },
     { nombre: 'Juan Carlos Jaramillo', correo: 'juancarlos.jaramillo@uajms.edu.bo' },
-    { nombre: 'Roberth Farfán', correo: 'roberth.farfan@uajms.edu.bo', especialidad: 'Modelado y Simulación' },
-    { nombre: 'Renzo Espinoza', correo: 'renzo.espinoza@uajms.edu.bo', especialidad: 'Sistemas de Información Geográfica / GIS' },
-    { nombre: 'Pedro Arenas', correo: 'pedro.arenas@uajms.edu.bo', especialidad: 'Programación III' },
+    { nombre: 'Roberth Farfán', correo: 'roberth.farfan@uajms.edu.bo'},
+    { nombre: 'Renzo Espinoza', correo: 'renzo.espinoza@uajms.edu.bo' },
+    { nombre: 'Pedro Arenas', correo: 'pedro.arenas@uajms.edu.bo'},
     { nombre: 'Ronald Cruz', correo: 'ronald.cruz@uajms.edu.bo' },
     { nombre: 'Jhenny Castillo', correo: 'jhenny.castillo@uajms.edu.bo' },
     { nombre: 'Jose Luis Narvaez', correo: 'jose.narvaez@uajms.edu.bo' },

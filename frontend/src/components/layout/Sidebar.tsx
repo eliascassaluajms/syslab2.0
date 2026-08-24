@@ -22,11 +22,11 @@ interface MenuItem {
 }
 
 // ==========================================
-// CONFIGURACIÓN CENTRALIZADA DEL MENÚ
+// CONFIGURACIÓN CENTRALIZADA Y COMPLETA DEL MENÚ
 // ==========================================
 const menuConfig: MenuItem[] = [
   {
-    id: 'catalogos',
+    id: 'organica',
     titulo: 'Estructura Orgánica',
     icono: '🏢',
     subItems: [
@@ -38,9 +38,77 @@ const menuConfig: MenuItem[] = [
       },
       {
         titulo: 'Planes y Materias',
-        ruta: '/admin/planes-materias', // Ruta correspondiente a la vista planesMateriasView
+        ruta: '/admin/planes-materias',
         icono: '📋',
-        permiso: ['planes:listar', 'materias:listar'], // Ajusta los permisos según tu backend
+        permiso: ['planes_estudio:listar', 'materias:listar'],
+      },
+      {
+        titulo: 'Horarios y Cronograma',
+        ruta: '/admin/horarios',
+        icono: '📅',
+        permiso: 'horarios:listar',
+      },
+    ],
+  },
+  {
+    id: 'laboratorios',
+    titulo: 'Gestión de Laboratorios',
+    icono: '🔬',
+    subItems: [
+      {
+        titulo: 'Laboratorios Físicos',
+        ruta: '/admin/laboratorios',
+        icono: '🔬',
+        permiso: 'laboratorios:listar',
+      },
+      {
+        titulo: 'Inventario de Equipos',
+        ruta: '/admin/equipos',
+        icono: '💻',
+        permiso: 'equipos:listar',
+      },
+      {
+        titulo: 'Bitácora de Uso',
+        ruta: '/admin/uso-laboratorios',
+        icono: '📖',
+        permiso: 'uso_laboratorios:listar',
+      },
+      {
+        titulo: 'Gestión de Incidencias',
+        ruta: '/admin/fallas',
+        icono: '⚠️',
+        permiso: 'fallas:listar',
+      },
+    ],
+  },
+  {
+    id: 'actividades',
+    titulo: 'Eventos y Actividades',
+    icono: '🎓',
+    subItems: [
+      {
+        titulo: 'Categorías de Eventos',
+        ruta: '/admin/actividades/categorias',
+        icono: '🏷️',
+        permiso: 'actividades:categorias_listar',
+      },
+      {
+        titulo: 'Actividades Académicas',
+        ruta: '/admin/actividades',
+        icono: '🎪',
+        permiso: 'actividades:listar',
+      },
+      {
+        titulo: 'Inscritos y Participantes',
+        ruta: '/admin/actividades/participantes',
+        icono: '👥',
+        permiso: 'actividades:participantes_listar',
+      },
+      {
+        titulo: 'Validación de Pagos',
+        ruta: '/admin/actividades/pagos',
+        icono: '💳',
+        permiso: ['actividades:pagos_registrar', 'actividades:pagos_validar'],
       },
     ],
   },
@@ -50,25 +118,18 @@ const menuConfig: MenuItem[] = [
     icono: '🛡️',
     subItems: [
       {
-        titulo: 'Roles y Permisos',
-        ruta: '/admin/roles',
-        icono: '🔑',
-        permiso: 'roles:listar',
-      },
-      {
         titulo: 'Gestión de Usuarios',
         ruta: '/admin/usuarios',
         icono: '👥',
         permiso: 'usuarios:listar',
       },
+      {
+        titulo: 'Roles y Permisos',
+        ruta: '/admin/roles',
+        icono: '🔑',
+        permiso: 'roles:listar',
+      },
     ],
-  },
-  {
-    id: 'laboratorios',
-    titulo: 'Gestión de Laboratorios',
-    icono: '🔬',
-    ruta: '/admin/laboratorios',
-    permiso: 'laboratorios:listar',
   },
 ];
 
@@ -76,18 +137,18 @@ export const Sidebar: React.FC = () => {
   const { user, tienePermiso, logout } = useAuth();
   const location = useLocation();
 
-  // Estado para controlar qué submenús están desplegados
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
-  const esAdmin = user?.rol === 'Administrador' || (typeof user?.rol === 'object' && (user.rol as any)?.nombre === 'Administrador');
+  const esAdmin =
+    user?.rol === 'Administrador' ||
+    (typeof user?.rol === 'object' && (user.rol as any)?.nombre === 'Administrador');
 
-  // Helper para verificar si un usuario tiene acceso a un permiso individual o arreglo de permisos
+  // Evalúa permisos granulares o bypass para administrador
   const evaluarPermiso = (permisoReq?: string | string[]): boolean => {
-    if (!permisoReq) return true; // Si no requiere permiso, es público
-    if (esAdmin) return true; // Bypass absoluto para Administrador
+    if (!permisoReq) return true;
+    if (esAdmin) return true;
 
     if (Array.isArray(permisoReq)) {
-      // Retorna true si tiene AL MENOS UNO de los permisos solicitados
       return permisoReq.some((p) => {
         if (typeof tienePermiso === 'function') return tienePermiso(p);
         return Array.isArray(user?.permisos) && user.permisos.includes(p);
@@ -98,19 +159,15 @@ export const Sidebar: React.FC = () => {
     return Array.isArray(user?.permisos) && user.permisos.includes(permisoReq);
   };
 
-  // 🔍 Filtrado dinámico recursivo del menú
+  // Filtrado recursivo del menú según permisos asignados
   const menuFiltrado = menuConfig
     .map((item) => {
-      // 1. Si es un menú simple (sin submenú)
       if (!item.subItems) {
-        const visible = evaluarPermiso(item.permiso);
-        return visible ? item : null;
+        return evaluarPermiso(item.permiso) ? item : null;
       }
 
-      // 2. Si tiene submenús, filtrar sus subItems de forma granular
       const subItemsVisibles = item.subItems.filter((sub) => evaluarPermiso(sub.permiso));
 
-      // Si le quedan sub-ítems visibles, conservar la categoría
       if (subItemsVisibles.length > 0) {
         return {
           ...item,
@@ -122,7 +179,6 @@ export const Sidebar: React.FC = () => {
     })
     .filter((item): item is MenuItem => item !== null);
 
-  // Auto-expandir el submenú correspondiente si la ruta actual coincide con un sub-ítem
   useEffect(() => {
     const newOpenState: Record<string, boolean> = { ...openSubmenus };
     menuFiltrado.forEach((item) => {
@@ -143,7 +199,6 @@ export const Sidebar: React.FC = () => {
     }));
   };
 
-  // Lectura del rol institucional
   let nombreRol = 'Personal';
   if (typeof user?.rol === 'string') {
     nombreRol = user.rol;
@@ -151,10 +206,14 @@ export const Sidebar: React.FC = () => {
     nombreRol = (user.rol as { nombre: string }).nombre;
   }
 
+  // Cálculo descriptivo del ámbito / perímetro asignado
+  const numFacultades = Array.isArray(user?.facultades) ? user.facultades.length : 0;
+  const numCarreras = Array.isArray(user?.carreras) ? user.carreras.length : 0;
+
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between h-screen sticky top-0 select-none text-slate-200">
       <div>
-        {/* Logotipo / Cabecera Institucional */}
+        {/* Cabecera Institucional */}
         <div className="p-6 border-b border-gray-800/80 flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg shadow-lg shadow-blue-500/10">
             SL
@@ -166,7 +225,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Navegación Principal Dinámica */}
-        <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
+        <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-220px)]">
           <div>
             <p className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">
               Menú Principal
@@ -179,10 +238,9 @@ export const Sidebar: React.FC = () => {
                 if (hasSubItems) {
                   return (
                     <li key={item.id} className="space-y-1">
-                      {/* Botón Encabezado de Categoria / Desplegable */}
                       <button
                         onClick={() => toggleSubmenu(item.id)}
-                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-gray-800/60 text-gray-300`}
+                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-gray-800/60 text-gray-300"
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-base">{item.icono}</span>
@@ -200,7 +258,6 @@ export const Sidebar: React.FC = () => {
                         </svg>
                       </button>
 
-                      {/* Sub-ítems Colapsables */}
                       {isOpen && (
                         <ul className="pl-4 space-y-1 border-l border-gray-800 ml-4 py-1">
                           {item.subItems!.map((sub) => (
@@ -226,7 +283,6 @@ export const Sidebar: React.FC = () => {
                   );
                 }
 
-                // Opción Simple sin submenú
                 return (
                   <li key={item.ruta || item.id}>
                     <NavLink
@@ -250,9 +306,26 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Perfil del Usuario Autenticado y Logout */}
-      <div className="p-4 border-t border-gray-800 bg-gray-950/40 space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Sección Inferior: Ámbito/Perímetro y Perfil de Usuario */}
+      <div className="p-4 border-t border-gray-800 bg-gray-950/60 space-y-3">
+        {/* Widget de Ámbito / Perímetro */}
+        <div className="px-3 py-2 rounded-xl bg-gray-900/80 border border-gray-800 text-[11px] space-y-1">
+          <div className="flex items-center justify-between text-gray-400 font-medium">
+            <span>📍 Ámbito Asignado:</span>
+          </div>
+          {esAdmin ? (
+            <span className="text-emerald-400 font-semibold block truncate">🌐 Global (Sin restricción)</span>
+          ) : (
+            <div className="flex items-center gap-2 text-blue-400 font-semibold text-[10px]">
+              <span>🏛️ {numFacultades} Fac.</span>
+              <span>•</span>
+              <span>🎓 {numCarreras} Carr.</span>
+            </div>
+          )}
+        </div>
+
+        {/* Perfil del Usuario Autenticado */}
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex-shrink-0 flex items-center justify-center text-blue-400 text-xs font-bold">
               {user?.nombre?.substring(0, 2).toUpperCase() || 'US'}
