@@ -99,7 +99,7 @@ model Carrera {
   asignaciones  AsignacionAmbito[]
   laboratorios  Laboratorio[]
   planesEstudio PlanEstudio[]
-
+  categoriasEventos CategoriaEvento[]
   @@map("carreras")
 }
 
@@ -174,7 +174,7 @@ model Laboratorio {
 
   equipos       Equipo[]
   horarios      Horario[]
-
+  activities    Activity[]
   @@map("laboratorios")
 }
 
@@ -268,4 +268,42 @@ model Incidencia {
   actualizadoEn   DateTime            @updatedAt @map("actualizado_en")
 
   @@map("incidencias")
+}
+// =========================================================================
+// MÓDULO DE GESTIÓN DE EVENTOS Y ACTIVIDADES
+// =========================================================================
+
+enum TipoCategoriaEvento {
+  ACADEMICO
+  NO_ACADEMICO
+}
+
+model CategoriaEvento {
+  id          Int                 @id @default(autoincrement())
+  nombre      String              @db.VarChar(100)
+  descripcion String?             @db.VarChar(255)
+  tipo        TipoCategoriaEvento @default(ACADEMICO)
+  activo      Boolean             @default(true)
+
+  carreraId   Int                 @map("carrera_id")
+  carrera     Carrera             @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+
+  creadoEn    DateTime            @default(now()) @map("creado_en")
+  actualizadoEn DateTime          @updatedAt @map("actualizado_en")
+
+  @@index([carreraId])
+  @@map("categorias_eventos")
+}
+model Activity {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  careerScope String      @map("career_scope")
+  labId       Int         @map("lab_id")
+  lab         Laboratorio @relation(fields: [labId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([careerScope])
+  @@map("activities")
 }

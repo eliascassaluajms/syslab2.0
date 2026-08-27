@@ -5,31 +5,32 @@ import { Usuario, AuthContextType } from '../interfaces/auth.interface';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<Usuario | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<Usuario | null>(() => {
+    const savedUser = localStorage.getItem('syslab_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [loading, setLoading] = useState<boolean>(false);
 
   const logout = () => {
     localStorage.removeItem('syslab_token');
+    localStorage.removeItem('syslab_user');
+    localStorage.removeItem('syslab_ambito_activo');
     setUser(null);
   };
 
-  // Validación flexible de permisos
   const tienePermiso = (permiso: string): boolean => {
     if (!user) return false;
 
-    // Extracción segura del nombre de rol
     let nombreRol = '';
     if (typeof user.rol === 'string') {
       nombreRol = user.rol;
     } else if (user.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
-      nombreRol = user.rol.nombre;
+      nombreRol = (user.rol as any).nombre;
     }
 
-    // El Administrador mantiene acceso global
     const esAdmin = nombreRol.toLowerCase().includes('admin');
     if (esAdmin) return true;
 
-    // Verificación contra la lista de permisos
     if (Array.isArray(user.permisos)) {
       return user.permisos.includes(permiso);
     }
@@ -38,40 +39,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    const verificarSesion = async () => {
-      const token = localStorage.getItem('syslab_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const { data } = await httpClient.get('/auth/me');
-        if (data?.usuario) setUser(data.usuario);
-      } catch {
-        localStorage.removeItem('syslab_token');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const manejarDesautenticacion = () => logout();
-    window.addEventListener('auth_unauthorized', manejarDesautenticacion);
-
-    verificarSesion();
-
-    return () => {
-      window.removeEventListener('auth_unauthorized', manejarDesautenticacion);
-    };
+    const token = localStorage.getItem('syslab_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    setLoading(false);
   }, []);
 
   const login = async (correo: string, password: string) => {
     try {
       const { data: responseData } = await httpClient.post('/auth/login', { correo, password });
-      const { token, data } = responseData;
-      if (!token || !data?.usuario) throw new Error('Estructura de respuesta inválida');
+      
+      const token = responseData.token;
+      const usuarioData = responseData.data?.usuario || responseData.usuario || responseData.data;
+
+      if (!token || !usuarioData) throw new Error('Estructura de respuesta de login inválida');
+
+      // Si el backend envía asignaciones vacías pero tiene roles, creamos un ámbito por defecto para evitar "Sin ámbitos"
+      let asignaciones = usuarioData.asignacionesAmbito || usuarioData.ambitos || usuarioData.asignaciones || [];
+      if ((!asignaciones || asignaciones.length === 0) && Array.isArray(usuarioData.roles) && usuarioData.roles.length > 0) {
+        asignaciones = usuarioData.roles.map((rolNombre: string, index: number) => ({
+          id: index + 1,
+          rol: { nombre: rolNombre },
+          carrera: { nombre: 'Facultad de Ciencias y Tecnología' }
+        }));
+      }
+
+      const usuarioNormalizado = {
+        ...usuarioData,
+        asignacionesAmbito: asignaciones
+      };
       
       localStorage.setItem('syslab_token', token);
-      setUser(data.usuario);
+      localStorage.setItem('syslab_user', JSON.stringify(usuarioNormalizado));
+      setUser(usuarioNormalizado);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || error.message || 'Error al autenticar');
     }

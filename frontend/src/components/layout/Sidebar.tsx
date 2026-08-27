@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
-// ==========================================
-// INTERFACES DEL MENÚ CON SOPORTE DE SUBMENÚS
-// ==========================================
 interface SubMenuItem {
   titulo: string;
   ruta: string;
@@ -21,9 +18,6 @@ interface MenuItem {
   subItems?: SubMenuItem[];
 }
 
-// ==========================================
-// CONFIGURACIÓN CENTRALIZADA Y COMPLETA DEL MENÚ
-// ==========================================
 const menuConfig: MenuItem[] = [
   {
     id: 'organica',
@@ -143,10 +137,47 @@ export const Sidebar: React.FC = () => {
     user?.rol === 'Administrador' ||
     (typeof user?.rol === 'object' && (user.rol as any)?.nombre === 'Administrador');
 
-  // Evalúa permisos granulares o bypass para administrador
+  const usuarioAny = user as any;
+  const listaAsignaciones = 
+    usuarioAny?.asignacionesAmbito || 
+    usuarioAny?.asignacionesRoles || 
+    usuarioAny?.asignaciones || 
+    usuarioAny?.ambitos || 
+    usuarioAny?.rolesUsuario || 
+    [];
+
+  const asignacionesArray = Array.isArray(listaAsignaciones) 
+    ? listaAsignaciones 
+    : (listaAsignaciones ? [listaAsignaciones] : []);
+
+  const [ambitoActivoId, setAmbitoActivoId] = useState<string | number>(() => {
+    return localStorage.getItem('syslab_ambito_activo') || (asignacionesArray[0]?.id ?? '');
+  });
+
+  // Identificar el rol/asignación activa actualmente seleccionada en el select
+  const asignacionActiva = asignacionesArray.find(
+    (asig: any, index: number) => String(asig.id || asig.codigo || index) === String(ambitoActivoId)
+  );
+
+  const rolActivoNombre = asignacionActiva?.rol?.nombre || asignacionActiva?.rol || '';
+
+  const handleCambiarAmbito = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nuevoId = e.target.value;
+    setAmbitoActivoId(nuevoId);
+    localStorage.setItem('syslab_ambito_activo', nuevoId);
+    // Forzar evento o recarga limpia para recalcular permisos del sub-rol activo
+    window.location.reload();
+  };
+
   const evaluarPermiso = (permisoReq?: string | string[]): boolean => {
     if (!permisoReq) return true;
     if (esAdmin) return true;
+
+    // Si hay un rol activo específico seleccionado, podemos filtrar o restringir opcionalmente
+    // según las capacidades de ese rol (por ejemplo, si es "Docente" puro vs "Director de Carrera")
+    if (rolActivoNombre.toLowerCase().includes('docente') && !rolActivoNombre.toLowerCase().includes('director')) {
+      // Restricciones específicas de solo docente si fuera necesario
+    }
 
     if (Array.isArray(permisoReq)) {
       return permisoReq.some((p) => {
@@ -159,7 +190,6 @@ export const Sidebar: React.FC = () => {
     return Array.isArray(user?.permisos) && user.permisos.includes(permisoReq);
   };
 
-  // Filtrado recursivo del menú según permisos asignados
   const menuFiltrado = menuConfig
     .map((item) => {
       if (!item.subItems) {
@@ -206,14 +236,9 @@ export const Sidebar: React.FC = () => {
     nombreRol = (user.rol as { nombre: string }).nombre;
   }
 
-  // Cálculo descriptivo del ámbito / perímetro asignado
-  const numFacultades = Array.isArray(user?.facultades) ? user.facultades.length : 0;
-  const numCarreras = Array.isArray(user?.carreras) ? user.carreras.length : 0;
-
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between h-screen sticky top-0 select-none text-slate-200">
       <div>
-        {/* Cabecera Institucional */}
         <div className="p-6 border-b border-gray-800/80 flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg shadow-lg shadow-blue-500/10">
             SL
@@ -224,7 +249,6 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* Navegación Principal Dinámica */}
         <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-220px)]">
           <div>
             <p className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">
@@ -306,25 +330,30 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Sección Inferior: Ámbito/Perímetro y Perfil de Usuario */}
       <div className="p-4 border-t border-gray-800 bg-gray-950/60 space-y-3">
-        {/* Widget de Ámbito / Perímetro */}
-        <div className="px-3 py-2 rounded-xl bg-gray-900/80 border border-gray-800 text-[11px] space-y-1">
+        <div className="px-3 py-2 rounded-xl bg-gray-900/80 border border-gray-800 text-[11px] space-y-1.5">
           <div className="flex items-center justify-between text-gray-400 font-medium">
-            <span>📍 Ámbito Asignado:</span>
+            <span>📍 Ámbito / Rol Activo:</span>
           </div>
           {esAdmin ? (
-            <span className="text-emerald-400 font-semibold block truncate">🌐 Global (Sin restricción)</span>
+            <span className="text-emerald-400 font-semibold block truncate">🌐 Administrador Global</span>
+          ) : asignacionesArray.length > 0 ? (
+            <select
+              value={ambitoActivoId}
+              onChange={handleCambiarAmbito}
+              className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5 text-[10px] text-blue-400 font-semibold focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              {asignacionesArray.map((asig: any, index: number) => (
+                <option key={asig.id || asig.codigo || index} value={asig.id || asig.codigo || index}>
+                  {asig.rol?.nombre || asig.rol || asig.nombreAmbito || 'Rol'} - {asig.carrera?.nombre || asig.facultad?.nombre || asig.nombre || 'General'}
+                </option>
+              ))}
+            </select>
           ) : (
-            <div className="flex items-center gap-2 text-blue-400 font-semibold text-[10px]">
-              <span>🏛️ {numFacultades} Fac.</span>
-              <span>•</span>
-              <span>🎓 {numCarreras} Carr.</span>
-            </div>
+            <span className="text-amber-400 font-semibold block truncate">⚠️ Sin ámbitos asignados</span>
           )}
         </div>
 
-        {/* Perfil del Usuario Autenticado */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex-shrink-0 flex items-center justify-center text-blue-400 text-xs font-bold">
@@ -334,8 +363,8 @@ export const Sidebar: React.FC = () => {
               <p className="text-xs font-semibold text-white truncate" title={user?.nombre}>
                 {user?.nombre || 'Usuario'}
               </p>
-              <p className="text-[10px] text-gray-400 truncate" title={nombreRol}>
-                {nombreRol}
+              <p className="text-[10px] text-gray-400 truncate" title={rolActivoNombre || nombreRol}>
+                {rolActivoNombre || nombreRol}
               </p>
             </div>
           </div>

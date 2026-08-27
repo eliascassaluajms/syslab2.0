@@ -7,6 +7,8 @@ import catalogosRouter from './catalogos.routes.js';
 import equiposRoutes from './equipos.routes.js';
 import planEstudioRouter from './planEstudio.routes.js';
 import materiaRouter from './materia.routes.js';
+import activityRoutes from './activity.routes.js';
+
 // ...
 export const router = Router();
 
@@ -18,3 +20,4 @@ router.use('/catalogos', catalogosRouter);
 router.use('/equipos', equiposRoutes);
 router.use('/planes-estudio', planEstudioRouter);
 router.use('/materias', materiaRouter);
+router.use('/actividades', activityRoutes);

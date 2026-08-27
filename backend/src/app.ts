@@ -1,4 +1,3 @@
-// backend/src/app.ts
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import authRouter from './routes/auth.routes.js';
@@ -12,6 +11,8 @@ import equiposRoutes from './routes/equipos.routes.js';
 import incidenciasRoutes from './routes/incidencias.routes.js';
 import planEstudioRouter from './routes/planEstudio.routes.js';
 import materiaRouter from './routes/materia.routes.js';
+import categoriaEventoRoutes from './routes/categoriaEvento.routes.js';
+import activityRoutes from './routes/activity.routes.js';
 
 // 1. Inicializar la aplicación Express PRIMERO
 const app: Application = express();
@@ -45,7 +46,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
     message: 'SysLab 2.0 API está respondiendo correctamente.',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -59,8 +60,15 @@ app.use('/api/equipos', equiposRoutes);
 app.use('/api/incidencias', incidenciasRoutes);
 app.use('/api/planes-estudio', planEstudioRouter);
 app.use('/api/materias', materiaRouter);
+app.use('/api/activities', activityRoutes);
+app.use('/api/activities', activityRoutes);
 
-// 5. Manejo de Rutas No Encontradas (SIEMPRE debe ir al final de las rutas)
+// Ruta esperada por el frontend
+app.use('/api/actividades/categorias', categoriaEventoRoutes);
+// Alias por retrocompatibilidad
+app.use('/api/categorias-eventos', categoriaEventoRoutes);
+
+// 5. Manejo de Rutas No Encontradas
 app.all('*', (req: Request, res: Response) => {
   throw new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404);
 });

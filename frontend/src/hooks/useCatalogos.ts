@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { httpClient } from '../services/httpClient';
 
 export interface Facultad {
@@ -18,15 +18,25 @@ export interface Carrera {
   facultad?: Facultad;
 }
 
-/**
- * Custom Hook: useCatalogos
- * Gestiona el catálogo de Facultades y Carreras universitarias (UAJMS).
- */
 export const useCatalogos = () => {
   const [facultades, setFacultades] = useState<Facultad[]>([]);
   const [carreras, setCarreras] = useState<Carrera[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados de selección dinámica
+  const [facultadId, setFacultadIdState] = useState<number | undefined>(undefined);
+  const [carreraId, setCarreraIdState] = useState<number | undefined>(undefined);
+
+  // Funciones de actualización memorizadas con useCallback para evitar fallos de referencia
+  const setFacultadId = useCallback((id?: number) => {
+    setFacultadIdState(id);
+    setCarreraIdState(undefined);
+  }, []);
+
+  const setCarreraId = useCallback((id?: number) => {
+    setCarreraIdState(id);
+  }, []);
 
   // Carga sincronizada de catálogos
   const cargarCatalogos = useCallback(async () => {
@@ -51,7 +61,13 @@ export const useCatalogos = () => {
     cargarCatalogos();
   }, [cargarCatalogos]);
 
-  // ================= OPERACIONES CRUD FACULTADES =================
+  // Filtrar carreras automáticamente según la facultad seleccionada
+  const carrerasFiltradas = useMemo(() => {
+    if (!facultadId) return carreras;
+    return carreras.filter((c) => c.facultadId === facultadId);
+  }, [carreras, facultadId]);
+
+  // ================= OPERACIONES CRUD =================
   const crearFacultad = async (nombre: string, codigo?: string) => {
     setError(null);
     try {
@@ -88,7 +104,6 @@ export const useCatalogos = () => {
     }
   };
 
-  // ================= OPERACIONES CRUD CARRERAS =================
   const crearCarrera = async (nombre: string, facultadId: number) => {
     setError(null);
     try {
@@ -127,7 +142,12 @@ export const useCatalogos = () => {
 
   return {
     facultades,
-    carreras,
+    carreras: carrerasFiltradas,
+    facultadId,
+    setFacultadId,
+    carreraId,
+    setCarreraId,
+    cargandoCatalogos: loading,
     loading,
     error,
     cargarCatalogos,
