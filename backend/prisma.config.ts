@@ -7,6 +7,6 @@ export default defineConfig({
     url: process.env.DATABASE_URL || 'postgresql://admin_syslab:SecretPassword2026@postgres-db:5432/syslab_db?schema=public',
   },
   migrations: {
-    seed: 'node ./prisma/seed.js',
+    seed: 'npx tsx ./prisma/seed.ts',
   },
 });
