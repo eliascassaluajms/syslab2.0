@@ -13,11 +13,10 @@ import planEstudioRouter from './routes/planEstudio.routes.js';
 import materiaRouter from './routes/materia.routes.js';
 import categoriaEventoRoutes from './routes/categoriaEvento.routes.js';
 import activityRoutes from './routes/activity.routes.js';
+import eventoRoutes from './routes/evento.routes.js';
 
-// 1. Inicializar la aplicación Express PRIMERO
 const app: Application = express();
 
-// 2. Configurar Middlewares Globales
 const rawOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 const cleanOrigin = rawOrigin.replace(/\/$/, '');
 const allowedOrigins = [
@@ -27,9 +26,6 @@ const allowedOrigins = [
   'http://0.0.0.0:5173',
 ];
 
-// ==========================================
-// CONFIGURACIÓN DE CORS
-// ==========================================
 app.use(
   cors({
     origin: allowedOrigins,
@@ -41,7 +37,6 @@ app.use(
 
 app.use(express.json());
 
-// 3. Ruta de Salud / Health Check
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
@@ -50,7 +45,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// 4. Montaje de Rutas de la API
+// Rutas de la API
 app.use('/api/auth', authRouter);
 app.use('/api/usuarios', userRoutes);
 app.use('/api/roles', roleRoutes);
@@ -61,19 +56,17 @@ app.use('/api/incidencias', incidenciasRoutes);
 app.use('/api/planes-estudio', planEstudioRouter);
 app.use('/api/materias', materiaRouter);
 app.use('/api/activities', activityRoutes);
-app.use('/api/activities', activityRoutes);
+app.use('/api/evento', eventoRoutes);
 
-// Ruta esperada por el frontend
+// Unificación de rutas de categorías para evitar conflictos con el frontend
 app.use('/api/actividades/categorias', categoriaEventoRoutes);
-// Alias por retrocompatibilidad
 app.use('/api/categorias-eventos', categoriaEventoRoutes);
+app.use('/api/categorias', categoriaEventoRoutes);
 
-// 5. Manejo de Rutas No Encontradas
 app.all('*', (req: Request, res: Response) => {
   throw new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404);
 });
 
-// 6. Middleware Global de Manejo de Errores
 app.use(errorHandler);
 
 export default app;

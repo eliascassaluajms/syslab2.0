@@ -96,68 +96,48 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
   console.log(`  └─ ✅ ${usuariosDocentes.length} docentes y usuarios de sistema creados.`);
 
   // =========================================================================
-  // 3. ASIGNACIONES DE ÁMBITO (RBAC)
+  // 3. ASIGNACIONES DE ÁMBITO (RBAC) - LIMPIEZA Y RE-CREACIÓN LIMPIA
   // =========================================================================
-  const ambitoAdmin = await prisma.asignacionAmbito.findFirst({
+  
+  // Admin
+  await prisma.asignacionAmbito.deleteMany({
     where: { usuarioId: userAdmin.id }
   });
-
-  if (!ambitoAdmin) {
-    await prisma.asignacionAmbito.create({
-      data: {
-        usuarioId: userAdmin.id,
-        rolId: rolAdminId,
-        facultadId: null,
-        carreraId: null
-      }
-    });
-  } else {
-    await prisma.asignacionAmbito.update({
-      where: { id: ambitoAdmin.id },
-      data: { rolId: rolAdminId, facultadId: null, carreraId: null }
-    });
-  }
-
-  const ambitoJefe = await prisma.asignacionAmbito.findFirst({
-    where: { usuarioId: userJefe.id }
+  await prisma.asignacionAmbito.create({
+    data: {
+      usuarioId: userAdmin.id,
+      rolId: rolAdminId,
+      facultadId: null,
+      carreraId: null
+    }
   });
 
-  if (!ambitoJefe) {
+  // Jefe de Labs
+  await prisma.asignacionAmbito.deleteMany({
+    where: { usuarioId: userJefe.id }
+  });
+  await prisma.asignacionAmbito.create({
+    data: {
+      usuarioId: userJefe.id,
+      rolId: rolJefeId,
+      facultadId: facultadId,
+      carreraId: carreraInfoId
+    }
+  });
+
+  // Docentes
+  for (const docente of usuariosDocentes) {
+    await prisma.asignacionAmbito.deleteMany({
+      where: { usuarioId: docente.id }
+    });
     await prisma.asignacionAmbito.create({
       data: {
-        usuarioId: userJefe.id,
-        rolId: rolJefeId,
+        usuarioId: docente.id,
+        rolId: rolDocenteId,
         facultadId: facultadId,
         carreraId: carreraInfoId
       }
     });
-  } else {
-    await prisma.asignacionAmbito.update({
-      where: { id: ambitoJefe.id },
-      data: { rolId: rolJefeId, facultadId: facultadId, carreraId: carreraInfoId }
-    });
-  }
-
-  for (const docente of usuariosDocentes) {
-    const ambitoDocente = await prisma.asignacionAmbito.findFirst({
-      where: { usuarioId: docente.id }
-    });
-
-    if (!ambitoDocente) {
-      await prisma.asignacionAmbito.create({
-        data: {
-          usuarioId: docente.id,
-          rolId: rolDocenteId,
-          facultadId: facultadId,
-          carreraId: carreraInfoId
-        }
-      });
-    } else {
-      await prisma.asignacionAmbito.update({
-        where: { id: ambitoDocente.id },
-        data: { rolId: rolDocenteId, facultadId: facultadId, carreraId: carreraInfoId }
-      });
-    }
   }
 
   console.log('  └─ ✅ Asignaciones de ámbito creadas para todos los usuarios.');

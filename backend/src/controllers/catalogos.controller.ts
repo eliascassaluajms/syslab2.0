@@ -16,7 +16,7 @@ export const obtenerFacultades = async (req: Request, res: Response, next: NextF
       },
       orderBy: { id: 'asc' },
     });
-    res.status(200).json({ status: 'success', data: facultades });
+    res.status(200).json(facultades);
   } catch (error) {
     next(error);
   }
@@ -29,7 +29,7 @@ export const crearFacultad = async (req: Request, res: Response, next: NextFunct
     const nuevaFacultad = await prisma.facultad.create({
       data: { nombre, sigla },
     });
-    res.status(201).json({ status: 'success', data: nuevaFacultad });
+    res.status(201).json(nuevaFacultad);
   } catch (error) {
     next(error);
   }
@@ -50,7 +50,7 @@ export const obtenerCarreras = async (req: Request, res: Response, next: NextFun
       },
       orderBy: { id: 'asc' },
     });
-    res.status(200).json({ status: 'success', data: carreras });
+    res.status(200).json(carreras);
   } catch (error) {
     next(error);
   }
@@ -59,7 +59,7 @@ export const obtenerCarreras = async (req: Request, res: Response, next: NextFun
 // POST /api/catalogos/carreras
 export const crearCarrera = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, facultadId } = req.body; // Se quita 'sigla'
+    const { nombre, facultadId } = req.body;
     const nuevaCarrera = await prisma.carrera.create({
       data: {
         nombre,
@@ -71,7 +71,7 @@ export const crearCarrera = async (req: Request, res: Response, next: NextFuncti
         },
       },
     });
-    res.status(201).json({ status: 'success', data: nuevaCarrera });
+    res.status(201).json(nuevaCarrera);
   } catch (error) {
     next(error);
   }

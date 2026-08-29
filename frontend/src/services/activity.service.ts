@@ -1,27 +1,29 @@
+import { httpClient } from './httpClient';
 import { Activity } from '../interfaces/activity.interface';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-
-export async function getActivities(): Promise<Activity[]> {
-  const res = await fetch(`${API_URL}/activities`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-  });
-  if (!res.ok) throw new Error('Error al cargar las actividades');
-  return res.json();
-}
-
-export async function createActivity(data: { title: string; description?: string; careerScope: string; labId: number }): Promise<Activity> {
-  const res = await fetch(`${API_URL}/activities`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('token')}`
-    },
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Error al registrar la actividad');
+export const getActivities = async () => {
+  try {
+    const response = await httpClient.get('/activities');
+    return response.data;
+  } catch (error: any) {
+    // Extrae el mensaje de error estructurado del servidor si existe
+    const detalleError = error.response?.data || { message: 'Error de conexión con el servidor' };
+    console.error('Fallo en API /activities:', detalleError);
+    throw detalleError;
   }
-  return res.json();
+};
+
+export async function createActivity(data: any): Promise<Activity> {
+  try {
+    const response = await httpClient.post('/actividades', data);
+    return response.data;
+  } catch (err) {
+    const response = await httpClient.post('/activities', data);
+    return response.data;
+  }
 }
+
+export const activityService = {
+  listar: getActivities,
+  crear: createActivity
+};

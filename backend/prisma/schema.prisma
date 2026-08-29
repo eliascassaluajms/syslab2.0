@@ -304,7 +304,58 @@ model Activity {
   lab         Laboratorio @relation(fields: [labId], references: [id], onDelete: Cascade)
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
-
+  eventoParticipantes EventoParticipante[]
   @@index([careerScope])
   @@map("activities")
+}
+// Tipo de participante en eventos o congresos
+enum TipoParticipante {
+  ESTUDIANTE
+  PROFESIONAL
+}
+
+// Estado del proceso de inscripción y validación de pago
+enum EstadoInscripcion {
+  PRE_INSCRITO
+  PAGO_VERIFICADO
+  RECHAZADO
+  ASISTENCIA_CONFIRMADA
+}
+
+model EventoParticipante {
+  id                String            @id @default(uuid())
+  nombre            String            @db.VarChar(100)
+  apellido          String            @db.VarChar(100)
+  correo            String            @unique @db.VarChar(150)
+  telefono          String            @db.VarChar(30)
+  tipo              TipoParticipante  // Estudiante o Profesional
+  estado            EstadoInscripcion @default(PRE_INSCRITO)
+  
+  // Relación directa con la actividad o evento general de SysLab
+  activityId        String?
+  activity          Activity?         @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  // Datos del pago
+  codigoTransaccion String?           @unique @db.VarChar(100)
+  comprobanteUrl    String?           @db.Text // Ruta o enlace a la captura subida
+  observaciones     String?           @db.Text // Notas de caja o soporte técnico
+  
+  // Control de fechas
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@map("evento_participantes")
+}
+
+model EventoPaymentConfig {
+  id              String   @id @default(uuid())
+  banco           String   @db.VarChar(100)
+  numeroCuenta    String   @db.VarChar(50)
+  nombreReceptor  String   @db.VarChar(150)
+  nitCI           String?  @db.VarChar(30)
+  qrImagenUrl     String   @db.Text // Imagen del QR para mostrar en pantalla
+  activo          Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+
+  @@map("evento_payment_configs")
 }

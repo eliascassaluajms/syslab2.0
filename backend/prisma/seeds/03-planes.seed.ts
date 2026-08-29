@@ -6,12 +6,12 @@ export async function seedPlanes(prisma: PrismaClient, carreraInfoId: number) {
   // =========================================================================
   // 1. PLAN DE ESTUDIOS 2007
   // =========================================================================
-  let planInformatica2007 = await prisma.planEstudio.findFirst({
+  let planInformatica2007 = await (prisma as any).planEstudio.findFirst({
     where: { carreraId: carreraInfoId, gestion: 2007 }
   });
 
   if (!planInformatica2007) {
-    planInformatica2007 = await prisma.planEstudio.create({
+    planInformatica2007 = await (prisma as any).planEstudio.create({
       data: {
         carreraId: carreraInfoId,
         gestion: 2007,
@@ -19,7 +19,7 @@ export async function seedPlanes(prisma: PrismaClient, carreraInfoId: number) {
       }
     });
   } else {
-    planInformatica2007 = await prisma.planEstudio.update({
+    planInformatica2007 = await (prisma as any).planEstudio.update({
       where: { id: planInformatica2007.id },
       data: { descripcion: 'Plan de Estudios 2007 - Ingeniería Informática' }
     });
@@ -92,7 +92,7 @@ export async function seedPlanes(prisma: PrismaClient, carreraInfoId: number) {
   ];
 
   for (const mat of materiasPlan2007) {
-    await prisma.materia.upsert({
+    await (prisma as any).materia.upsert({
       where: { codigo: mat.codigo },
       update: { planId: planInformatica2007.id },
       create: {
@@ -110,12 +110,12 @@ export async function seedPlanes(prisma: PrismaClient, carreraInfoId: number) {
   // =========================================================================
   // 2. NUEVA MALLA CURRICULAR (2024)
   // =========================================================================
-  let planInformaticaNuevaMalla = await prisma.planEstudio.findFirst({
+  let planInformaticaNuevaMalla = await (prisma as any).planEstudio.findFirst({
     where: { carreraId: carreraInfoId, gestion: 2024 }
   });
 
   if (!planInformaticaNuevaMalla) {
-    planInformaticaNuevaMalla = await prisma.planEstudio.create({
+    planInformaticaNuevaMalla = await (prisma as any).planEstudio.create({
       data: {
         carreraId: carreraInfoId,
         gestion: 2024,
@@ -123,7 +123,7 @@ export async function seedPlanes(prisma: PrismaClient, carreraInfoId: number) {
       }
     });
   } else {
-    planInformaticaNuevaMalla = await prisma.planEstudio.update({
+    planInformaticaNuevaMalla = await (prisma as any).planEstudio.update({
       where: { id: planInformaticaNuevaMalla.id },
       data: { descripcion: 'Malla Curricular Nueva - Ingeniería Informática' }
     });
@@ -182,7 +182,7 @@ export async function seedPlanes(prisma: PrismaClient, carreraInfoId: number) {
   ];
 
   for (const mat of materiasNuevaMalla) {
-    await prisma.materia.upsert({
+    await (prisma as any).materia.upsert({
       where: { codigo: mat.codigo },
       update: { planId: planInformaticaNuevaMalla.id },
       create: {

@@ -88,7 +88,7 @@ const menuConfig: MenuItem[] = [
       },
       {
         titulo: 'Actividades Académicas',
-        ruta: '/admin/actividades',
+        ruta: '/admin/actividades/gestion', // 👈 Apunta a la vista de gestión
         icono: '🎪',
         permiso: 'actividades:listar',
       },
