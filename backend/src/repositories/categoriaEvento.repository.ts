@@ -3,12 +3,12 @@ import { TipoCategoriaEvento, Prisma } from '@prisma/client';
 
 export class CategoriaEventoRepository {
   /**
-   * Listar categorías asociadas a una carrera
+   * Listar categorías (globales o filtradas si se provee carreraId)
    */
-  static async listarPorCarrera(carreraId: number, tipo?: TipoCategoriaEvento) {
+  static async listarPorCarrera(carreraId?: number, tipo?: TipoCategoriaEvento) {
     return await prisma.categoriaEvento.findMany({
       where: {
-        carreraId,
+        ...(carreraId && carreraId > 0 ? { carreraId } : {}),
         ...(tipo && { tipo }),
       },
       orderBy: { nombre: 'asc' },
@@ -16,21 +16,24 @@ export class CategoriaEventoRepository {
   }
 
   /**
-   * Buscar categoría por ID y su ámbito de carrera
+   * Buscar categoría por ID permitiendo bypass de carrera si es global
    */
-  static async buscarPorIdYCarrera(id: number, carreraId: number) {
+  static async buscarPorIdYCarrera(id: number, carreraId?: number) {
     return await prisma.categoriaEvento.findFirst({
-      where: { id, carreraId },
+      where: {
+        id,
+        ...(carreraId && carreraId > 0 ? { carreraId } : {}),
+      },
     });
   }
 
   /**
-   * Verificar existencia de nombre duplicado dentro de una misma carrera
+   * Verificar existencia de nombre duplicado de manera global o por carrera
    */
-  static async buscarPorNombreYCarrera(nombre: string, carreraId: number, idExcluido?: number) {
+  static async buscarPorNombreYCarrera(nombre: string, carreraId?: number, idExcluido?: number) {
     return await prisma.categoriaEvento.findFirst({
       where: {
-        carreraId,
+        ...(carreraId && carreraId > 0 ? { carreraId } : {}),
         nombre: { equals: nombre, mode: 'insensitive' },
         ...(idExcluido && { NOT: { id: idExcluido } }),
       },

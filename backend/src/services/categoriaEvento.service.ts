@@ -9,7 +9,7 @@ export interface CrearCategoriaDto {
   tipo: TipoCategoriaEvento;
   requiereAprobacion?: boolean;
   permiteInscripcionForm?: boolean;
-  carreraId?: number;
+  carreraId?: number | null;
 }
 
 export interface ActualizarCategoriaDto {
@@ -23,57 +23,58 @@ export interface ActualizarCategoriaDto {
 
 export class CategoriaEventoService {
   /**
-   * Consulta las categorías asociadas a la carrera
+   * Lista todas las categorías globales disponibles
    */
   static async listar(carreraId?: number, tipo?: TipoCategoriaEvento) {
-    return await CategoriaEventoRepository.listarPorCarrera(carreraId || 0, tipo);
+    // Reutilizamos el método del repositorio pasando 0 para ignorar el filtro estricto de carrera si la consulta lo soporta,
+    // o puedes usar directamente Prisma en el repositorio. Usamos 0 como comodín global.
+    return await CategoriaEventoRepository.listarPorCarrera(0, tipo);
   }
 
   /**
-   * Obtiene la categoría por ID
+   * Obtiene la categoría por ID de forma global
    */
   static async obtenerPorId(id: number, carreraId?: number) {
-    const categoria = await CategoriaEventoRepository.buscarPorIdYCarrera(id, carreraId || 0);
+    // Buscamos ignorando la restricción de carrera pasando 0
+    const categoria = await CategoriaEventoRepository.buscarPorIdYCarrera(id, 0);
 
     if (!categoria) {
-      throw new AppError('La categoría no existe o no pertenece a su ámbito académico.', 404);
+      throw new AppError('La categoría no existe.', 404);
     }
 
     return categoria;
   }
 
   /**
-   * Crea una nueva categoría
+   * Crea una nueva categoría global
    */
   static async crear(datos: CrearCategoriaDto) {
-    if (!datos.carreraId) {
-      throw new AppError('No se pudo identificar la carrera o ámbito académico activo para asociar la categoría.', 400);
-    }
-
-    const existe = await CategoriaEventoRepository.buscarPorNombreYCarrera(datos.nombre, datos.carreraId);
+    const existe = await CategoriaEventoRepository.buscarPorNombreYCarrera(datos.nombre, 0);
     if (existe) {
-      throw new AppError(`Ya existe una categoría registrada con el nombre "${datos.nombre}" en esta carrera.`, 400);
+      throw new AppError(`Ya existe una categoría registrada con el nombre "${datos.nombre}".`, 400);
     }
 
     return await CategoriaEventoRepository.crear({
       nombre: datos.nombre,
       descripcion: datos.descripcion,
       tipo: datos.tipo,
-      carrera: { connect: { id: datos.carreraId } },
+      requiereAprobacion: datos.requiereAprobacion ?? false,
+      permiteInscripcionForm: datos.permiteInscripcionForm ?? false,
+      activo: true,
+      // Sin carrera asignada para que sea global (carreraId: null)
     });
   }
 
   /**
-   * Actualiza un registro de categoría
+   * Actualiza un registro de categoría global
    */
   static async actualizar(id: number, carreraId: number | undefined, datos: ActualizarCategoriaDto) {
-    if (carreraId) {
-      await this.obtenerPorId(id, carreraId);
-      if (datos.nombre) {
-        const duplicado = await CategoriaEventoRepository.buscarPorNombreYCarrera(datos.nombre, carreraId, id);
-        if (duplicado) {
-          throw new AppError(`Ya existe otra categoría registrada con el nombre "${datos.nombre}".`, 400);
-        }
+    await this.obtenerPorId(id);
+    
+    if (datos.nombre) {
+      const duplicado = await CategoriaEventoRepository.buscarPorNombreYCarrera(datos.nombre, 0, id);
+      if (duplicado) {
+        throw new AppError(`Ya existe otra categoría registrada con el nombre "${datos.nombre}".`, 400);
       }
     }
 
@@ -81,12 +82,10 @@ export class CategoriaEventoService {
   }
 
   /**
-   * Elimina la categoría
+   * Elimina la categoría de forma global
    */
   static async eliminar(id: number, carreraId?: number) {
-    if (carreraId) {
-      await this.obtenerPorId(id, carreraId);
-    }
+    await this.obtenerPorId(id);
     return await CategoriaEventoRepository.eliminar(id);
   }
 }
