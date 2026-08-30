@@ -5,10 +5,10 @@ import { publicRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
 
-// Endpoint público con tasa límite contra bots
+// GET /api/activities - Listar actividades
 router.get('/', publicRateLimiter(60, 60 * 1000), ActivityController.listar);
 
-// Endpoints protegidos para administración
+// POST /api/activities - Crear actividad
 router.post('/', verificarJWT, ActivityController.crear);
 
 export default router;

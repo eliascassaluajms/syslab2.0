@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         asignaciones = usuarioData.roles.map((rolNombre: string, index: number) => ({
           id: index + 1,
           rol: { nombre: rolNombre },
-          carrera: { nombre: 'Facultad de Ciencias y Tecnología' }
+          carrera: { nombre: 'FIRNT' }
         }));
       }
 

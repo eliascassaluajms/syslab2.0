@@ -17,8 +17,8 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🚀 Iniciando proceso global de sembrado de datos (Seeding)...\n');
 
-  // Paso 1: Módulo de Seguridad y Accesos
-  const { rolAdmin, rolJefe, rolDocente, DUMMY_PASSWORD_HASH } = await seedSeguridad(prisma);
+  // Paso 1: Módulo de Seguridad y Accesos (se añade rolDirectorCarrera)
+  const { rolAdmin, rolJefe, rolDocente, rolDirectorCarrera, DUMMY_PASSWORD_HASH } = await seedSeguridad(prisma);
 
   // Paso 2: Módulo de Estructura Institucional y Laboratorios
   const { carreraInfoId, facultadId, labs } = await seedEstructura(prisma);
@@ -36,6 +36,7 @@ async function main() {
       rolAdminId: rolAdmin.id,
       rolJefeId: rolJefe.id,
       rolDocenteId: rolDocente.id,
+      rolDirectorCarreraId: rolDirectorCarrera.id, // 👈 Se agrega este campo requerido
       carreraInfoId,
       facultadId,
       labs,

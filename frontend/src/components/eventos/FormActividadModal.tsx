@@ -19,6 +19,7 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Normalización sólida para cualquier estructura que responda la API
   const normalizeList = (res: any): any[] => {
     if (!res) return [];
     let target = res.data !== undefined ? res.data : res;
@@ -47,12 +48,17 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
 
     const fetchCategorias = async () => {
       try {
+        // Intento 1: Ruta habitual
         const res = await httpClient.get('/actividades/categorias');
-        const list = normalizeList(res);
-        console.log('Categorías recibidas del backend:', list);
-        setCategorias(list);
+        setCategorias(normalizeList(res));
       } catch (e) {
-        console.error('Error al cargar categorías desde /actividades/categorias:', e);
+        try {
+          // Intento 2: Ruta en inglés / alias del router principal
+          const resAlt = await httpClient.get('/activities/categorias');
+          setCategorias(normalizeList(resAlt));
+        } catch (errAlt) {
+          console.error('Error al cargar categorías desde ambas rutas:', errAlt);
+        }
       }
     };
 
@@ -67,6 +73,7 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
     setLoading(true);
     setError('');
 
+    // Construcción del payload sanitizado para el Controller
     const payload: Record<string, any> = {
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || null,
@@ -76,29 +83,29 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
       const numCat = Number(categoriaId);
       payload.categoriaId = numCat;
       payload.categoria_id = numCat;
-      payload.id_categoria = numCat;
     }
 
     if (carreraId) {
       const numCar = Number(carreraId);
       payload.carreraId = numCar;
       payload.carrera_id = numCar;
-      payload.id_carrera = numCar;
     }
 
     try {
       await activityService.crear(payload);
       onSuccess();
       onClose();
+      // Limpiar formulario tras éxito
       setNombre('');
       setDescripcion('');
       setCategoriaId('');
       setCarreraId('');
     } catch (err: any) {
-      const msg = err.response?.data?.message 
-        || err.response?.data?.error 
-        || (typeof err.response?.data === 'string' ? err.response.data : null)
-        || 'Error al registrar la actividad en la base de datos';
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        (typeof err.response?.data === 'string' ? err.response.data : null) ||
+        'Error al registrar la actividad en la base de datos';
       setError(msg);
     } finally {
       setLoading(false);
@@ -174,7 +181,14 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
               <option value="">Seleccione una categoría (opcional)</option>
               {categorias.map((cat: any) => {
                 const id = cat.id || cat.categoria_id || cat.id_categoria || cat.id_categoria_evento;
-                const nombreCategoria = cat.nombre || cat.nombre_categoria || cat.categoria || cat.titulo || cat.descripcion || cat.name || cat.label;
+                const nombreCategoria =
+                  cat.nombre ||
+                  cat.nombre_categoria ||
+                  cat.categoria ||
+                  cat.titulo ||
+                  cat.descripcion ||
+                  cat.name ||
+                  cat.label;
                 return (
                   <option key={id} value={id}>
                     {nombreCategoria}

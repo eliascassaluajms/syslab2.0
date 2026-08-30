@@ -4,6 +4,7 @@ interface SeedUsuariosParams {
   rolAdminId: number;
   rolJefeId: number;
   rolDocenteId: number;
+  rolDirectorCarreraId: number;
   carreraInfoId: number;
   facultadId: number;
   labs: {
@@ -21,10 +22,10 @@ interface SeedUsuariosParams {
 export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosParams) {
   console.log('👥 Cargando datos del módulo de Usuarios, Docentes e Inventario de Equipos...');
 
-  const { rolAdminId, rolJefeId, rolDocenteId, carreraInfoId, facultadId, labs, passwordHash } = params;
+  const { rolAdminId, rolJefeId, rolDocenteId, rolDirectorCarreraId, carreraInfoId, facultadId, labs, passwordHash } = params;
 
   // =========================================================================
-  // 1. USUARIOS DEL SISTEMA
+  // 1. USUARIOS ADMINISTRATIVOS Y DIRECTIVOS
   // =========================================================================
   const userAdmin = await prisma.usuario.upsert({
     where: { correo: 'admin@uajms.edu.bo' },
@@ -54,11 +55,24 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
     }
   });
 
+  const userYovana = await prisma.usuario.upsert({
+    where: { correo: 'yovana.sanchez@uajms.edu.bo' },
+    update: {},
+    create: {
+      nombre: 'Yovana',
+      apellido: 'Sanchez',
+      correo: 'yovana.sanchez@uajms.edu.bo',
+      password: passwordHash,
+      rolId: rolDirectorCarreraId,
+      activo: true,
+      esGlobal: false
+    }
+  });
+
   // =========================================================================
   // 2. DOCENTES
   // =========================================================================
   const docentesData = [
-    { nombre: 'Yovana', apellido: 'Sanchez', correo: 'yovana.sanchez@uajms.edu.bo' },
     { nombre: 'Cesar', apellido: 'Santos', correo: 'cesar.santos@uajms.edu.bo' },
     { nombre: 'Juan Carlos', apellido: 'Jaramillo', correo: 'juancarlos.jaramillo@uajms.edu.bo' },
     { nombre: 'Roberth', apellido: 'Farfán', correo: 'roberth.farfan@uajms.edu.bo' },
@@ -93,50 +107,41 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
     usuariosDocentes.push(user);
   }
 
-  console.log(`  └─ ✅ ${usuariosDocentes.length} docentes y usuarios de sistema creados.`);
+  console.log(`  └─ ✅ ${usuariosDocentes.length + 1} docentes y usuarios institucionales creados.`);
 
   // =========================================================================
-  // 3. ASIGNACIONES DE ÁMBITO (RBAC) - LIMPIEZA Y RE-CREACIÓN LIMPIA
+  // 3. ASIGNACIONES DE ÁMBITO (RBAC)
   // =========================================================================
   
   // Admin
-  await prisma.asignacionAmbito.deleteMany({
-    where: { usuarioId: userAdmin.id }
-  });
+  await prisma.asignacionAmbito.deleteMany({ where: { usuarioId: userAdmin.id } });
   await prisma.asignacionAmbito.create({
-    data: {
-      usuarioId: userAdmin.id,
-      rolId: rolAdminId,
-      facultadId: null,
-      carreraId: null
-    }
+    data: { usuarioId: userAdmin.id, rolId: rolAdminId, facultadId: null, carreraId: null }
   });
 
-  // Jefe de Labs
-  await prisma.asignacionAmbito.deleteMany({
-    where: { usuarioId: userJefe.id }
+  // Elias Cassal (Jefe de Laboratorio y Docente)
+  await prisma.asignacionAmbito.deleteMany({ where: { usuarioId: userJefe.id } });
+  await prisma.asignacionAmbito.create({
+    data: { usuarioId: userJefe.id, rolId: rolJefeId, facultadId: facultadId, carreraId: carreraInfoId }
   });
   await prisma.asignacionAmbito.create({
-    data: {
-      usuarioId: userJefe.id,
-      rolId: rolJefeId,
-      facultadId: facultadId,
-      carreraId: carreraInfoId
-    }
+    data: { usuarioId: userJefe.id, rolId: rolDocenteId, facultadId: facultadId, carreraId: carreraInfoId }
   });
 
-  // Docentes
+  // Yovana Sanchez (Directora de Carrera y Docente)
+  await prisma.asignacionAmbito.deleteMany({ where: { usuarioId: userYovana.id } });
+  await prisma.asignacionAmbito.create({
+    data: { usuarioId: userYovana.id, rolId: rolDirectorCarreraId, facultadId: facultadId, carreraId: carreraInfoId }
+  });
+  await prisma.asignacionAmbito.create({
+    data: { usuarioId: userYovana.id, rolId: rolDocenteId, facultadId: facultadId, carreraId: carreraInfoId }
+  });
+
+  // Demás Docentes
   for (const docente of usuariosDocentes) {
-    await prisma.asignacionAmbito.deleteMany({
-      where: { usuarioId: docente.id }
-    });
+    await prisma.asignacionAmbito.deleteMany({ where: { usuarioId: docente.id } });
     await prisma.asignacionAmbito.create({
-      data: {
-        usuarioId: docente.id,
-        rolId: rolDocenteId,
-        facultadId: facultadId,
-        carreraId: carreraInfoId
-      }
+      data: { usuarioId: docente.id, rolId: rolDocenteId, facultadId: facultadId, carreraId: carreraInfoId }
     });
   }
 
@@ -156,7 +161,6 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
   ];
 
   let totalEquipos = 0;
-
   for (const conf of configuracionLaboratorios) {
     for (let i = 1; i <= conf.cantidad; i++) {
       const numFormatted = i.toString().padStart(2, '0');
@@ -190,6 +194,7 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
   return {
     userAdmin,
     userJefe,
+    userYovana,
     usuariosDocentes
   };
 }

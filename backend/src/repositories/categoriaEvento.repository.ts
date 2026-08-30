@@ -1,12 +1,11 @@
 import { prisma } from '../config/prisma.js';
-import { TipoCategoriaEvento, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+
+type TipoCategoriaEvento = 'ACADEMICO' | 'MANTENIMIENTO' | 'INSTITUCIONAL' | 'OTRO';
 
 export class CategoriaEventoRepository {
-  /**
-   * Listar categorías (globales o filtradas si se provee carreraId)
-   */
   static async listarPorCarrera(carreraId?: number, tipo?: TipoCategoriaEvento) {
-    return await prisma.categoriaEvento.findMany({
+    return await (prisma as any).categoriaEvento.findMany({
       where: {
         ...(carreraId && carreraId > 0 ? { carreraId } : {}),
         ...(tipo && { tipo }),
@@ -15,11 +14,8 @@ export class CategoriaEventoRepository {
     });
   }
 
-  /**
-   * Buscar categoría por ID permitiendo bypass de carrera si es global
-   */
   static async buscarPorIdYCarrera(id: number, carreraId?: number) {
-    return await prisma.categoriaEvento.findFirst({
+    return await (prisma as any).categoriaEvento.findFirst({
       where: {
         id,
         ...(carreraId && carreraId > 0 ? { carreraId } : {}),
@@ -27,11 +23,8 @@ export class CategoriaEventoRepository {
     });
   }
 
-  /**
-   * Verificar existencia de nombre duplicado de manera global o por carrera
-   */
   static async buscarPorNombreYCarrera(nombre: string, carreraId?: number, idExcluido?: number) {
-    return await prisma.categoriaEvento.findFirst({
+    return await (prisma as any).categoriaEvento.findFirst({
       where: {
         ...(carreraId && carreraId > 0 ? { carreraId } : {}),
         nombre: { equals: nombre, mode: 'insensitive' },
@@ -40,28 +33,19 @@ export class CategoriaEventoRepository {
     });
   }
 
-  /**
-   * Insertar una nueva categoría
-   */
-  static async crear(datos: Prisma.CategoriaEventoCreateInput) {
-    return await prisma.categoriaEvento.create({ data: datos });
+  static async crear(datos: any) {
+    return await (prisma as any).categoriaEvento.create({ data: datos });
   }
 
-  /**
-   * Actualizar registro de categoría
-   */
-  static async actualizar(id: number, datos: Prisma.CategoriaEventoUpdateInput) {
-    return await prisma.categoriaEvento.update({
+  static async actualizar(id: number, datos: any) {
+    return await (prisma as any).categoriaEvento.update({
       where: { id },
       data: datos,
     });
   }
 
-  /**
-   * Eliminar categoría por ID
-   */
   static async eliminar(id: number) {
-    return await prisma.categoriaEvento.delete({
+    return await (prisma as any).categoriaEvento.delete({
       where: { id },
     });
   }

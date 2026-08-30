@@ -297,5 +297,5 @@ export async function seedSeguridad(prisma: PrismaClient) {
   console.log('  └─ ✅ Matriz de permisos vinculada exitosamente a todos los roles.');
   console.log('✅ Permisos, roles y matriz de accesos procesados con éxito.\n');
 
-  return { rolAdmin, rolJefe, rolDocente, DUMMY_PASSWORD_HASH };
+return { rolAdmin, rolJefe, rolDocente, rolDirectorCarrera, DUMMY_PASSWORD_HASH };
 }
