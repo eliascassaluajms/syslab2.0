@@ -5,21 +5,23 @@ import { activityService } from '../../services/activity.service';
 
 interface Props {
   isOpen: boolean;
+  actividad?: any | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
+export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose, onSuccess }) => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
   const [carreraId, setCarreraId] = useState('');
+  const [labId, setLabId] = useState('');
   const [categorias, setCategorias] = useState<any[]>([]);
   const [carreras, setCarreras] = useState<any[]>([]);
+  const [laboratorios, setLaboratorios] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Normalización sólida para cualquier estructura que responda la API
   const normalizeList = (res: any): any[] => {
     if (!res) return [];
     let target = res.data !== undefined ? res.data : res;
@@ -29,6 +31,7 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
     if (Array.isArray(target)) return target;
     if (Array.isArray(target?.carreras)) return target.carreras;
     if (Array.isArray(target?.categorias)) return target.categorias;
+    if (Array.isArray(target?.laboratorios)) return target.laboratorios;
     if (Array.isArray(target?.items)) return target.items;
     if (Array.isArray(target?.rows)) return target.rows;
     return [];
@@ -37,34 +40,48 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
   useEffect(() => {
     if (!isOpen) return;
 
-    const fetchCarreras = async () => {
+    if (actividad) {
+      setNombre(actividad.title || actividad.titulo || actividad.nombre || '');
+      setDescripcion(actividad.description || actividad.descripcion || '');
+      setCategoriaId(actividad.categoriaId || actividad.categoria_id || '');
+      setCarreraId(actividad.careerScope || actividad.carreraId || '');
+      setLabId(actividad.labId || actividad.lab_id || '');
+    } else {
+      setNombre('');
+      setDescripcion('');
+      setCategoriaId('');
+      setCarreraId('');
+      setLabId('');
+    }
+
+    const fetchCatalogos = async () => {
       try {
-        const res = await httpClient.get('/catalogos/carreras');
-        setCarreras(normalizeList(res));
+        const resCar = await httpClient.get('/catalogos/carreras');
+        setCarreras(normalizeList(resCar));
       } catch (e) {
         console.error('Error al cargar carreras:', e);
       }
-    };
 
-    const fetchCategorias = async () => {
       try {
-        // Intento 1: Ruta habitual
-        const res = await httpClient.get('/actividades/categorias');
-        setCategorias(normalizeList(res));
+        const resCat = await httpClient.get('/actividades/categorias');
+        setCategorias(normalizeList(resCat));
       } catch (e) {
         try {
-          // Intento 2: Ruta en inglés / alias del router principal
-          const resAlt = await httpClient.get('/activities/categorias');
-          setCategorias(normalizeList(resAlt));
-        } catch (errAlt) {
-          console.error('Error al cargar categorías desde ambas rutas:', errAlt);
-        }
+          const resCatAlt = await httpClient.get('/activities/categorias');
+          setCategorias(normalizeList(resCatAlt));
+        } catch (err) {}
+      }
+
+      try {
+        const resLabs = await httpClient.get('/laboratorios');
+        setLaboratorios(normalizeList(resLabs));
+      } catch (e) {
+        console.error('Error al cargar laboratorios:', e);
       }
     };
 
-    fetchCarreras();
-    fetchCategorias();
-  }, [isOpen]);
+    fetchCatalogos();
+  }, [isOpen, actividad]);
 
   if (!isOpen) return null;
 
@@ -73,39 +90,35 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
     setLoading(true);
     setError('');
 
-    // Construcción del payload sanitizado para el Controller
     const payload: Record<string, any> = {
+      title: nombre.trim(),
       nombre: nombre.trim(),
+      description: descripcion.trim() || null,
       descripcion: descripcion.trim() || null,
+      careerScope: carreraId ? String(carreraId) : '1',
+      carreraId: carreraId ? Number(carreraId) : 1,
+      carrera_id: carreraId ? Number(carreraId) : 1,
+      labId: labId ? Number(labId) : (laboratorios[0]?.id || 1),
+      lab_id: labId ? Number(labId) : (laboratorios[0]?.id || 1)
     };
 
     if (categoriaId) {
-      const numCat = Number(categoriaId);
-      payload.categoriaId = numCat;
-      payload.categoria_id = numCat;
-    }
-
-    if (carreraId) {
-      const numCar = Number(carreraId);
-      payload.carreraId = numCar;
-      payload.carrera_id = numCar;
+      payload.categoriaId = Number(categoriaId);
     }
 
     try {
-      await activityService.crear(payload);
+      if (actividad && actividad.id) {
+        await activityService.actualizar(actividad.id, payload);
+      } else {
+        await activityService.crear(payload);
+      }
       onSuccess();
       onClose();
-      // Limpiar formulario tras éxito
-      setNombre('');
-      setDescripcion('');
-      setCategoriaId('');
-      setCarreraId('');
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        (typeof err.response?.data === 'string' ? err.response.data : null) ||
-        'Error al registrar la actividad en la base de datos';
+        'Error al procesar la actividad';
       setError(msg);
     } finally {
       setLoading(false);
@@ -118,7 +131,7 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
         <div className="flex justify-between items-center p-5 border-b border-slate-800 bg-slate-800/50">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Layers className="w-5 h-5 text-blue-400" />
-            Nueva Actividad Académica
+            {actividad ? 'Editar Actividad Académica' : 'Nueva Actividad Académica'}
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
@@ -146,27 +159,44 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Carrera Destino *
-            </label>
-            <select
-              required
-              value={carreraId}
-              onChange={(e) => setCarreraId(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
-            >
-              <option value="">Seleccione la carrera...</option>
-              {carreras.map((car: any) => {
-                const id = car.id || car.carrera_id || car.id_carrera;
-                const nombreCarrera = car.nombre || car.nombre_carrera || car.nombreCarrera;
-                return (
-                  <option key={id} value={id}>
-                    {nombreCarrera}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Carrera Destino *
+              </label>
+              <select
+                required
+                value={carreraId}
+                onChange={(e) => setCarreraId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Seleccione carrera...</option>
+                {carreras.map((car: any) => (
+                  <option key={car.id} value={car.id}>
+                    {car.nombre}
                   </option>
-                );
-              })}
-            </select>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Laboratorio *
+              </label>
+              <select
+                required
+                value={labId}
+                onChange={(e) => setLabId(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">Seleccione laboratorio...</option>
+                {laboratorios.map((lab: any) => (
+                  <option key={lab.id} value={lab.id}>
+                    {lab.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -178,23 +208,12 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
               onChange={(e) => setCategoriaId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
             >
-              <option value="">Seleccione una categoría (opcional)</option>
-              {categorias.map((cat: any) => {
-                const id = cat.id || cat.categoria_id || cat.id_categoria || cat.id_categoria_evento;
-                const nombreCategoria =
-                  cat.nombre ||
-                  cat.nombre_categoria ||
-                  cat.categoria ||
-                  cat.titulo ||
-                  cat.descripcion ||
-                  cat.name ||
-                  cat.label;
-                return (
-                  <option key={id} value={id}>
-                    {nombreCategoria}
-                  </option>
-                );
-              })}
+              <option value="">Seleccione categoría (opcional)</option>
+              {categorias.map((cat: any) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.nombre}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -224,7 +243,7 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess
               disabled={loading}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
-              {loading ? 'Guardando...' : 'Crear Actividad'}
+              {loading ? 'Guardando...' : actividad ? 'Guardar Cambios' : 'Crear Actividad'}
             </button>
           </div>
         </form>

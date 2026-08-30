@@ -1,70 +1,85 @@
 import { PrismaClient } from '@prisma/client';
 
-export async function seedEventos(prisma: PrismaClient, carreraInfoId: number, usuarioId: number) {
-  console.log('📅 Cargando datos del módulo de Categorías de Eventos y Actividades...');
+export async function seedEventos(prisma: PrismaClient, carreraInfoId: number, adminUserId: number) {
+  console.log('\n📅 Cargando datos del módulo de Categorías de Eventos y Actividades...');
 
-  // =========================================================================
-  // 1. CATEGORÍAS DE EVENTOS
-  // =========================================================================
   const categoriasData = [
     { nombre: 'Congreso', descripcion: 'Congresos científicos y académicos de gran envergadura' },
-    { nombre: 'Curso', descripcion: 'Cursos de capacitación y actualización tecnológica' },
-    { nombre: 'Seminario', descripcion: 'Seminarios especializados y conferencias magistrales' },
-    { nombre: 'Taller', descripcion: 'Talleres prácticos orientados al uso de laboratorios' }
+    { nombre: 'Seminario', descripcion: 'Seminarios y charlas magistrales' },
+    { nombre: 'Taller', descripcion: 'Talleres prácticos y capacitaciones' },
+    { nombre: 'Curso', descripcion: 'Cursos de corta y media duración' },
+    { nombre: 'Simposio', descripcion: 'Simposios y mesas redondas de debate' }
   ];
 
   const categoriasMap: Record<string, any> = {};
+
   for (const cat of categoriasData) {
-    const categoria = await (prisma as any).categoriaEvento.upsert({
-      where: { nombre: cat.nombre },
-      update: { descripcion: cat.descripcion },
-      create: {
+    let categoria = await (prisma as any).categoriaEvento.findFirst({
+      where: {
         nombre: cat.nombre,
-        descripcion: cat.descripcion,
         carreraId: carreraInfoId
       }
     });
+
+    if (!categoria) {
+      categoria = await (prisma as any).categoriaEvento.create({
+        data: {
+          nombre: cat.nombre,
+          descripcion: cat.descripcion,
+          carreraId: carreraInfoId
+        }
+      });
+    } else {
+      categoria = await (prisma as any).categoriaEvento.update({
+        where: { id: categoria.id },
+        data: { descripcion: cat.descripcion }
+      });
+    }
+
     categoriasMap[cat.nombre] = categoria;
   }
 
-  console.log('  └─ ✅ Categorías de eventos registradas.');
+  console.log(`  └─ ✅ ${Object.keys(categoriasMap).length} Categorías de eventos procesadas.`);
 
-  // =========================================================================
-  // 2. ACTIVIDADES (CURSO DE DOCKER Y CONGRESO CITREN)
-  // =========================================================================
+  // 2. ACTIVIDADES Y EVENTOS
+  const labBase = await prisma.laboratorio.findFirst();
+  const labId = labBase ? labBase.id : 1;
+
   const actividadesData = [
     {
-      titulo: 'Curso Práctico de Docker y Contenedores en Linux',
-      descripcion: 'Capacitación intensiva sobre virtualización ligera, despliegue de microservicios y contenedores para laboratorios de informática.',
-      categoria: 'Curso'
+      title: 'Curso Práctico de Docker y Contenedores en Linux',
+      description: 'Capacitación intensiva sobre virtualización ligera, despliegue de microservicios y contenedores para laboratorios de informática.'
     },
     {
-      titulo: 'CITREN 2026 - Congreso Internacional de Tecnologías de Redes y Ingeniería',
-      descripcion: 'Congreso anual que reúne a investigadores, docentes y estudiantes para debatir avances en computación paralela, redes y tecnologías emergentes.',
-      categoria: 'Congreso'
+      title: 'CITREN 2026 - Congreso Internacional de Tecnologías de Redes y Ingeniería',
+      description: 'Congreso anual que reúne a investigadores, docentes y estudiantes para debatir avances en computación paralela, redes y tecnologías emergentes.'
     }
   ];
 
   for (const act of actividadesData) {
-    const catObj = categoriasMap[act.categoria];
-    if (catObj) {
-      await (prisma as any).actividad.upsert({
-        where: { titulo: act.titulo },
-        update: {
-          descripcion: act.descripcion,
-          categoriaEventoId: catObj.id
-        },
-        create: {
-          titulo: act.titulo,
-          descripcion: act.descripcion,
-          categoriaEventoId: catObj.id,
-          carreraId: carreraInfoId,
-          creadoPorId: usuarioId,
-          estado: 'PUBLICADO'
+    let actividad = await prisma.activity.findFirst({
+      where: { title: act.title }
+    });
+
+    if (!actividad) {
+      await prisma.activity.create({
+        data: {
+          title: act.title,
+          description: act.description,
+          careerScope: carreraInfoId.toString(),
+          labId: labId
+        }
+      });
+    } else {
+      await prisma.activity.update({
+        where: { id: actividad.id },
+        data: {
+          description: act.description,
+          careerScope: carreraInfoId.toString()
         }
       });
     }
   }
 
-  console.log('  └─ ✅ Actividades institucionales (Curso de Docker y Congreso CITREN) cargadas con éxito.\n');
+  console.log('  └─ ✅ Actividades institucionales cargadas con éxito.\n');
 }

@@ -213,22 +213,44 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolDirectorCarrera.id,
       codigos: [
-        'materias:listar', 'materias:editar', 'planes_estudio:listar', 'horarios:listar',
-        'laboratorios:listar', 'laboratorios:ver_estado', 'fallas:crear', 'fallas:listar',
-        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:participantes_listar'
+        // Materias, Horarios y Planes
+        'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
+        'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
+        'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
+        
+        // Laboratorios y Uso
+        'laboratorios:listar', 'laboratorios:ver_estado', 'laboratorios:editar',
+        'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 'uso_laboratorios:eliminar',
+        'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
+        
+        // Actividades y Categorías (Permisos Totales)
+        'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
+        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
+        'actividades:participantes_listar', 'actividades:participantes_registrar',
+        'actividades:pagos_registrar', 'actividades:pagos_validar'
       ]
     },
     {
       rolId: rolJefe.id,
       codigos: [
-        'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:ver_estado',
+        // Laboratorios y Equipos
+        'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:eliminar', 'laboratorios:ver_estado',
         'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
-        'materias:crear', 'materias:listar', 'materias:editar',
-        'horarios:crear', 'horarios:listar', 'horarios:editar',
-        'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
-        'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar',
+        
+        // Materias, Horarios y Planes
+        'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
+        'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
         'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
-        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:participantes_listar'
+        
+        // Fallas y Uso
+        'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:eliminar', 'fallas:ver_reportes',
+        'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 'uso_laboratorios:eliminar',
+        
+        // Actividades y Categorías (Permisos Totales)
+        'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
+        'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
+        'actividades:participantes_listar', 'actividades:participantes_registrar',
+        'actividades:pagos_registrar', 'actividades:pagos_validar'
       ]
     },
     {
