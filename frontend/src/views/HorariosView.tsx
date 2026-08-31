@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { httpClient } from '../services/httpClient';
 import { horariosService } from '../services/horarios.service';
+import { useAuth } from '../context/AuthContext';
+import { ModalSolicitudExtraordinaria } from '../components/horarios/ModalSolicitudExtraordinaria';
 
 interface LaboratorioOption {
   id: number;
@@ -79,10 +81,22 @@ const timeToMinutes = (timeStr: string): number => {
 };
 
 export const HorariosView: React.FC = () => {
+  const { tienePermiso, user } = useAuth();
+  const [modalSolicitudAbierto, setModalSolicitudAbierto] = useState(false);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+
   const [horarios, setHorarios] = useState<any[]>([]);
   const [laboratorios, setLaboratorios] = useState<LaboratorioOption[]>([]);
   const [docentes, setDocentes] = useState<UsuarioOption[]>([]);
   const [materias, setMaterias] = useState<MateriaOption[]>([]);
+
+  const esDirectorOJefe = user?.rol
+    ? typeof user.rol === 'string'
+      ? user.rol.toLowerCase().includes('director') || user.rol.toLowerCase().includes('jefe') || user.rol.toLowerCase().includes('admin')
+      : String((user.rol as any).nombre || '').toLowerCase().includes('director') ||
+        String((user.rol as any).nombre || '').toLowerCase().includes('jefe') ||
+        String((user.rol as any).nombre || '').toLowerCase().includes('admin')
+    : false;
   
   // Estados para la búsqueda desplegable de materia
   const [busquedaMateria, setBusquedaMateria] = useState('');
@@ -310,14 +324,32 @@ export const HorariosView: React.FC = () => {
           <p className="text-xs uppercase tracking-[0.2em] text-blue-400">Académico</p>
           <h1 className="text-2xl font-bold">Horarios y Cronograma</h1>
         </div>
-        <button
-          type="button"
-          onClick={resetForm}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer"
-        >
-          {editId ? 'Cancelar edición' : 'Nuevo horario'}
-        </button>
+        <div className="flex items-center gap-3">
+          {tienePermiso('solicitudes:crear') && (
+            <button
+              type="button"
+              onClick={() => setModalSolicitudAbierto(true)}
+              className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 shadow-lg shadow-amber-900/20"
+            >
+              <span>⚡</span> Solicitar Horario Extraordinario
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={resetForm}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-colors"
+          >
+            {editId ? 'Cancelar edición' : 'Nuevo horario'}
+          </button>
+        </div>
       </div>
+
+      {mensajeExito && (
+        <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 flex justify-between items-center">
+          <span>✅ {mensajeExito}</span>
+          <button onClick={() => setMensajeExito(null)} className="text-emerald-400 font-bold">&times;</button>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -719,6 +751,17 @@ export const HorariosView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Asistente de Solicitud Extraordinaria */}
+      <ModalSolicitudExtraordinaria
+        isOpen={modalSolicitudAbierto}
+        onClose={() => setModalSolicitudAbierto(false)}
+        onSuccess={() => {
+          setMensajeExito('Solicitud de horario extraordinario enviada correctamente.');
+          void cargarDatos();
+        }}
+        esDirectorOJefe={esDirectorOJefe}
+      />
     </div>
   );
 };
