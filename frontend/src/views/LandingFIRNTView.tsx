@@ -1,8 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
+import { activityService } from '../services/activity.service';
+import fondoCitren from '../../media/imagenes/fondo-citren.jpeg';
+import httpClient from '../services/httpClient';
+
+interface IActividad {
+  id: string | number;
+  title: string;
+  description?: string;
+  bannerUrl?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  fecha?: string;
+}
+
+interface IConfigPago {
+  banco: string;
+  numeroCuenta: string;
+  nombreReceptor: string;
+  qrImagenUrl?: string;
+}
+
+interface IPreinscripcionPayload {
+  nombre: string;
+  apellido: string;
+  correo: string;
+  telefono: string;
+  tipo: string;
+  activityId: string | number;
+  codigoTransaccion: string;
+}
 
 export const LandingFIRNTView: React.FC = () => {
+  const [actividades, setActividades] = useState<IActividad[]>([]);
+  const [actividadSeleccionada, setActividadSeleccionada] = useState<IActividad | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [correo, setCorreo] = useState('');
@@ -11,38 +45,104 @@ export const LandingFIRNTView: React.FC = () => {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [numeroTransaccion, setNumeroTransaccion] = useState('');
-  const [configPago, setConfigPago] = useState<any>(null);
+  const [configPago, setConfigPago] = useState<IConfigPago | null>(null);
 
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    const cargarConfiguracion = async () => {
+    const cargarCatalogos = async () => {
       try {
-        const config = await EventoParticipanteService.obtenerConfiguracionPago();
-        setConfigPago(config);
+        const config = await (EventoParticipanteService as any).obtenerConfiguracionPago?.();
+        if (config) {
+          setConfigPago(config);
+        }
+
+        const listaActividades = await activityService.listar();
+        const items: IActividad[] = Array.isArray(listaActividades) ? listaActividades : [];
+        setActividades(items);
       } catch (err) {
-        console.error('Error al cargar configuración de pago:', err);
+        console.error('Error al cargar catálogos e información inicial:', err);
       }
     };
-    cargarConfiguracion();
+    cargarCatalogos();
   }, []);
+
+  // Filtrado de eventos vigentes por fecha
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const eventosVigentes = actividades.filter((act) => {
+    const fechaRef = act.fechaFin || act.fecha || act.fechaInicio;
+    if (!fechaRef) return true;
+    const fechaEvento = new Date(fechaRef);
+    return fechaEvento >= hoy;
+  });
+
+  const ultimosTresVigentes = eventosVigentes.slice(-3);
+
+  useEffect(() => {
+    if (ultimosTresVigentes.length > 0) {
+      if (!actividadSeleccionada || !ultimosTresVigentes.some((a) => a.id === actividadSeleccionada.id)) {
+        setActividadSeleccionada(ultimosTresVigentes[0]);
+        setCurrentIndex(0);
+      }
+    }
+  }, [actividades]);
+
+  const siguienteSlide = () => {
+    if (ultimosTresVigentes.length === 0) return;
+    const nuevoIndice = (currentIndex + 1) % ultimosTresVigentes.length;
+    setCurrentIndex(nuevoIndice);
+    setActividadSeleccionada(ultimosTresVigentes[nuevoIndice]);
+  };
+
+  const anteriorSlide = () => {
+    if (ultimosTresVigentes.length === 0) return;
+    const nuevoIndice = (currentIndex - 1 + ultimosTresVigentes.length) % ultimosTresVigentes.length;
+    setCurrentIndex(nuevoIndice);
+    setActividadSeleccionada(ultimosTresVigentes[nuevoIndice]);
+  };
+
+  const registrarPreinscripcion = async (payload: IPreinscripcionPayload) => {
+    const response = await httpClient.post('/evento-participantes', payload);
+    return response.data;
+  };
 
   const handleContinuarPago = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !apellido || !correo || !telefono) {
-      setErrorMsg('Por favor completa todos los campos obligatorios.');
+    if (!nombre || !apellido || !correo || !telefono || !actividadSeleccionada) {
+      setErrorMsg('Por favor completa todos los campos requeridos y selecciona un evento.');
       return;
     }
+
+    const fechaRef = actividadSeleccionada.fechaFin || actividadSeleccionada.fecha || actividadSeleccionada.fechaInicio;
+    if (fechaRef) {
+      const fechaEvento = new Date(fechaRef);
+      fechaEvento.setHours(23, 59, 59, 999);
+      if (fechaEvento < new Date()) {
+        setErrorMsg('No es posible realizar la preinscripción: la fecha de este evento ya ha expirado.');
+        return;
+      }
+    }
+
     setErrorMsg('');
     setModalAbierto(true);
   };
 
   const handleFinalizarPreinscripcion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!numeroTransaccion) {
-      setErrorMsg('Debes ingresar el número de comprobante/transacción.');
+    const codigoLimpio = numeroTransaccion.trim();
+
+    const regexTransaccion = /^\d{6,25}$/;
+    if (!regexTransaccion.test(codigoLimpio)) {
+      setErrorMsg('El número de comprobante o transacción debe contener exclusivamente dígitos numéricos (entre 6 y 25 caracteres).');
+      return;
+    }
+
+    if (!actividadSeleccionada) {
+      setErrorMsg('No hay una actividad seleccionada.');
       return;
     }
 
@@ -50,18 +150,20 @@ export const LandingFIRNTView: React.FC = () => {
     setErrorMsg('');
 
     try {
-      await EventoParticipanteService.registrar({
+      await registrarPreinscripcion({
         nombre,
         apellido,
         correo,
         telefono,
-        tipoParticipante,
-        numeroTransaccion,
+        tipo: tipoParticipante,
+        activityId: actividadSeleccionada.id,
+        codigoTransaccion: codigoLimpio,
       });
       setMensajeExito(true);
       setModalAbierto(false);
+      setNumeroTransaccion('');
     } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || 'Error al procesar la preinscripción.');
+      setErrorMsg(err?.response?.data?.message || err?.message || 'Error al procesar la preinscripción. Intenta nuevamente.');
     } finally {
       setCargando(false);
     }
@@ -69,22 +171,23 @@ export const LandingFIRNTView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between relative overflow-hidden">
-      {/* Marca de agua del fondo aclarada y ampliada */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+      {/* Fondo institucional CITREN 2026 con marca de agua */}
+      <div className="absolute inset-0 pointer-events-none opacity-5 flex items-center justify-center overflow-hidden z-0">
         <img
-          src="/media/imagenes/WhatsApp Image 2026-08-13 at 11.28.00 AM.jpeg"
-          alt="CITREN 2026 Watermark"
-          className="w-[85%] max-w-5xl object-contain opacity-20 filter contrast-125 transform rotate-[-5deg] scale-110 select-none"
+          src={fondoCitren}
+          alt="CITREN 2026 Background"
+          className="w-[120%] h-[120%] object-contain filter grayscale contrast-200"
+          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
         />
       </div>
 
-      <header className="w-full py-4 px-8 flex justify-between items-center border-b border-slate-800 bg-slate-950/70 backdrop-blur-md relative z-10">
+      <header className="w-full py-4 px-8 flex justify-between items-center border-b border-slate-800 bg-slate-950/80 backdrop-blur-md relative z-10">
         <div>
           <span className="text-xs uppercase tracking-widest text-emerald-400 font-semibold block">
             Universidad Autónoma Juan Misael Saracho
           </span>
           <h1 className="text-sm font-bold text-slate-200">
-            Facultad de Ingeniería de Recursos Naturales y Tecnologías
+            Facultad de Ingeniería de Recursos Naturales y Tecnologías — CITREN 2026
           </h1>
         </div>
         <Link
@@ -96,213 +199,277 @@ export const LandingFIRNTView: React.FC = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-10 w-full flex-grow flex flex-col gap-10 relative z-10">
-        <section className="bg-slate-800/60 backdrop-blur-md border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col md:flex-row gap-8 items-center">
-            <div className="flex-1 space-y-4">
-              <span className="bg-emerald-500/20 text-emerald-300 text-xs font-medium px-2.5 py-1 rounded-full border border-emerald-500/30">
-                CITREN 2026 · Evento Vigente
-              </span>
-              <h2 className="text-3xl font-extrabold tracking-tight text-white">
-                Congreso de Tecnologías e Ingeniería de Recursos Naturales
-              </h2>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                Participa en las ponencias magistrales, talleres especializados y accede a nuestras tutorías oficiales diseñadas para potenciar tu perfil profesional.
-              </p>
-              <div className="flex gap-3 pt-2">
-                <span className="text-xs bg-slate-700/60 px-3 py-1.5 rounded text-slate-300 border border-slate-700">
-                  📅 15 - 18 de Agosto
-                </span>
-                <span className="text-xs bg-slate-700/60 px-3 py-1.5 rounded text-slate-300 border border-slate-700">
-                  📍 Campus Yacuiba
-                </span>
-              </div>
-            </div>
-
-            {/* Publicidad Oficial con el Banner */}
-            <div className="w-full md:w-80 h-52 rounded-xl overflow-hidden shadow-xl relative border border-slate-700/80 group">
-              <img
-                src="/media/imagenes/WhatsApp Image 2026-08-13 at 11.28.00 AM.jpeg"
-                alt="Publicidad Oficial CITREN 2026"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-bold px-2 py-1 rounded border border-emerald-500/40 uppercase tracking-wider">
-                Publicidad Oficial
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-slate-800/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto w-full shadow-2xl">
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-bold text-white">Registro de Participantes</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Completa tus datos personales para avanzar a la verificación de pago.
+        {ultimosTresVigentes.length === 0 ? (
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-800 rounded-2xl p-10 text-center space-y-3 shadow-2xl">
+            <h2 className="text-xl font-bold text-white">No hay eventos vigentes disponibles</h2>
+            <p className="text-slate-400 text-sm">
+              En este momento no se encuentran actividades o congresos activos para preinscripción. Por favor, vuelve más tarde.
             </p>
           </div>
-
-          {mensajeExito ? (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-4 rounded-xl text-center space-y-2">
-              <p className="font-bold">¡Preinscripción realizada con éxito!</p>
-              <p className="text-xs text-slate-300">
-                Tu registro ha sido recibido correctamente y se encuentra pendiente de verificación de pago.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleContinuarPago} className="space-y-4">
-              {errorMsg && (
-                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded text-xs text-center">
-                  {errorMsg}
+        ) : (
+          <>
+            {/* Carrusel de Eventos / CITREN 2026 con Fondo Promocional */}
+            {actividadSeleccionada && (
+              <section className="bg-slate-800/70 backdrop-blur-md border border-slate-700/80 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                {/* Fondo sutil del logotipo CITREN dentro de la tarjeta */}
+                <div className="absolute right-0 bottom-0 w-96 h-96 opacity-10 pointer-events-none transform translate-x-1/4 translate-y-1/4">
+                  <img src="../../media/imagenes/CITREN-logo.jpeg" alt="Watermark" className="w-full h-full object-contain" />
                 </div>
+
+                <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="bg-emerald-500/20 text-emerald-300 text-xs font-medium px-2.5 py-1 rounded-full border border-emerald-500/30">
+                        CITREN 2026 — Vigente ({currentIndex + 1} de {ultimosTresVigentes.length})
+                      </span>
+                      {actividadSeleccionada.fechaFin || actividadSeleccionada.fecha || actividadSeleccionada.fechaInicio ? (
+                        <span className="text-xs text-slate-300 font-mono bg-slate-900/60 px-2 py-1 rounded border border-slate-700">
+                          📅 {actividadSeleccionada.fechaFin || actividadSeleccionada.fecha || actividadSeleccionada.fechaInicio}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <h2 className="text-3xl font-extrabold tracking-tight text-white">
+                      {actividadSeleccionada.title}
+                    </h2>
+                    <p className="text-slate-300 text-sm leading-relaxed">
+                      {actividadSeleccionada.description || 'Participa en el 1er Congreso Internacional de Tecnología y Recursos Naturales.'}
+                    </p>
+
+                    {ultimosTresVigentes.length > 1 && (
+                      <div className="flex items-center gap-3 pt-2">
+                        <button
+                          onClick={anteriorSlide}
+                          className="bg-slate-900/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded text-xs transition-colors cursor-pointer shadow"
+                        >
+                          ← Anterior
+                        </button>
+                        <button
+                          onClick={siguienteSlide}
+                          className="bg-slate-900/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded text-xs transition-colors cursor-pointer shadow"
+                        >
+                          Siguiente →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Banner / Afiche con la imagen publicitaria del congreso */}
+                  <div className="w-full md:w-80 h-52 rounded-xl overflow-hidden shadow-xl relative border border-slate-700/90 group bg-slate-950 shrink-0">
+                    <img
+                      src={actividadSeleccionada.bannerUrl || '../../media/imagenes/fondo-citren.jpeg'}
+                      alt={actividadSeleccionada.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-bold px-2 py-1 rounded border border-emerald-500/40 uppercase tracking-wider">
+                      Afiche Oficial CITREN
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Formulario de Preinscripción */}
+            <section className="bg-slate-800/60 backdrop-blur-md border border-slate-700/80 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto w-full shadow-2xl relative">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-white">Preinscripción — CITREN 2026</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Selecciona el evento vigente e ingresa tus datos completos para la confirmación y certificado del congreso.
+                </p>
+              </div>
+
+              {mensajeExito ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-6 rounded-xl text-center space-y-3">
+                  <p className="font-bold text-lg">¡Preinscripción realizada con éxito!</p>
+                  <p className="text-xs text-slate-300">
+                    Tu registro al congreso fue recibido correctamente. El equipo administrativo verificará tu transacción.
+                  </p>
+                  <button
+                    onClick={() => setMensajeExito(false)}
+                    className="mt-2 text-xs text-emerald-400 underline hover:text-emerald-300 cursor-pointer"
+                  >
+                    Realizar otra inscripción
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleContinuarPago} className="space-y-4">
+                  {errorMsg && (
+                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded text-xs text-center">
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Seleccionar Evento / Congreso Vigente *</label>
+                    <select
+                      value={actividadSeleccionada?.id || ''}
+                      onChange={(e) => {
+                        const act = eventosVigentes.find((a) => String(a.id) === e.target.value);
+                        if (act) {
+                          setActividadSeleccionada(act);
+                          const idx = ultimosTresVigentes.findIndex((a) => a.id === act.id);
+                          if (idx !== -1) setCurrentIndex(idx);
+                        }
+                      }}
+                      className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                    >
+                      {eventosVigentes.length === 0 ? (
+                        <option value="" disabled>No hay eventos vigentes disponibles</option>
+                      ) : (
+                        eventosVigentes.map((act) => (
+                          <option key={act.id} value={act.id}>
+                            {act.title} {act.fechaFin || act.fecha || act.fechaInicio ? `(📅 ${act.fechaFin || act.fecha || act.fechaInicio})` : ''}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">Nombres *</label>
+                      <input
+                        type="text"
+                        required
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
+                        placeholder="Ej. Juan Carlos"
+                        className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">Apellidos *</label>
+                      <input
+                        type="text"
+                        required
+                        value={apellido}
+                        onChange={(e) => setApellido(e.target.value)}
+                        placeholder="Ej. Pérez Baldiviezo"
+                        className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">Correo Electrónico *</label>
+                      <input
+                        type="email"
+                        required
+                        value={correo}
+                        onChange={(e) => setCorreo(e.target.value)}
+                        placeholder="usuario@uajms.edu.bo"
+                        className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300 mb-1">Teléfono / WhatsApp *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={telefono}
+                        onChange={(e) => setTelefono(e.target.value)}
+                        placeholder="70000000"
+                        className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Tipo de Participante</label>
+                    <select
+                      value={tipoParticipante}
+                      onChange={(e) => setTipoParticipante(e.target.value)}
+                      className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="ESTUDIANTE">Estudiante</option>
+                      <option value="PROFESIONAL">Profesional</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded text-sm transition-colors shadow-lg shadow-emerald-900/20 cursor-pointer"
+                  >
+                    Continuar a Verificación de Pago →
+                  </button>
+                </form>
               )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Nombre</label>
-                  <input
-                    type="text"
-                    required
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    placeholder="Ej. Juan"
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Apellido</label>
-                  <input
-                    type="text"
-                    required
-                    value={apellido}
-                    onChange={(e) => setApellido(e.target.value)}
-                    placeholder="Ej. Pérez"
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Correo Electrónico</label>
-                  <input
-                    type="email"
-                    required
-                    value={correo}
-                    onChange={(e) => setCorreo(e.target.value)}
-                    placeholder="correo@uajms.edu.bo"
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Teléfono / WhatsApp</label>
-                  <input
-                    type="tel"
-                    required
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="70000000"
-                    className="w-full bg-slate-900/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">Tipo de Participante</label>
-                <select
-                  value={tipoParticipante}
-                  onChange={(e) => setTipoParticipante(e.target.value)}
-                  className="w-full bg-slate-900/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
-                >
-                  <option value="ESTUDIANTE">Estudiante</option>
-                  <option value="PROFESIONAL">Profesional</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded text-sm transition-colors shadow-lg shadow-emerald-900/20 cursor-pointer"
-              >
-                Continuar al Pago →
-              </button>
-            </form>
-          )}
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
-      {/* Modal de Validación de Pago */}
+      {/* Modal de Confirmación de Pago */}
       {modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 relative">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h4 className="font-bold text-slate-100 text-base">Validación de Pago del Evento</h4>
-              <button
-                onClick={() => setModalAbierto(false)}
-                className="text-slate-400 hover:text-white text-sm"
-              >
+              <h4 className="font-bold text-slate-100 text-sm">Resumen de Inscripción & Pago — CITREN</h4>
+              <button onClick={() => setModalAbierto(false)} className="text-slate-400 hover:text-white text-xs cursor-pointer">
                 ✕
               </button>
             </div>
 
+            <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <img
+                src={actividadSeleccionada?.bannerUrl || '/media/imagenes/default-banner.jpeg'}
+                alt="Miniatura"
+                className="w-16 h-16 object-cover rounded-lg border border-slate-700 shrink-0"
+              />
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold text-white truncate">{actividadSeleccionada?.title}</p>
+                <p className="text-[11px] text-slate-400 truncate">{nombre} {apellido}</p>
+                <p className="text-[10px] text-emerald-400 font-mono truncate">{correo}</p>
+              </div>
+            </div>
+
             {configPago && (
-              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Banco:</span>
-                  <span className="font-medium text-slate-200">{configPago.banco}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">N° Cuenta:</span>
-                  <span className="font-medium text-slate-200">{configPago.numeroCuenta}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Titular:</span>
-                  <span className="font-medium text-slate-200">{configPago.nombreReceptor}</span>
-                </div>
+              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+                <div className="flex justify-between"><span className="text-slate-400">Banco:</span><span className="font-medium text-slate-200">{configPago.banco}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">N° Cuenta:</span><span className="font-medium text-slate-200">{configPago.numeroCuenta}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Titular:</span><span className="font-medium text-slate-200">{configPago.nombreReceptor}</span></div>
                 {configPago.qrImagenUrl && (
                   <div className="flex justify-center pt-2">
-                    <img
-                      src={configPago.qrImagenUrl}
-                      alt="QR de Pago"
-                      className="w-36 h-36 object-contain rounded border border-slate-700"
-                    />
+                    <img src={configPago.qrImagenUrl} alt="QR de Pago" className="w-28 h-28 object-contain rounded border border-slate-700" />
                   </div>
                 )}
               </div>
             )}
 
-            <form onSubmit={handleFinalizarPreinscripcion} className="space-y-4">
+            <form onSubmit={handleFinalizarPreinscripcion} className="space-y-3">
+              {errorMsg && (
+                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2 rounded text-xs text-center">
+                  {errorMsg}
+                </div>
+              )}
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
-                  N° de Comprobante / Transacción
-                </label>
+                <label className="block text-xs font-medium text-slate-300 mb-1">N° de Comprobante / Nro. Documento *</label>
                 <input
                   type="text"
                   required
                   value={numeroTransaccion}
                   onChange={(e) => setNumeroTransaccion(e.target.value)}
-                  placeholder="Ej. 98451236"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                  placeholder="Ej. 5718439691"
+                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
                 />
+                <span className="text-[10px] text-slate-500 mt-1 block">Ingrese el número de documento o transacción del comprobante móvil (solo dígitos).</span>
               </div>
 
-              {errorMsg && (
-                <p className="text-xs text-rose-400">{errorMsg}</p>
-              )}
-
-              <div className="flex gap-3">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setModalAbierto(false)}
-                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded text-xs transition-colors"
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded text-xs transition-colors cursor-pointer"
                 >
-                  Cancelar
+                  Modificar Datos
                 </button>
                 <button
                   type="submit"
                   disabled={cargando}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-medium transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  {cargando ? 'Procesando...' : 'Finalizar Preinscripción'}
+                  {cargando ? 'Procesando...' : 'Confirmar Preinscripción'}
                 </button>
               </div>
             </form>
@@ -311,8 +478,10 @@ export const LandingFIRNTView: React.FC = () => {
       )}
 
       <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-800/60 relative z-10 bg-slate-950/50">
-        Sistema de Gestión de Laboratorios y Eventos — UAJMS FIRNT Yacuiba
+        1er Congreso Internacional de Tecnología y Recursos Naturales (CITREN 2026) — UAJMS FIRNT Yacuiba
       </footer>
     </div>
   );
 };
+
+export default LandingFIRNTView;

@@ -290,7 +290,7 @@ export const CategoriasEventosView: React.FC = () => {
         onClose={() => setIsModalDeleteOpen(false)}
         onConfirmar={handleConfirmarEliminar}
         titulo="Eliminar Categoría"
-        mensaje={`¿Está seguro de eliminar la categoría "${categoriaAEliminar?.nombre}"?`}
+        mensaje={`¿Está seguro de eliminar la categoría "${categoriaAEliminar?.nombre || ''}"?`}
       />
     </div>
   );

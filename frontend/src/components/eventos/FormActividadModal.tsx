@@ -81,7 +81,7 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
     };
 
     fetchCatalogos();
-  }, [isOpen, actividad]);
+  }, [isOpen, actividad?.id]);
 
   if (!isOpen) return null;
 
@@ -102,8 +102,9 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
       lab_id: labId ? Number(labId) : (laboratorios[0]?.id || 1)
     };
 
-    if (categoriaId) {
-      payload.categoriaId = Number(categoriaId);
+    if (categoriaId !== '') {
+      payload.categoriaId = categoriaId ? Number(categoriaId) : null;
+      payload.categoria_id = categoriaId ? Number(categoriaId) : null;
     }
 
     try {
@@ -251,3 +252,4 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
     </div>
   );
 };
+export default FormActividadModal;

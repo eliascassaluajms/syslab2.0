@@ -1,19 +1,30 @@
 import { httpClient } from './httpClient';
-import { EventoPaymentConfig, RegistrarParticipanteDTO, EventoParticipante } from '../interfaces/eventoParticipante.interface';
 
 export const EventoParticipanteService = {
-  async obtenerConfiguracionPago(): Promise<EventoPaymentConfig> {
-    const response = await httpClient.get('/evento/pago-config');
-    return response.data.data;
+  async listar() {
+    const { data } = await httpClient.get('/evento-participantes');
+    return data;
   },
 
-  async registrar(data: RegistrarParticipanteDTO): Promise<EventoParticipante> {
-    const response = await httpClient.post('/evento/registro', data);
-    return response.data.data;
+  async actualizar(id: string, datos: any) {
+    const { data } = await httpClient.put(`/evento-participantes/${id}`, datos);
+    return data;
   },
 
-  async listarParticipantes(): Promise<EventoParticipante[]> {
-    const response = await httpClient.get('/evento/participantes');
-    return response.data.data;
+  async eliminar(id: string) {
+    const { data } = await httpClient.delete(`/evento-participantes/${id}`);
+    return data;
+  },
+
+  async validarPago(id: string, estado: string, observaciones?: string) {
+    const { data } = await httpClient.patch(`/evento-participantes/${id}/validar-pago`, { estado, observaciones });
+    return data;
+  },
+
+  async subirComprobante(id: string, formData: FormData) {
+    const { data } = await httpClient.post(`/evento-participantes/${id}/comprobante`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
   }
 };

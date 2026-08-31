@@ -18,6 +18,8 @@ import { LaboratoriosView } from '../views/LaboratoriosView';
 import { PlanesMateriasView } from '../views/PlanesMateriasView';
 import { CategoriasEventosView } from '../views/CategoriasEventosView';
 import ActivitiesView from '../views/ActivitiesView';
+import { ParticipantesView } from '../views/ParticipantesView';
+import { ValidacionPagosView } from '../views/ValidacionPagosView';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -51,6 +53,8 @@ export const AppRoutes: React.FC = () => {
               <Route index element={<Navigate to="/admin/actividades/categorias" replace />} />
               <Route path="categorias" element={<CategoriasEventosView />} />
               <Route path="gestion" element={<ActivitiesView />} />
+              <Route path="participantes" element={<ParticipantesView />} />
+              <Route path="pagos" element={<ValidacionPagosView />} />
             </Route>
           </Route>
 
