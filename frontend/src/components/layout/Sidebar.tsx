@@ -63,9 +63,15 @@ const menuConfig: MenuItem[] = [
       },
       {
         titulo: 'Bitácora de Uso',
-        ruta: '/admin/uso-laboratorios',
-        icono: '📖',
-        permiso: 'uso_laboratorios:listar',
+        ruta: '/admin/bitacoras',
+        icono: '📋',
+        permiso: ['uso_laboratorios:listar', 'bitacora:consultar'],
+      },
+      {
+        titulo: 'Horarios Extraordinarios',
+        ruta: '/admin/solicitudes-extraordinarias',
+        icono: '⏱️',
+        permiso: ['solicitudes:listar', 'solicitudes:crear'],
       },
       {
         titulo: 'Gestión de Incidencias',

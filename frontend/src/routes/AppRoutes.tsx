@@ -52,7 +52,9 @@ export const AppRoutes: React.FC = () => {
             <Route path="roles" element={<GestionRolesView />} />
             <Route path="laboratorios" element={<LaboratoriosView />} />
             <Route path="horarios" element={<HorariosView />} />
+            <Route path="solicitudes-extraordinarias" element={<HorariosView />} />
             <Route path="bitacoras" element={<HistorialBitacorasView />} />
+            <Route path="uso-laboratorios" element={<HistorialBitacorasView />} />
             
             {/* Actividades y Eventos */}
             <Route path="actividades">

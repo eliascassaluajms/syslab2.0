@@ -14,24 +14,30 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // URL que codificará el QR para el escaneo móvil
   const urlAsistencia = `${window.location.origin}/asistencia/${sesion.tokenQR}`;
 
-  // Polling en tiempo real para refrescar el conteo de alumnos cada 4 segundos
   useEffect(() => {
+    let activo = true;
+
     const cargarAsistentes = async () => {
       try {
         const data = await bitacoraService.obtenerAsistentesSesion(sesion.id);
-        setAsistentesCount(data.total || 0);
-        setListaAsistentes(data.asistentes || []);
+        if (activo) {
+          setAsistentesCount(data.total || (data.asistentes ? data.asistentes.length : 0));
+          setListaAsistentes(data.asistentes || []);
+        }
       } catch (err: unknown) {
-        console.error('Error al actualizar lista de asistentes', err);
+        console.error('Error al actualizar asistentes:', err);
       }
     };
 
     void cargarAsistentes();
     const interval = setInterval(cargarAsistentes, 4000);
-    return () => clearInterval(interval);
+
+    return () => {
+      activo = false;
+      clearInterval(interval);
+    };
   }, [sesion.id]);
 
   const handleFinalizar = async (e: React.FormEvent) => {
@@ -56,7 +62,6 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white max-w-6xl mx-auto my-6 shadow-2xl">
-      {/* Encabezado */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-4 mb-6">
         <div>
           <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-full">
@@ -73,9 +78,7 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
         </div>
       </div>
 
-      {/* Grid Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Columna Izquierda: Proyección de QR y Contador */}
         <div className="lg:col-span-5 bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center text-center">
           <p className="text-sm font-medium text-slate-300 mb-4">
             Escanee el código QR para registrar su asistencia
@@ -85,7 +88,6 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
             <QRCodeSVG includeMargin={true} level="H" size={220} value={urlAsistencia} />
           </div>
 
-          {/* Badge Contador en Tiempo Real */}
           <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between mt-2">
             <span className="text-xs text-slate-400">Estudiantes Registrados:</span>
             <span className="text-2xl font-bold text-emerald-400 font-mono animate-pulse">
@@ -94,7 +96,6 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
           </div>
         </div>
 
-        {/* Columna Derecha: Formulario de Prácticas y Cierre */}
         <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
           <form onSubmit={handleFinalizar} className="space-y-4">
             <div>
@@ -116,7 +117,6 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
               </div>
             )}
 
-            {/* Listado Rápido de Asistentes */}
             <div>
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                 Últimos Asistentes Confirmados
@@ -146,7 +146,7 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Finalizando...' : 'Finalizar y Guardar Bitácora'}
             </button>
