@@ -17,6 +17,7 @@ import activityRoutes from './routes/activity.routes.js';
 import eventoRoutes from './routes/evento.routes.js';
 import eventoPaymentConfigRoutes from './routes/eventoPaymentConfig.routes.js';
 import eventoParticipanteRoutes from './routes/eventoParticipante.routes.js';
+import horarioRoutes from './routes/horarios.routes.js';
 
 const app: Application = express();
 
@@ -61,6 +62,7 @@ app.use('/api/equipos', equiposRoutes);
 app.use('/api/incidencias', incidenciasRoutes);
 app.use('/api/planes-estudio', planEstudioRouter);
 app.use('/api/materias', materiaRouter);
+app.use('/api/horarios', horarioRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/evento', eventoRoutes);
 

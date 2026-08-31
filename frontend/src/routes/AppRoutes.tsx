@@ -16,6 +16,7 @@ import { UsuariosView } from '../views/UsuariosView';
 import { GestionRolesView } from '../views/GestionRolesView';
 import { LaboratoriosView } from '../views/LaboratoriosView';
 import { PlanesMateriasView } from '../views/PlanesMateriasView';
+import { HorariosView } from '../views/HorariosView';
 import { CategoriasEventosView } from '../views/CategoriasEventosView';
 import ActivitiesView from '../views/ActivitiesView';
 import { ParticipantesView } from '../views/ParticipantesView';
@@ -47,6 +48,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="usuarios" element={<UsuariosView />} />
             <Route path="roles" element={<GestionRolesView />} />
             <Route path="laboratorios" element={<LaboratoriosView />} />
+            <Route path="horarios" element={<HorariosView />} />
             
             {/* Actividades y Eventos */}
             <Route path="actividades">
@@ -62,6 +64,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/usuarios" element={<UsuariosView />} />
           <Route path="/roles" element={<GestionRolesView />} />
           <Route path="/laboratorios" element={<LaboratoriosView />} />
+          <Route path="/horarios" element={<HorariosView />} />
           <Route path="/activities" element={<ActivitiesView />} />
           <Route path="/admin/planes-materias" element={<PlanesMateriasView />} />
           <Route path="/admin/actividades" element={<Navigate to="/admin/actividades/categorias" replace />} />

@@ -187,6 +187,8 @@ model Horario {
   diaSemana     String   @map("dia_semana") // 'Lunes', 'Martes', 'Miércoles', etc.
   horaInicio    String   @map("hora_inicio") @db.VarChar(10) // Formato "HH:MM"
   horaFin       String   @map("hora_fin") @db.VarChar(10)       // Formato "HH:MM"
+  grupo         Int      @default(1)
+  totalGrupos   Int      @default(1) @map("total_grupos")
   semestre      Int
   gestion       Int      // Ej: 2026
 
@@ -194,6 +196,8 @@ model Horario {
   materia       Materia     @relation(fields: [materiaId], references: [id], onDelete: Cascade)
   docente       Usuario     @relation("HorariosDocente", fields: [docenteId], references: [id], onDelete: Cascade)
 
+  @@index([laboratorioId, diaSemana, horaInicio, horaFin])
+  @@index([docenteId, diaSemana, horaInicio, horaFin])
   @@map("horarios")
 }
 
