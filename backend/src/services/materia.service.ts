@@ -44,6 +44,19 @@ export class MateriaService {
     });
   }
 
+  async listarTodas() {
+    return await prisma.materia.findMany({
+      include: {
+        planEstudio: {
+          include: {
+            carrera: { select: { id: true, nombre: true } },
+          },
+        },
+      },
+      orderBy: [{ nombre: 'asc' }],
+    });
+  }
+
   async obtenerPorId(id: number) {
     const materia = await prisma.materia.findUnique({
       where: { id },

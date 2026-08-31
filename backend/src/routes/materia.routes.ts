@@ -8,6 +8,12 @@ const router = Router();
 
 router.use(verificarJWT);
 
+router.get(
+  '/', 
+  requirePermission('materias:listar'), 
+  materiaController.listarTodas
+);
+
 router.post(
   '/', 
   requirePermission('materias:crear'), 

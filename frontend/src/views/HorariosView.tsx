@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { httpClient } from '../services/httpClient';
 import { horariosService } from '../services/horarios.service';
 
@@ -13,6 +13,23 @@ interface UsuarioOption {
   nombre: string;
   apellido?: string;
   correo?: string;
+}
+
+interface MateriaOption {
+  id: number;
+  nombre: string;
+  codigo?: string;
+  sigla?: string;
+  planEstudio?: {
+    id: number;
+    codigo?: string;
+    descripcion?: string;
+    nombre?: string;
+    carrera?: {
+      nombre?: string;
+      sigla?: string;
+    };
+  };
 }
 
 interface HorarioForm {
@@ -45,25 +62,41 @@ export const HorariosView: React.FC = () => {
   const [horarios, setHorarios] = useState<any[]>([]);
   const [laboratorios, setLaboratorios] = useState<LaboratorioOption[]>([]);
   const [docentes, setDocentes] = useState<UsuarioOption[]>([]);
+  const [materias, setMaterias] = useState<MateriaOption[]>([]);
+  
+  // Estados para la búsqueda desplegable de materia
+  const [busquedaMateria, setBusquedaMateria] = useState('');
+  const [dropdownMateriaAbierto, setDropdownMateriaAbierto] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [form, setForm] = useState<HorarioForm>(emptyForm);
   const [editId, setEditId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Carga de datos extendida
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [resHorarios, resLabs, resUsuarios] = await Promise.all([
+      const [resHorarios, resLabs, resUsuarios, resMaterias] = await Promise.all([
         horariosService.listar(),
         httpClient.get('/laboratorios'),
         httpClient.get('/usuarios'),
+        httpClient.get('/materias'),
       ]);
 
       setHorarios(Array.isArray(resHorarios) ? resHorarios : resHorarios?.data || []);
       setLaboratorios(Array.isArray(resLabs.data?.data) ? resLabs.data.data : resLabs.data?.data || []);
       setDocentes(Array.isArray(resUsuarios.data?.data) ? resUsuarios.data.data : resUsuarios.data?.data || []);
+      
+      const listaMaterias = Array.isArray(resMaterias.data?.data?.materias)
+        ? resMaterias.data.data.materias
+        : (Array.isArray(resMaterias.data?.data) 
+            ? resMaterias.data.data 
+            : (Array.isArray(resMaterias.data) ? resMaterias.data : []));
+      setMaterias(listaMaterias);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'No se pudo cargar la información de horarios.');
+      setError(err.response?.data?.message || 'No se pudo cargar la información.');
     } finally {
       setLoading(false);
     }
@@ -71,6 +104,15 @@ export const HorariosView: React.FC = () => {
 
   useEffect(() => {
     void cargarDatos();
+
+    // Cerrar dropdown al hacer click fuera
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownMateriaAbierto(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleChange = (field: keyof HorarioForm, value: string | number) => {
@@ -80,11 +122,37 @@ export const HorariosView: React.FC = () => {
   const resetForm = () => {
     setEditId(null);
     setForm(emptyForm);
+    setBusquedaMateria('');
+  };
+
+  // Filtrado de materias dinámico por Nombre, Sigla o Plan
+  const materiasFiltradas = materias.filter((mat) => {
+    const query = busquedaMateria.toLowerCase();
+    const nombre = (mat.nombre || '').toLowerCase();
+    const sigla = (mat.codigo || mat.sigla || '').toLowerCase();
+    const plan = (mat.planEstudio?.codigo || mat.planEstudio?.descripcion || mat.planEstudio?.nombre || '').toLowerCase();
+    return nombre.includes(query) || sigla.includes(query) || plan.includes(query);
+  });
+
+  const handleSelectMateria = (materia: MateriaOption) => {
+    handleChange('materiaId', materia.id);
+    const code = materia.codigo || materia.sigla;
+    const planText = materia.planEstudio?.descripcion || materia.planEstudio?.codigo || materia.planEstudio?.nombre;
+    const label = `${code ? `[${code}] ` : ''}${materia.nombre}${
+      planText ? ` (${planText})` : ''
+    }`;
+    setBusquedaMateria(label);
+    setDropdownMateriaAbierto(false);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+
+    if (!form.materiaId) {
+      setError('Por favor selecciona una materia válida de la lista.');
+      return;
+    }
 
     try {
       const payload = {
@@ -127,6 +195,20 @@ export const HorariosView: React.FC = () => {
       grupo: Number(horario.grupo || 1),
       totalGrupos: Number(horario.totalGrupos || 1),
     });
+
+    if (horario.materia) {
+      const mat = horario.materia;
+      const code = mat.codigo || mat.sigla;
+      setBusquedaMateria(`${code ? `[${code}] ` : ''}${mat.nombre}`);
+    } else {
+      const mat = materias.find((m) => m.id === Number(horario.materiaId));
+      if (mat) {
+        const code = mat.codigo || mat.sigla;
+        setBusquedaMateria(`${code ? `[${code}] ` : ''}${mat.nombre}`);
+      } else {
+        setBusquedaMateria('');
+      }
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -150,7 +232,7 @@ export const HorariosView: React.FC = () => {
         <button
           type="button"
           onClick={resetForm}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold"
+          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer"
         >
           {editId ? 'Cancelar edición' : 'Nuevo horario'}
         </button>
@@ -172,7 +254,7 @@ export const HorariosView: React.FC = () => {
               <select
                 value={form.laboratorioId || ''}
                 onChange={(e) => handleChange('laboratorioId', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500 cursor-pointer"
               >
                 <option value="">Seleccionar laboratorio</option>
                 {laboratorios.map((lab) => (
@@ -186,7 +268,7 @@ export const HorariosView: React.FC = () => {
               <select
                 value={form.docenteId || ''}
                 onChange={(e) => handleChange('docenteId', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500 cursor-pointer"
               >
                 <option value="">Seleccionar docente</option>
                 {docentes.map((docente) => (
@@ -197,24 +279,61 @@ export const HorariosView: React.FC = () => {
               </select>
             </label>
 
-            <label className="text-sm text-gray-300">
-              Materia ID
+            {/* Selector Buscable de Materia */}
+            <div className="relative text-sm text-gray-300" ref={dropdownRef}>
+              <label className="block mb-1">Materia y Plan</label>
               <input
-                type="number"
-                min={1}
-                value={form.materiaId || ''}
-                onChange={(e) => handleChange('materiaId', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
-                placeholder="Ej. 12"
+                type="text"
+                value={busquedaMateria}
+                onFocus={() => setDropdownMateriaAbierto(true)}
+                onChange={(e) => {
+                  setBusquedaMateria(e.target.value);
+                  setDropdownMateriaAbierto(true);
+                  if (form.materiaId) handleChange('materiaId', 0);
+                }}
+                placeholder="Buscar por nombre, sigla o plan..."
+                className="w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
-            </label>
+
+              {dropdownMateriaAbierto && (
+                <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-gray-800 bg-gray-950 shadow-2xl">
+                  {materiasFiltradas.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-gray-400">No se encontraron materias</div>
+                  ) : (
+                    materiasFiltradas.map((materia) => {
+                      const code = materia.codigo || materia.sigla;
+                      const planText = materia.planEstudio?.descripcion || materia.planEstudio?.codigo || materia.planEstudio?.nombre;
+                      return (
+                        <button
+                          key={materia.id}
+                          type="button"
+                          onClick={() => handleSelectMateria(materia)}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-blue-600/20 hover:text-blue-300 border-b border-gray-900 last:border-none transition-colors cursor-pointer"
+                        >
+                          <div className="font-semibold text-white">
+                            {code && <span className="text-blue-400 mr-1.5">[{code}]</span>}
+                            {materia.nombre}
+                          </div>
+                          {materia.planEstudio && (
+                            <div className="text-[11px] text-gray-400 mt-0.5">
+                              Plan: {planText || 'General'} 
+                              {materia.planEstudio.carrera?.sigla || materia.planEstudio.carrera?.nombre ? ` - ${materia.planEstudio.carrera.sigla || materia.planEstudio.carrera.nombre}` : ''}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
 
             <label className="text-sm text-gray-300">
               Día
               <select
                 value={form.diaSemana}
                 onChange={(e) => handleChange('diaSemana', e.target.value)}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500 cursor-pointer"
               >
                 {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((dia) => (
                   <option key={dia} value={dia}>{dia}</option>
@@ -228,7 +347,7 @@ export const HorariosView: React.FC = () => {
                 type="time"
                 value={form.horaInicio}
                 onChange={(e) => handleChange('horaInicio', e.target.value)}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </label>
 
@@ -238,7 +357,7 @@ export const HorariosView: React.FC = () => {
                 type="time"
                 value={form.horaFin}
                 onChange={(e) => handleChange('horaFin', e.target.value)}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </label>
 
@@ -249,7 +368,7 @@ export const HorariosView: React.FC = () => {
                 min={1}
                 value={form.semestre}
                 onChange={(e) => handleChange('semestre', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </label>
 
@@ -260,7 +379,7 @@ export const HorariosView: React.FC = () => {
                 min={2020}
                 value={form.gestion}
                 onChange={(e) => handleChange('gestion', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </label>
 
@@ -271,7 +390,7 @@ export const HorariosView: React.FC = () => {
                 min={1}
                 value={form.grupo}
                 onChange={(e) => handleChange('grupo', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </label>
 
@@ -282,14 +401,14 @@ export const HorariosView: React.FC = () => {
                 min={1}
                 value={form.totalGrupos}
                 onChange={(e) => handleChange('totalGrupos', Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white"
+                className="mt-1 w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2 text-white focus:outline-none focus:border-blue-500"
               />
             </label>
           </div>
 
           <button
             type="submit"
-            className="mt-5 w-full rounded-xl bg-green-600 hover:bg-green-500 px-4 py-2.5 text-sm font-semibold text-white"
+            className="mt-5 w-full rounded-xl bg-green-600 hover:bg-green-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors cursor-pointer shadow-lg shadow-green-600/20"
           >
             {editId ? 'Guardar cambios' : 'Guardar horario'}
           </button>
@@ -310,35 +429,39 @@ export const HorariosView: React.FC = () => {
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-gray-400">
+                    <th className="py-2 pr-4">Materia</th>
                     <th className="py-2 pr-4">Día</th>
                     <th className="py-2 pr-4">Horario</th>
                     <th className="py-2 pr-4">Laboratorio</th>
                     <th className="py-2 pr-4">Docente</th>
-                    <th className="py-2 pr-4">Semestre</th>
+                    <th className="py-2 pr-4">Grupo</th>
                     <th className="py-2">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {horarios.map((horario) => (
                     <tr key={horario.id} className="border-b border-gray-800 hover:bg-gray-800/40">
+                      <td className="py-2 pr-4 font-medium text-blue-400">
+                        {horario.materia ? `${horario.materia.codigo ? `[${horario.materia.codigo}] ` : ''}${horario.materia.nombre}` : horario.materiaId}
+                      </td>
                       <td className="py-2 pr-4">{horario.diaSemana}</td>
                       <td className="py-2 pr-4">{horario.horaInicio} - {horario.horaFin}</td>
                       <td className="py-2 pr-4">{horario.laboratorio?.nombre || horario.laboratorioId}</td>
                       <td className="py-2 pr-4">{horario.docente ? `${horario.docente.nombre} ${horario.docente.apellido || ''}` : horario.docenteId}</td>
-                      <td className="py-2 pr-4">{horario.semestre}</td>
+                      <td className="py-2 pr-4 text-xs text-gray-400">{horario.grupo || 1}/{horario.totalGrupos || 1}</td>
                       <td className="py-2">
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => handleEdit(horario)}
-                            className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+                            className="text-blue-400 hover:text-blue-300 text-xs font-semibold cursor-pointer"
                           >
                             Editar
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(horario.id)}
-                            className="text-red-400 hover:text-red-300 text-xs font-semibold"
+                            className="text-red-400 hover:text-red-300 text-xs font-semibold cursor-pointer"
                           >
                             Eliminar
                           </button>

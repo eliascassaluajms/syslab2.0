@@ -44,6 +44,20 @@ export class MateriaController {
     }
   }
 
+  async listarTodas(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const materias = await materiaService.listarTodas();
+
+      res.status(200).json({
+        status: 'success',
+        results: materias.length,
+        data: { materias },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async obtenerUno(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
