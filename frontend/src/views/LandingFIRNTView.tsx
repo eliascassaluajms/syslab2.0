@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import { activityService } from '../services/activity.service';
-import fondoCitren from '../../media/imagenes/fondo-citren.jpeg';
 import httpClient from '../services/httpClient';
 
 interface IActividad {
@@ -30,6 +29,7 @@ interface IPreinscripcionPayload {
   tipo: string;
   activityId: string | number;
   codigoTransaccion: string;
+  comprobanteUrl?: string;
 }
 
 export const LandingFIRNTView: React.FC = () => {
@@ -158,10 +158,12 @@ export const LandingFIRNTView: React.FC = () => {
         tipo: tipoParticipante,
         activityId: actividadSeleccionada.id,
         codigoTransaccion: codigoLimpio,
+        comprobanteUrl: (window as any).__comprobanteUrlSubido || undefined,
       });
       setMensajeExito(true);
       setModalAbierto(false);
       setNumeroTransaccion('');
+      delete (window as any).__comprobanteUrlSubido;
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.message || err?.message || 'Error al procesar la preinscripción. Intenta nuevamente.');
     } finally {
@@ -174,7 +176,7 @@ export const LandingFIRNTView: React.FC = () => {
       {/* Fondo institucional CITREN 2026 con marca de agua */}
       <div className="absolute inset-0 pointer-events-none opacity-5 flex items-center justify-center overflow-hidden z-0">
         <img
-          src={fondoCitren}
+          src="/media/imagenes/fondo-citren.jpeg"
           alt="CITREN 2026 Background"
           className="w-[120%] h-[120%] object-contain filter grayscale contrast-200"
           onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
@@ -213,7 +215,7 @@ export const LandingFIRNTView: React.FC = () => {
               <section className="bg-slate-800/70 backdrop-blur-md border border-slate-700/80 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
                 {/* Fondo sutil del logotipo CITREN dentro de la tarjeta */}
                 <div className="absolute right-0 bottom-0 w-96 h-96 opacity-10 pointer-events-none transform translate-x-1/4 translate-y-1/4">
-                  <img src="../../media/imagenes/CITREN-logo.jpeg" alt="Watermark" className="w-full h-full object-contain" />
+                  <img src="/media/imagenes/CITREN-logo.jpeg" alt="Watermark" className="w-full h-full object-contain" />
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
@@ -257,7 +259,7 @@ export const LandingFIRNTView: React.FC = () => {
                   {/* Banner / Afiche con la imagen publicitaria del congreso */}
                   <div className="w-full md:w-80 h-52 rounded-xl overflow-hidden shadow-xl relative border border-slate-700/90 group bg-slate-950 shrink-0">
                     <img
-                      src={actividadSeleccionada.bannerUrl || '../../media/imagenes/fondo-citren.jpeg'}
+                      src={actividadSeleccionada.bannerUrl || '/media/imagenes/fondo-citren.jpeg'}
                       alt={actividadSeleccionada.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -443,6 +445,51 @@ export const LandingFIRNTView: React.FC = () => {
                   {errorMsg}
                 </div>
               )}
+
+              {/* Sección de Subida de Comprobante y Escaneo OCR */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-300">Comprobante de Pago (Imagen / Voucher) *</label>
+                <div className="flex items-center gap-2">
+                  <label className="flex-1 flex items-center justify-center px-3 py-2 bg-slate-950 border border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-emerald-500 transition-colors text-xs text-slate-400">
+                    <span>📁 Subir imagen de comprobante</span>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      className="hidden" 
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        const formData = new FormData();
+                        formData.append('comprobante', file);
+
+                        try {
+                          setCargando(true);
+                          setErrorMsg('');
+                          // Petición al endpoint OCR preparado en el backend
+                          const res = await httpClient.post('/evento-participantes/ocr', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          
+                          if (res.data?.codigoTransaccion) {
+                            setNumeroTransaccion(res.data.codigoTransaccion);
+                          }
+                          if (res.data?.comprobanteUrl) {
+                            // Guardamos opcionalmente la ruta del archivo subido
+                            (window as any).__comprobanteUrlSubido = res.data.comprobanteUrl;
+                          }
+                        } catch (err) {
+                          setErrorMsg('No se pudo escanear el comprobante automáticamente. Ingrese el número manualmente.');
+                        } finally {
+                          setCargando(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <span className="text-[10px] text-slate-500 block">El escaneo OCR detectará automáticamente el Nro. Documento/Transacción.</span>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">N° de Comprobante / Nro. Documento *</label>
                 <input
