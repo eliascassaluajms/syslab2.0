@@ -8,6 +8,9 @@ import equiposRoutes from './equipos.routes.js';
 import planEstudioRouter from './planEstudio.routes.js';
 import materiaRouter from './materia.routes.js';
 import activityRoutes from './activity.routes.js';
+import solicitudExtraordinariaRoutes from './solicitudExtraordinaria.routes.js';
+import bitacoraRoutes from './bitacora.routes.js';
+import asistenciaRoutes from './asistencia.routes.js';
 
 // ...
 export const router = Router();
@@ -21,3 +24,6 @@ router.use('/equipos', equiposRoutes);
 router.use('/planes-estudio', planEstudioRouter);
 router.use('/materias', materiaRouter);
 router.use('/actividades', activityRoutes);
+router.use('/solicitudes-extraordinarias', solicitudExtraordinariaRoutes);
+router.use('/bitacora', bitacoraRoutes);
+router.use('/asistencia', asistenciaRoutes);

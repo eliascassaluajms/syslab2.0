@@ -5,12 +5,16 @@ import {
   obtenerUsuarios, 
   crearUsuarioBasico,
   modificarUsuarioYPerimetros, 
-  cambiarEstadoUsuario 
+  cambiarEstadoUsuario,
+  obtenerEstudiantesPublico
 } from '../controllers/user.controller.js';
 
 const router = Router();
 
-// Proteger todas las rutas con verificación de sesión JWT
+// Endpoint público para obtener listado de estudiantes en selector QR
+router.get('/estudiantes', obtenerEstudiantesPublico);
+
+// Proteger todas las rutas posteriores con verificación de sesión JWT
 router.use(verificarJWT);
 
 // Endpoints ABM de Personal con permisos dinámicos

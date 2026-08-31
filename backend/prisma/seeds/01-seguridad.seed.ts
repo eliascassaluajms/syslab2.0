@@ -67,7 +67,13 @@ export async function seedSeguridad(prisma: PrismaClient) {
     { codigo: 'actividades:participantes_listar', descripcion: 'Permite consultar la lista de participantes inscritos' },
     { codigo: 'actividades:participantes_registrar', descripcion: 'Permite registrar la inscripción de participantes' },
     { codigo: 'actividades:pagos_registrar', descripcion: 'Permite registrar el comprobante o pago de inscripción' },
-    { codigo: 'actividades:pagos_validar', descripcion: 'Permite validar, aprobar o rechazar pagos de inscripción' }
+    { codigo: 'actividades:pagos_validar', descripcion: 'Permite validar, aprobar o rechazar pagos de inscripción' },
+    { codigo: 'solicitudes:crear', descripcion: 'Permite solicitar horarios extraordinarios' },
+    { codigo: 'solicitudes:listar', descripcion: 'Permite ver las solicitudes de horarios extraordinarios' },
+    { codigo: 'solicitudes:aprobar', descripcion: 'Permite aprobar o rechazar solicitudes extraordinarias de uso de laboratorio' },
+    { codigo: 'bitacora:iniciar', descripcion: 'Permite iniciar una sesión de uso de laboratorio y generar código QR' },
+    { codigo: 'bitacora:finalizar', descripcion: 'Permite finalizar una sesión de bitácora de laboratorio' },
+    { codigo: 'bitacora:consultar', descripcion: 'Permite consultar sesiones de bitácora' }
   ];
 
   const permisosCreados = [];
@@ -222,7 +228,9 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
         'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
         'actividades:participantes_listar', 'actividades:participantes_registrar',
-        'actividades:pagos_registrar', 'actividades:pagos_validar'
+        'actividades:pagos_registrar', 'actividades:pagos_validar',
+        'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
+        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar'
       ]
     },
     {
@@ -238,14 +246,16 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
         'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
         'actividades:participantes_listar', 'actividades:participantes_registrar',
-        'actividades:pagos_registrar', 'actividades:pagos_validar'
+        'actividades:pagos_registrar', 'actividades:pagos_validar',
+        'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
+        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar'
       ]
     },
     {
       rolId: rolTecnico.id,
       codigos: [
         'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'equipos:editar',
-        'fallas:crear', 'fallas:listar', 'fallas:editar', 'uso_laboratorios:listar'
+        'fallas:crear', 'fallas:listar', 'fallas:editar', 'uso_laboratorios:listar', 'bitacora:consultar'
       ]
     },
     {
@@ -253,7 +263,9 @@ export async function seedSeguridad(prisma: PrismaClient) {
       codigos: [
         'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'horarios:listar',
         'fallas:crear', 'fallas:listar', 'uso_laboratorios:crear', 'uso_laboratorios:listar',
-        'actividades:listar', 'actividades:participantes_registrar'
+        'actividades:listar', 'actividades:participantes_registrar',
+        'solicitudes:crear', 'solicitudes:listar',
+        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar'
       ]
     },
     {
@@ -287,7 +299,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
       rolId: rolEstudiante.id,
       codigos: [
         'laboratorios:listar', 'laboratorios:ver_estado', 'horarios:listar',
-        'actividades:listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar'
+        'actividades:listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar',
+        'bitacora:consultar'
       ]
     }
   ];

@@ -8,6 +8,7 @@ const router = Router();
 router.use(verificarJWT);
 
 router.get('/', requirePermission('horarios:listar'), horarioController.listar);
+router.get('/disponibilidad', requirePermission('horarios:listar'), horarioController.obtenerDisponibilidad);
 router.get('/:id', requirePermission('horarios:ver'), horarioController.obtenerPorId);
 router.post('/', requirePermission('horarios:crear'), horarioController.crear);
 router.put('/:id', requirePermission('horarios:editar'), horarioController.actualizar);

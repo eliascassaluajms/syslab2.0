@@ -373,6 +373,182 @@ export class HorarioService {
       where: { id },
     });
   }
+
+  async obtenerDisponibilidad({
+    fecha,
+    horaInicio,
+    horaFin,
+  }: {
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+  }) {
+    if (!fecha || !horaInicio || !horaFin) {
+      throw new AppError('Debe proporcionar fecha, horaInicio y horaFin.', 400);
+    }
+
+    const reqInicioMin = timeToMinutes(horaInicio);
+    const reqFinMin = timeToMinutes(horaFin);
+    if (reqFinMin <= reqInicioMin) {
+      throw new AppError('La hora de inicio debe ser menor a la hora de fin.', 400);
+    }
+
+    const parts = fecha.split('-');
+    if (parts.length !== 3) {
+      throw new AppError('Formato de fecha inválido. Debe ser YYYY-MM-DD.', 400);
+    }
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      throw new AppError('Fecha inválida.', 400);
+    }
+
+    const dateObj = new Date(year, month - 1, day);
+    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const diaSemanaNombre = diasSemana[dateObj.getDay()];
+
+    // 1. Obtener IDs de laboratorios ocupados en Horarios Regulares
+    const todosHorarios = await prisma.horario.findMany({
+      where: {
+        diaSemana: {
+          equals: diaSemanaNombre,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        laboratorioId: true,
+        horaInicio: true,
+        horaFin: true,
+      },
+    });
+
+    const labsOcupadosHorarios = new Set<number>();
+    for (const h of todosHorarios) {
+      try {
+        if (haySolapamientoHorario(horaInicio, horaFin, h.horaInicio, h.horaFin)) {
+          labsOcupadosHorarios.add(h.laboratorioId);
+        }
+      } catch {
+        // ignora
+      }
+    }
+
+    // 2. Obtener IDs de laboratorios ocupados en SolicitudHorarioExtraordinario (APROBADO)
+    const fechaInicioDia = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+    const fechaFinDia = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+
+    const solicitudesAprobadas = await prisma.solicitudHorarioExtraordinario.findMany({
+      where: {
+        fecha: {
+          gte: fechaInicioDia,
+          lte: fechaFinDia,
+        },
+        estado: 'APROBADO',
+      },
+      select: {
+        laboratorioId: true,
+        horaInicio: true,
+        horaFin: true,
+      },
+    });
+
+    const labsOcupadosSolicitudes = new Set<number>();
+    for (const sol of solicitudesAprobadas) {
+      try {
+        if (haySolapamientoHorario(horaInicio, horaFin, sol.horaInicio, sol.horaFin)) {
+          labsOcupadosSolicitudes.add(sol.laboratorioId);
+        }
+      } catch {
+        // ignora
+      }
+    }
+
+    // 3. Unión de IDs ocupados
+    const idsOcupados = Array.from(
+      new Set([...Array.from(labsOcupadosHorarios), ...Array.from(labsOcupadosSolicitudes)])
+    );
+
+    // Retorna la lista de laboratorios cuyos IDs NO estén en la lista de ocupados
+    return prisma.laboratorio.findMany({
+      where: {
+        activo: true,
+        id: {
+          notIn: idsOcupados,
+        },
+      },
+      orderBy: { nombre: 'asc' },
+    });
+  }
+
+  async esLaboratorioDisponible({
+    laboratorioId,
+    fecha,
+    horaInicio,
+    horaFin,
+    excludeSolicitudId,
+  }: {
+    laboratorioId: number;
+    fecha: string | Date;
+    horaInicio: string;
+    horaFin: string;
+    excludeSolicitudId?: number;
+  }): Promise<boolean> {
+    const fechaStr = typeof fecha === 'string' 
+      ? fecha.split('T')[0] 
+      : fecha.toISOString().split('T')[0];
+
+    const labsDisponibles = await this.obtenerDisponibilidad({
+      fecha: fechaStr,
+      horaInicio,
+      horaFin,
+    });
+
+    const estaDisponible = labsDisponibles.some((lab) => lab.id === laboratorioId);
+    if (estaDisponible) return true;
+
+    if (excludeSolicitudId) {
+      const parts = fechaStr.split('-');
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      const dateObj = new Date(year, month - 1, day);
+      const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const diaSemanaNombre = diasSemana[dateObj.getDay()];
+
+      const horarios = await prisma.horario.findMany({
+        where: {
+          laboratorioId,
+          diaSemana: { equals: diaSemanaNombre, mode: 'insensitive' },
+        },
+      });
+      for (const h of horarios) {
+        if (haySolapamientoHorario(horaInicio, horaFin, h.horaInicio, h.horaFin)) {
+          return false;
+        }
+      }
+
+      const fechaInicioDia = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+      const fechaFinDia = new Date(Date.UTC(year, month - 1, day, 23, 59, 59));
+      const solicitudes = await prisma.solicitudHorarioExtraordinario.findMany({
+        where: {
+          laboratorioId,
+          fecha: { gte: fechaInicioDia, lte: fechaFinDia },
+          estado: 'APROBADO',
+          id: { not: excludeSolicitudId },
+        },
+      });
+      for (const sol of solicitudes) {
+        if (haySolapamientoHorario(horaInicio, horaFin, sol.horaInicio, sol.horaFin)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return false;
+  }
 }
 
 export const horarioService = new HorarioService();

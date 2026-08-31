@@ -105,6 +105,30 @@ export class HorarioController {
       next(error);
     }
   }
+
+  async obtenerDisponibilidad(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { fecha, horaInicio, horaFin } = req.query;
+
+      if (!fecha || !horaInicio || !horaFin) {
+        throw new AppError('Se requieren los parámetros query: fecha, horaInicio y horaFin.', 400);
+      }
+
+      const laboratorios = await horarioService.obtenerDisponibilidad({
+        fecha: String(fecha),
+        horaInicio: String(horaInicio),
+        horaFin: String(horaFin),
+      });
+
+      res.status(200).json({
+        status: 'success',
+        results: laboratorios.length,
+        data: { laboratorios },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const horarioController = new HorarioController();

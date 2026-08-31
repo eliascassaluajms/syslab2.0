@@ -116,6 +116,7 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
       const user = await tx.usuario.create({
         data: {
           nombre: nombre.trim(),
+          apellido: '',
           correo: correo.trim().toLowerCase(),
           password: hashedPassword,
           rolId: idsRolesFinales[0],
@@ -260,6 +261,44 @@ export const cambiarEstadoUsuario = async (req: Request, res: Response, next: Ne
       status: 'success',
       message: `Usuario ${activo ? 'activado' : 'desactivado'} correctamente.`
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 6. Obtener lista pública de estudiantes (para selector de asistencia QR)
+export const obtenerEstudiantesPublico = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const estudiantes = await prisma.usuario.findMany({
+      where: {
+        activo: true,
+        OR: [
+          { rol: { nombre: { contains: 'Estudiante', mode: 'insensitive' } } },
+          { asignacionesRoles: { some: { rol: { nombre: { contains: 'Estudiante', mode: 'insensitive' } } } } },
+        ],
+      },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+      },
+      orderBy: { nombre: 'asc' },
+    });
+
+    const usuariosList = estudiantes.length > 0 ? estudiantes : await prisma.usuario.findMany({
+      where: { activo: true },
+      select: { id: true, nombre: true, apellido: true, correo: true },
+      orderBy: { nombre: 'asc' },
+    });
+
+    const resultado = usuariosList.map((e) => ({
+      id: e.id,
+      nombreCompleto: `${e.nombre} ${e.apellido || ''}`.trim(),
+      registroUniversitario: e.correo ? e.correo.split('@')[0] : `RU-${e.id}`,
+    }));
+
+    res.status(200).json(resultado);
   } catch (error) {
     next(error);
   }
