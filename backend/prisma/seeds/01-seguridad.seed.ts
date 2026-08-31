@@ -213,17 +213,12 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolDirectorCarrera.id,
       codigos: [
-        // Materias, Horarios y Planes
         'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
         'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
         'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
-        
-        // Laboratorios y Uso
         'laboratorios:listar', 'laboratorios:ver_estado', 'laboratorios:editar',
         'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 'uso_laboratorios:eliminar',
         'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:ver_reportes',
-        
-        // Actividades y Categorías (Permisos Totales)
         'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
         'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
         'actividades:participantes_listar', 'actividades:participantes_registrar',
@@ -233,20 +228,13 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolJefe.id,
       codigos: [
-        // Laboratorios y Equipos
         'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:eliminar', 'laboratorios:ver_estado',
         'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
-        
-        // Materias, Horarios y Planes
         'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
         'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
         'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
-        
-        // Fallas y Uso
         'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:eliminar', 'fallas:ver_reportes',
         'uso_laboratorios:crear', 'uso_laboratorios:listar', 'uso_laboratorios:editar', 'uso_laboratorios:eliminar',
-        
-        // Actividades y Categorías (Permisos Totales)
         'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
         'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
         'actividades:participantes_listar', 'actividades:participantes_registrar',
@@ -319,5 +307,5 @@ export async function seedSeguridad(prisma: PrismaClient) {
   console.log('  └─ ✅ Matriz de permisos vinculada exitosamente a todos los roles.');
   console.log('✅ Permisos, roles y matriz de accesos procesados con éxito.\n');
 
-return { rolAdmin, rolJefe, rolDocente, rolDirectorCarrera, DUMMY_PASSWORD_HASH };
+  return { rolAdmin, rolJefe, rolDocente, rolDirectorCarrera, DUMMY_PASSWORD_HASH };
 }

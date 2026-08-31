@@ -296,25 +296,26 @@ model CategoriaEvento {
   @@map("categorias_eventos")
 }
 model Activity {
-  id          String      @id @default(uuid())
-  title       String
-  description String?
-  careerScope String      @map("career_scope")
-  labId       Int         @map("lab_id")
-  lab         Laboratorio @relation(fields: [labId], references: [id], onDelete: Cascade)
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  id                  String               @id @default(uuid())
+  title               String
+  description         String?              @db.Text
+  careerScope         String               @map("career_scope")
+  bannerUrl           String?              @map("banner_url") @db.Text
+  labId               Int                  @map("lab_id")
+  lab                 Laboratorio          @relation(fields: [labId], references: [id], onDelete: Cascade)
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
   eventoParticipantes EventoParticipante[]
+
   @@index([careerScope])
   @@map("activities")
 }
-// Tipo de participante en eventos o congresos
+
 enum TipoParticipante {
   ESTUDIANTE
   PROFESIONAL
 }
 
-// Estado del proceso de inscripción y validación de pago
 enum EstadoInscripcion {
   PRE_INSCRITO
   PAGO_VERIFICADO
@@ -326,36 +327,40 @@ model EventoParticipante {
   id                String            @id @default(uuid())
   nombre            String            @db.VarChar(100)
   apellido          String            @db.VarChar(100)
-  correo            String            @unique @db.VarChar(150)
+  correo            String            @db.VarChar(150) // Corrección: quitado @unique individual
   telefono          String            @db.VarChar(30)
-  tipo              TipoParticipante  // Estudiante o Profesional
+  tipo              TipoParticipante  
   estado            EstadoInscripcion @default(PRE_INSCRITO)
   
-  // Relación directa con la actividad o evento general de SysLab
-  activityId        String?
+  // Relación obligatoria o nula con la actividad
+  activityId        String?           @map("activity_id")
   activity          Activity?         @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   // Datos del pago
-  codigoTransaccion String?           @unique @db.VarChar(100)
-  comprobanteUrl    String?           @db.Text // Ruta o enlace a la captura subida
-  observaciones     String?           @db.Text // Notas de caja o soporte técnico
+  codigoTransaccion String?           @map("codigo_transaccion") @db.VarChar(100)
+  comprobanteUrl    String?           @map("comprobante_url") @db.Text
+  observaciones     String?           @db.Text
   
   // Control de fechas
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
 
+  // Índices para búsquedas rápidas en caja/operador y unicidad por evento
+  @@unique([correo, activityId]) // Evita inscripciones dobles al MISMO evento
+  @@index([estado])
+  @@index([codigoTransaccion])
   @@map("evento_participantes")
 }
 
 model EventoPaymentConfig {
-  id              String   @id @default(uuid())
-  banco           String   @db.VarChar(100)
-  numeroCuenta    String   @db.VarChar(50)
-  nombreReceptor  String   @db.VarChar(150)
-  nitCI           String?  @db.VarChar(30)
-  qrImagenUrl     String   @db.Text // Imagen del QR para mostrar en pantalla
-  activo          Boolean  @default(true)
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(uuid())
+  banco          String   @db.VarChar(100)
+  numeroCuenta   String   @map("numero_cuenta") @db.VarChar(50)
+  nombreReceptor String   @map("nombre_receptor") @db.VarChar(150)
+  nitCI          String?  @map("nit_ci") @db.VarChar(30)
+  qrImagenUrl    String   @map("qr_imagen_url") @db.Text
+  activo         Boolean  @default(true)
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("evento_payment_configs")
 }
