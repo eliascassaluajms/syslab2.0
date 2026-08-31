@@ -2,38 +2,76 @@ import React, { useEffect, useState } from 'react';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import httpClient from '../services/httpClient';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+type EstadoInscripcion = 'PRE_INSCRITO' | 'PAGO_VERIFICADO' | 'RECHAZADO' | 'ASISTENCIA_CONFIRMADA';
+type Participante = {
+  id: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  telefono: string;
+  tipo: string;
+  estado: EstadoInscripcion;
+  codigoTransaccion: string;
+  comprobanteUrl?: string;
+  activity?: { id: string; title: string };
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export const ValidacionPagosView: React.FC = () => {
-  const [participantes, setParticipantes] = useState<any[]>([]);
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState<string>('');
+  const [procesando, setProcesando] = useState<string | null>(null);
+  const [confirmandoRechazo, setConfirmandoRechazo] = useState<string | null>(null);
 
-  const cargarDatos = async () => {
+  const cargarDatos = async (): Promise<void> => {
     try {
       setLoading(true);
       const data = await EventoParticipanteService.listar();
       setParticipantes(data);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       setError('Error al obtener la lista de pagos.');
+      console.error('Error al cargar datos:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleValidar = async (id: string, nuevoEstado: 'APROBADO' | 'RECHAZADO') => {
+  const handleValidar = async (
+    id: string,
+    nuevoEstado: 'PAGO_VERIFICADO' | 'RECHAZADO'
+  ): Promise<void> => {
+    setProcesando(id);
     try {
-      // Intento con la ruta estándar PUT /evento-participantes/:id
       await httpClient.put(`/evento-participantes/${id}`, { estado: nuevoEstado });
-      cargarDatos();
-    } catch (err: any) {
-      try {
-        // Fallback alternativo con patch por si el backend lo requiere
-        await httpClient.patch(`/evento-participantes/${id}`, { estado: nuevoEstado });
-        cargarDatos();
-      } catch (err2: any) {
-        alert('No se pudo actualizar el estado del pago. Compruebe la conexión con el servidor.');
+      setError(null);
+      setConfirmandoRechazo(null);
+      await cargarDatos();
+    } catch (err: unknown) {
+      const errorData = err as { response?: { data?: { error?: string } } };
+      const errorMessage = errorData?.response?.data?.error || 
+                          `No se pudo actualizar el estado del pago. Verifique la conexión.`;
+      setError(errorMessage);
+      console.error('Error al validar pago:', err);
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  const confirmarRechazo = (id: string, esPagoPrevio: boolean): void => {
+    if (esPagoPrevio) {
+      if (confirmandoRechazo === id) {
+        handleValidar(id, 'RECHAZADO');
+      } else {
+        setConfirmandoRechazo(id);
       }
+    } else {
+      handleValidar(id, 'RECHAZADO');
     }
   };
 
@@ -41,7 +79,6 @@ export const ValidacionPagosView: React.FC = () => {
     cargarDatos();
   }, []);
 
-  // Filtrado por nombre, apellido o número de transacción
   const participantesFiltrados = participantes.filter((p) => {
     const query = busqueda.toLowerCase().trim();
     if (!query) return true;
@@ -58,7 +95,6 @@ export const ValidacionPagosView: React.FC = () => {
           <h1 className="text-2xl font-bold text-white tracking-tight">Validación de Pagos</h1>
           <p className="text-xs text-gray-400 mt-1">Revisión de comprobantes bancarios subidos por los participantes.</p>
         </div>
-        {/* Barra de búsqueda por nombre y transacción */}
         <div className="w-full md:w-72">
           <input
             type="text"
@@ -90,10 +126,15 @@ export const ValidacionPagosView: React.FC = () => {
                   <p className="text-[11px] text-gray-400">{p.correo}</p>
                 </div>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  p.estado === 'APROBADO' ? 'bg-emerald-500/20 text-emerald-400' :
-                  p.estado === 'RECHAZADO' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                  p.estado === 'PAGO_VERIFICADO' ? 'bg-emerald-500/20 text-emerald-400' :
+                  p.estado === 'RECHAZADO' ? 'bg-red-500/20 text-red-400' :
+                  p.estado === 'ASISTENCIA_CONFIRMADA' ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-amber-500/20 text-amber-400'
                 }`}>
-                  {p.estado}
+                  {p.estado === 'PAGO_VERIFICADO' ? 'Aprobado' :
+                   p.estado === 'ASISTENCIA_CONFIRMADA' ? 'Asistencia Confirmada' :
+                   p.estado === 'PRE_INSCRITO' ? 'Pre-inscrito' :
+                   p.estado}
                 </span>
               </div>
 
@@ -105,7 +146,7 @@ export const ValidacionPagosView: React.FC = () => {
               {p.comprobanteUrl ? (
                 <div className="space-y-2">
                   <a 
-                    href={`http://localhost:3000${p.comprobanteUrl}`} 
+                    href={`${API_BASE_URL}${p.comprobanteUrl}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="block text-center py-2 px-3 bg-blue-600/15 border border-blue-500/30 rounded-xl text-blue-400 text-xs font-semibold hover:bg-blue-600/25 transition-colors"
@@ -118,18 +159,40 @@ export const ValidacionPagosView: React.FC = () => {
               )}
 
               <div className="flex gap-2 pt-2 border-t border-gray-800">
-                <button 
-                  onClick={() => handleValidar(p.id, 'APROBADO')}
-                  className="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Aprobar
-                </button>
-                <button 
-                  onClick={() => handleValidar(p.id, 'RECHAZADO')}
-                  className="flex-1 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Rechazar
-                </button>
+                {p.estado === 'PAGO_VERIFICADO' ? (
+                  <button 
+                    onClick={() => confirmarRechazo(p.id, true)}
+                    disabled={procesando === p.id}
+                    className={`w-full py-2 rounded-xl text-xs font-bold transition-colors ${
+                      confirmandoRechazo === p.id
+                        ? 'bg-orange-600/30 hover:bg-orange-600/40 text-orange-400 border border-orange-500/30'
+                        : 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {procesando === p.id 
+                      ? 'Procesando...' 
+                      : confirmandoRechazo === p.id 
+                        ? '¿Confirmar rechazo? Clic de nuevo'
+                        : 'Rechazar / Revertir Pago'}
+                  </button>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => handleValidar(p.id, 'PAGO_VERIFICADO')}
+                      disabled={procesando === p.id}
+                      className="flex-1 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 disabled:bg-emerald-600/10 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {procesando === p.id ? 'Procesando...' : 'Aprobar Pago'}
+                    </button>
+                    <button 
+                      onClick={() => confirmarRechazo(p.id, false)}
+                      disabled={procesando === p.id}
+                      className="flex-1 py-2 bg-red-600/20 hover:bg-red-600/30 disabled:bg-red-600/10 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {procesando === p.id ? 'Procesando...' : 'Rechazar'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))
@@ -138,4 +201,5 @@ export const ValidacionPagosView: React.FC = () => {
     </div>
   );
 };
+
 export default ValidacionPagosView;

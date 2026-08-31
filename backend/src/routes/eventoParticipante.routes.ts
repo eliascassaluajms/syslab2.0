@@ -6,21 +6,33 @@ import { uploadComprobante } from '../middlewares/upload.middleware.js';
 
 const router = Router();
 
+// POST /api/evento-participantes (crear preinscripción pública)
 router.post('/', (req: Request, res: Response, next: NextFunction) => {
   EventoParticipanteController.crear(req, res).catch(next);
 });
 
+// POST /api/evento-participantes/ocr (DEBE IR ANTES DE /:id)
+// Endpoint público para escaneo OCR de comprobantes en preinscripción
+router.post('/ocr', 
+  uploadComprobante.single('comprobante'),
+  (req: Request, res: Response, next: NextFunction) => {
+    EventoParticipanteController.procesarComprobanteOCR(req, res).catch(next);
+  }
+);
+
+// GET /api/evento-participantes
 router.get('/', 
   verificarJWT,
-  requirePermission('participantes:listar'),
+  requirePermission('actividades:participantes_listar'),
   (req: Request, res: Response, next: NextFunction) => {
     EventoParticipanteController.listar(req, res).catch(next);
   }
 );
 
+// PATCH /api/evento-participantes/:id/validar-pago
 router.patch('/:id/validar-pago', 
   verificarJWT,
-  requirePermission('participantes:validar_pago'),
+  requirePermission('actividades:pagos_validar'),
   (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { estado } = req.body;
@@ -34,9 +46,21 @@ router.patch('/:id/validar-pago',
   }
 );
 
+// POST /api/evento-participantes/:id/comprobante
+// Endpoint multipart/form-data protegido para admin
+router.post('/:id/comprobante',
+  verificarJWT,
+  requirePermission('actividades:pagos_registrar'),
+  uploadComprobante.single('comprobante'),
+  (req: Request, res: Response, next: NextFunction) => {
+    EventoParticipanteController.subirComprobante(req, res).catch(next);
+  }
+);
+
+// PUT /api/evento-participantes/:id
 router.put('/:id', 
   verificarJWT,
-  requirePermission('participantes:editar'),
+  requirePermission('actividades:participantes_listar'),
   (req: Request, res: Response, next: NextFunction) => {
     if (!req.params.id) {
       res.status(400).json({ error: 'El ID del participante es requerido.' });
@@ -46,26 +70,29 @@ router.put('/:id',
   }
 );
 
+// PATCH /api/evento-participantes/:id
+router.patch('/:id',
+  verificarJWT,
+  requirePermission('actividades:participantes_listar'),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.params.id) {
+      res.status(400).json({ error: 'El ID del participante es requerido.' });
+      return;
+    }
+    EventoParticipanteController.actualizar(req, res).catch(next);
+  }
+);
+
+// DELETE /api/evento-participantes/:id
 router.delete('/:id',
   verificarJWT,
-  requirePermission('participantes:eliminar'),
+  requirePermission('actividades:participantes_listar'),
   (req: Request, res: Response, next: NextFunction) => {
     if (!req.params.id) {
       res.status(400).json({ error: 'El ID del participante es requerido.' });
       return;
     }
     EventoParticipanteController.eliminar(req, res).catch(next);
-  }
-);
-
-// POST /api/evento-participantes/:id/comprobante
-// Endpoint multipart/form-data protegido
-router.post('/:id/comprobante',
-  verificarJWT,
-  requirePermission('actividades:pagos_registrar'),
-  uploadComprobante.single('comprobante'),
-  (req: Request, res: Response, next: NextFunction) => {
-    EventoParticipanteController.subirComprobante(req, res).catch(next);
   }
 );
 

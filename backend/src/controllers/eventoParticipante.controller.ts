@@ -8,7 +8,7 @@ import { extraerDatosComprobante } from '../services/ocr.service.js';
 export const EventoParticipanteController = {
   async crear(req: Request, res: Response): Promise<void> {
     try {
-      const { nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, observaciones } = req.body;
+      const { nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, comprobanteUrl, observaciones } = req.body;
 
       if (!nombre || !apellido || !correo || !telefono || !activityId || !codigoTransaccion) {
         res.status(400).json({
@@ -28,6 +28,7 @@ export const EventoParticipanteController = {
           tipo: tipoNormalizado,
           activityId: String(activityId),
           codigoTransaccion,
+          ...(comprobanteUrl && { comprobanteUrl }),
           ...(observaciones !== undefined && { observaciones }),
           estado: EstadoInscripcion.PRE_INSCRITO,
         },
@@ -96,7 +97,12 @@ export const EventoParticipanteController = {
   async actualizar(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { nombre, apellido, correo, telefono, tipo, codigoTransaccion } = req.body;
+      const { nombre, apellido, correo, telefono, tipo, estado, codigoTransaccion, observaciones } = req.body;
+
+      if (!Object.values(EstadoInscripcion).includes(estado as EstadoInscripcion) && estado !== undefined) {
+        res.status(400).json({ error: 'El estado especificado no es válido.' });
+        return;
+      }
 
       const participanteActualizado = await prisma.eventoParticipante.update({
         where: { id },
@@ -106,7 +112,9 @@ export const EventoParticipanteController = {
           ...(correo && { correo }),
           ...(telefono !== undefined && { telefono }),
           ...(tipo && { tipo }),
+          ...(estado && { estado: estado as EstadoInscripcion }),
           ...(codigoTransaccion !== undefined && { codigoTransaccion }),
+          ...(observaciones !== undefined && { observaciones }),
         },
         include: {
           activity: { select: { id: true, title: true } },
@@ -160,8 +168,9 @@ export const EventoParticipanteController = {
       const nombreArchivoFinal = `${nombreParticipanteSeguro}_pago${ext}`;
       const rutaDestinoFinal = path.join(targetDir, nombreArchivoFinal);
 
-      // Trasladar archivo desde temporal a la ruta definitiva
-      fs.renameSync(req.file.path, rutaDestinoFinal);
+      // Trasladar archivo desde temporal a la ruta definitiva usando copy y unlink para evitar EXDEV
+      fs.copyFileSync(req.file.path, rutaDestinoFinal);
+      fs.unlinkSync(req.file.path);
 
       // URL pública para el frontend
       const comprobanteUrl = `/frontend/media/imagenes/${nombreEventoSeguro}/${nombreArchivoFinal}`;
@@ -192,6 +201,83 @@ export const EventoParticipanteController = {
     }
   },
 
+  async procesarComprobanteOCR(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No se proporcionó ningún archivo de comprobante.' });
+        return;
+      }
+
+      console.log('[OCR] Archivo recibido:', {
+        filename: req.file.filename,
+        path: req.file.path,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      // Procesar OCR del comprobante
+      let datosOcr = { nroOrden: '', numeroDocumento: '' };
+      try {
+        datosOcr = await extraerDatosComprobante(req.file.path);
+        console.log('[OCR] Datos extraídos:', datosOcr);
+      } catch (ocrError) {
+        console.warn('[OCR] Advertencia en extracción OCR, continuando sin datos extraídos:', ocrError);
+        // No lanzar error, continuar con datos vacíos
+      }
+      
+      // Generar ruta segura para almacenar el comprobante temporalmente
+      const ext = path.extname(req.file.originalname);
+      const nombreArchivoSeguro = `comprobante_${Date.now()}${ext}`;
+      
+      // Crear directorio en la carpeta pública del frontend
+      const targetDir = path.resolve(process.cwd(), '../frontend/public/comprobantes');
+      
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+        console.log('[OCR] Directorio creado:', targetDir);
+      }
+
+      const rutaDestino = path.join(targetDir, nombreArchivoSeguro);
+      
+      // Usar copyFileSync y unlinkSync para evitar el error EXDEV entre volúmenes Docker diferentes
+      fs.copyFileSync(req.file.path, rutaDestino);
+      fs.unlinkSync(req.file.path);
+      console.log('[OCR] Archivo guardado en:', rutaDestino);
+
+      // URL pública para el comprobante (relativa al frontend)
+      const comprobanteUrl = `/comprobantes/${nombreArchivoSeguro}`;
+
+      console.log('[OCR] Respuesta exitosa:', {
+        codigoTransaccion: datosOcr.nroOrden || datosOcr.numeroDocumento || '',
+        comprobanteUrl
+      });
+
+      res.status(200).json({
+        codigoTransaccion: datosOcr.nroOrden || datosOcr.numeroDocumento || '',
+        comprobanteUrl: comprobanteUrl,
+        datosOcr: datosOcr,
+        message: 'Comprobante procesado correctamente'
+      });
+    } catch (error) {
+      console.error('[OCR] Error al procesar comprobante:', error);
+      
+      // Limpiar archivo temporal en caso de error
+      if (req.file && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+          console.log('[OCR] Archivo temporal eliminado');
+        } catch (deleteError) {
+          console.error('[OCR] Error al eliminar archivo temporal:', deleteError);
+        }
+      }
+      
+      res.status(500).json({ 
+        error: 'Error al procesar el comprobante. Por favor intente nuevamente.',
+        details: (error as any)?.message || 'Error desconocido'
+      });
+    }
+  },
+
   async eliminar(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
@@ -205,14 +291,36 @@ export const EventoParticipanteController = {
         return;
       }
 
+      // Si posee un comprobante local guardado, intentar eliminar el archivo físico de manera segura
+      if (participante.comprobanteUrl && participante.comprobanteUrl.startsWith('/frontend/media/')) {
+        try {
+          const relativePath = participante.comprobanteUrl.replace('/frontend/', '../frontend/');
+          const absolutePath = path.resolve(process.cwd(), relativePath);
+          if (fs.existsSync(absolutePath)) {
+            fs.unlinkSync(absolutePath);
+          }
+        } catch (fileErr) {
+          console.warn(`[ELIMINAR] No se pudo eliminar el archivo físico del comprobante para el participante ${id}:`, fileErr);
+        }
+      }
+
       await prisma.eventoParticipante.delete({
         where: { id },
       });
 
-      res.status(200).json({ message: 'Participante eliminado correctamente.' });
-    } catch (error) {
+      res.status(200).json({ message: 'Participante eliminado exitosamente.' });
+    } catch (error: any) {
+      if (error?.code === 'P2025') {
+        res.status(404).json({ error: 'El registro del participante no existe.' });
+        return;
+      }
+      if (error?.code === 'P2003') {
+        res.status(400).json({ error: 'No se puede eliminar el participante porque posee registros vinculados.' });
+        return;
+      }
       console.error(`Error al eliminar participante ${req.params.id}:`, error);
-      res.status(500).json({ error: 'Error al eliminar el registro del participante.' });
+      res.status(500).json({ error: 'Error al eliminar el participante de la base de datos.' });
     }
   }
 };
+
