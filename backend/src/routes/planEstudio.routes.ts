@@ -12,31 +12,31 @@ router.use(verificarJWT);
 // Rutas de Planes de Estudio
 router.post(
   '/', 
-  requirePermission('planes:crear'), 
+  requirePermission('planes_estudio:crear'), 
   planEstudioController.crear
 );
 
 router.get(
   '/carrera/:carreraId', 
-  requirePermission('planes:listar'), 
+  requirePermission('planes_estudio:listar'), 
   planEstudioController.listarPorCarrera
 );
 
 router.get(
   '/:id', 
-  requirePermission('planes:ver'), 
+  requirePermission('planes_estudio:listar'), 
   planEstudioController.obtenerUno
 );
 
 router.put(
   '/:id', 
-  requirePermission('planes:editar'), 
+  requirePermission('planes_estudio:editar'), 
   planEstudioController.actualizar
 );
 
 router.delete(
   '/:id', 
-  requirePermission('planes:eliminar'), 
+  requirePermission('planes_estudio:eliminar'), 
   planEstudioController.eliminar
 );
 

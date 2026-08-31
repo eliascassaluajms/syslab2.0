@@ -22,7 +22,7 @@ router.get(
 
 router.get(
   '/:id', 
-  requirePermission('materias:ver'), 
+  requirePermission('materias:listar'), 
   materiaController.obtenerUno
 );
 
