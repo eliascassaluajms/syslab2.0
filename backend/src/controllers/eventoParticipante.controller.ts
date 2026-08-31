@@ -3,7 +3,7 @@ import { EstadoInscripcion } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
 import { prisma } from '../config/prisma.js';
-import { extraerDatosComprobante } from '../services/ocr.service.js';
+import { extraerDatosComprobante, DatosTransaccionOCR } from '../services/ocr.service.js';
 
 export const EventoParticipanteController = {
   async crear(req: Request, res: Response): Promise<void> {
@@ -140,9 +140,7 @@ export const EventoParticipanteController = {
       const participante = await prisma.eventoParticipante.findUnique({
         where: { id },
         include: {
-          activity: {
-            include: { event: true }
-          }
+          activity: true
         }
       });
 
@@ -153,7 +151,7 @@ export const EventoParticipanteController = {
       }
 
       // Nombre del evento para la carpeta
-      const nombreEventoCrudo = participante.activity?.event?.nombre || participante.activity?.title || 'evento_general';
+      const nombreEventoCrudo = participante.activity?.title || 'evento_general';
       const nombreEventoSeguro = nombreEventoCrudo.replace(/[^a-zA-Z0-9-_]/g, '_');
 
       // Ruta física: /frontend/media/imagenes/<NombreDelEvento>/
@@ -183,7 +181,7 @@ export const EventoParticipanteController = {
         data: {
           comprobanteUrl,
           codigoTransaccion: datosOcr.nroOrden || participante.codigoTransaccion,
-          estado: EstadoInscripcion.PENDIENTE
+          estado: EstadoInscripcion.PRE_INSCRITO
         }
       });
 
@@ -216,7 +214,7 @@ export const EventoParticipanteController = {
       });
 
       // Procesar OCR del comprobante
-      let datosOcr = { nroOrden: '', numeroDocumento: '' };
+      let datosOcr: DatosTransaccionOCR = { nroOrden: '', nroDocumento: '' };
       try {
         datosOcr = await extraerDatosComprobante(req.file.path);
         console.log('[OCR] Datos extraídos:', datosOcr);
@@ -248,12 +246,12 @@ export const EventoParticipanteController = {
       const comprobanteUrl = `/comprobantes/${nombreArchivoSeguro}`;
 
       console.log('[OCR] Respuesta exitosa:', {
-        codigoTransaccion: datosOcr.nroOrden || datosOcr.numeroDocumento || '',
+        codigoTransaccion: datosOcr.nroOrden || datosOcr.nroDocumento || '',
         comprobanteUrl
       });
 
       res.status(200).json({
-        codigoTransaccion: datosOcr.nroOrden || datosOcr.numeroDocumento || '',
+        codigoTransaccion: datosOcr.nroOrden || datosOcr.nroDocumento || '',
         comprobanteUrl: comprobanteUrl,
         datosOcr: datosOcr,
         message: 'Comprobante procesado correctamente'
