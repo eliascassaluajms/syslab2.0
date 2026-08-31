@@ -58,6 +58,26 @@ const emptyForm: HorarioForm = {
   totalGrupos: 1,
 };
 
+// Helper funciones de fecha y hora
+const getDiaActualEs = (): string => {
+  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const now = new Date();
+  return dias[now.getDay()];
+};
+
+const getHoraActualHHMM = (): string => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const timeToMinutes = (timeStr: string): number => {
+  if (!timeStr) return 0;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
 export const HorariosView: React.FC = () => {
   const [horarios, setHorarios] = useState<any[]>([]);
   const [laboratorios, setLaboratorios] = useState<LaboratorioOption[]>([]);
@@ -68,6 +88,12 @@ export const HorariosView: React.FC = () => {
   const [busquedaMateria, setBusquedaMateria] = useState('');
   const [dropdownMateriaAbierto, setDropdownMateriaAbierto] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Estado para el modal de cronograma diario por laboratorio
+  const [labSeleccionadoModal, setLabSeleccionadoModal] = useState<LaboratorioOption | null>(null);
+
+  // Tick para refresco visual en tiempo real cada 30s
+  const [, setTick] = useState(0);
 
   const [form, setForm] = useState<HorarioForm>(emptyForm);
   const [editId, setEditId] = useState<number | null>(null);
@@ -105,6 +131,11 @@ export const HorariosView: React.FC = () => {
   useEffect(() => {
     void cargarDatos();
 
+    // Actualización de estado en tiempo real cada 30 segundos
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 30000);
+
     // Cerrar dropdown al hacer click fuera
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -112,7 +143,10 @@ export const HorariosView: React.FC = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleChange = (field: keyof HorarioForm, value: string | number) => {
@@ -123,6 +157,53 @@ export const HorariosView: React.FC = () => {
     setEditId(null);
     setForm(emptyForm);
     setBusquedaMateria('');
+  };
+
+  // Lógica de Estado en Tiempo Real por laboratorio
+  const obtenerEstadoLaboratorio = (labId: number) => {
+    const diaActual = getDiaActualEs();
+    const horaActual = getHoraActualHHMM();
+    const minsActual = timeToMinutes(horaActual);
+
+    const ocupante = horarios.find((h) => {
+      if (Number(h.laboratorioId) !== labId) return false;
+      const diaH = (h.diaSemana || '').trim();
+      if (diaH.toLowerCase() !== diaActual.toLowerCase()) return false;
+
+      const ini = timeToMinutes(h.horaInicio);
+      const fin = timeToMinutes(h.horaFin);
+
+      return minsActual >= ini && minsActual < fin;
+    });
+
+    if (ocupante) {
+      const materiaNombre = ocupante.materia
+        ? `${ocupante.materia.codigo ? `[${ocupante.materia.codigo}] ` : ''}${ocupante.materia.nombre}`
+        : `Materia ID: ${ocupante.materiaId}`;
+
+      const docenteNombre = ocupante.docente
+        ? `${ocupante.docente.nombre} ${ocupante.docente.apellido || ''}`.trim()
+        : `Docente ID: ${ocupante.docenteId}`;
+
+      return {
+        estaOcupado: true,
+        materiaActual: materiaNombre,
+        docenteActual: docenteNombre,
+        horarioActual: ocupante,
+      };
+    }
+
+    return {
+      estaOcupado: false,
+    };
+  };
+
+  const abrirModalDetalleLab = (lab: LaboratorioOption) => {
+    setLabSeleccionadoModal(lab);
+  };
+
+  const cerrarModal = () => {
+    setLabSeleccionadoModal(null);
   };
 
   // Filtrado de materias dinámico por Nombre, Sigla o Plan
@@ -244,6 +325,7 @@ export const HorariosView: React.FC = () => {
         </div>
       )}
 
+      {/* Grid Principal: Formulario y Tabla de Listado */}
       <div className="grid grid-cols-1 xl:grid-cols-[420px_minmax(0,1fr)] gap-6">
         <form onSubmit={handleSubmit} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 shadow-xl">
           <h2 className="text-lg font-semibold mb-4">{editId ? 'Editar horario' : 'Registrar horario'}</h2>
@@ -475,6 +557,168 @@ export const HorariosView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Sección de Estado en Tiempo Real de Laboratorios */}
+      <div className="mt-8 border-t border-gray-800 pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            Estado Actual de Laboratorios
+          </h2>
+          <span className="text-xs text-gray-400">Actualizado en tiempo real ({getDiaActualEs()} {getHoraActualHHMM()})</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {laboratorios.map((lab) => {
+            const estadoInfo = obtenerEstadoLaboratorio(lab.id);
+            return (
+              <div
+                key={lab.id}
+                onClick={() => abrirModalDetalleLab(lab)}
+                className={`cursor-pointer rounded-2xl border p-4 transition-all duration-200 hover:scale-[1.02] ${
+                  estadoInfo.estaOcupado
+                    ? 'bg-red-950/20 border-red-500/30 hover:border-red-500/60'
+                    : 'bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-500/60'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-white">{lab.nombre}</h3>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      estadoInfo.estaOcupado
+                        ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    }`}
+                  >
+                    {estadoInfo.estaOcupado ? 'Ocupado' : 'Libre'}
+                  </span>
+                </div>
+
+                {estadoInfo.estaOcupado ? (
+                  <div className="mt-2 text-xs text-gray-300 space-y-1">
+                    <p className="font-medium text-red-200 truncate">{estadoInfo.materiaActual}</p>
+                    <p className="text-gray-400 truncate">{estadoInfo.docenteActual}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-gray-400">Disponible sin clase programada en este momento.</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Modal de Cronograma Diario por Laboratorio */}
+      {labSeleccionadoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-blue-400">Cronograma del Día ({getDiaActualEs()})</p>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  {labSeleccionadoModal.nombre}
+                  {labSeleccionadoModal.codigo && (
+                    <span className="text-xs font-normal bg-gray-800 text-gray-300 px-2 py-0.5 rounded-md">
+                      {labSeleccionadoModal.codigo}
+                    </span>
+                  )}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={cerrarModal}
+                className="text-gray-400 hover:text-white rounded-lg p-1.5 hover:bg-gray-800 transition-colors text-sm font-semibold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Programación del día filtrada y ordenada */}
+            {(() => {
+              const diaActual = getDiaActualEs();
+              const minsActual = timeToMinutes(getHoraActualHHMM());
+              const cronogramaDia = horarios
+                .filter(
+                  (h) =>
+                    Number(h.laboratorioId) === labSeleccionadoModal.id &&
+                    (h.diaSemana || '').trim().toLowerCase() === diaActual.toLowerCase()
+                )
+                .sort((a, b) => timeToMinutes(a.horaInicio) - timeToMinutes(b.horaInicio));
+
+              if (cronogramaDia.length === 0) {
+                return (
+                  <div className="py-8 text-center text-gray-400">
+                    <p className="text-sm">No hay clases ni actividades programadas para hoy ({diaActual}) en este laboratorio.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {cronogramaDia.map((bloque) => {
+                    const ini = timeToMinutes(bloque.horaInicio);
+                    const fin = timeToMinutes(bloque.horaFin);
+                    
+                    let estadoBloque = { texto: 'Concluido', clase: 'bg-gray-800 text-gray-400 border border-gray-700' };
+                    if (minsActual >= ini && minsActual < fin) {
+                      estadoBloque = { texto: 'En curso', clase: 'bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold' };
+                    } else if (minsActual < ini) {
+                      estadoBloque = { texto: 'Próximo', clase: 'bg-amber-500/10 text-amber-400 border border-amber-500/30' };
+                    }
+
+                    const materiaText = bloque.materia
+                      ? `${bloque.materia.codigo ? `[${bloque.materia.codigo}] ` : ''}${bloque.materia.nombre}`
+                      : `Materia ID: ${bloque.materiaId}`;
+
+                    const docenteText = bloque.docente
+                      ? `${bloque.docente.nombre} ${bloque.docente.apellido || ''}`.trim()
+                      : `Docente ID: ${bloque.docenteId}`;
+
+                    return (
+                      <div
+                        key={bloque.id}
+                        className="bg-gray-950 border border-gray-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-gray-700 transition-colors"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono bg-blue-950/60 text-blue-300 border border-blue-800/40 px-2 py-0.5 rounded-md">
+                              {bloque.horaInicio} - {bloque.horaFin}
+                            </span>
+                            <span className={`text-[11px] px-2 py-0.5 rounded-full ${estadoBloque.clase}`}>
+                              {estadoBloque.texto}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-sm text-white">{materiaText}</h4>
+                          <p className="text-xs text-gray-400 flex flex-wrap items-center gap-2">
+                            <span>👨‍🏫 {docenteText}</span>
+                            <span>•</span>
+                            <span>Grupo: {bloque.grupo || 1}/{bloque.totalGrupos || 1}</span>
+                            <span>•</span>
+                            <span>Semestre: {bloque.semestre}</span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div className="mt-6 border-t border-gray-800 pt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={cerrarModal}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
