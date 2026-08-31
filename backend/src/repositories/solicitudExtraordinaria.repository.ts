@@ -1,4 +1,5 @@
-import { EstadoSolicitud, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { EstadoSolicitud } from '../services/solicitudExtraordinaria.service.js';
 import { prisma } from '../config/prisma.js';
 
 export interface CrearSolicitudExtraordinariaInput {

@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { EstadoSolicitud } from '@prisma/client';
-import { solicitudExtraordinariaService } from '../services/solicitudExtraordinaria.service.js';
+import { solicitudExtraordinariaService, EstadoSolicitud } from '../services/solicitudExtraordinaria.service.js';
 import { AppError } from '../utils/appError.js';
 
 export class SolicitudExtraordinariaController {

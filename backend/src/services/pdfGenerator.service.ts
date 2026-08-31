@@ -3,11 +3,6 @@ import { TDocumentDefinitions, TableCell } from 'pdfmake/interfaces.js';
 
 const require = createRequire(import.meta.url);
 
-// Carga robusta de módulos de pdfmake en entorno ESM Node
-const PdfPrinter = require('pdfmake/js/Printer.js').default || require('pdfmake/js/Printer.js');
-const vfs = require('pdfmake/js/virtual-fs.js').default || require('pdfmake/js/virtual-fs.js');
-const URLResolver = require('pdfmake/js/URLResolver.js').default || require('pdfmake/js/URLResolver.js');
-
 const fonts = {
   Roboto: {
     normal: 'Helvetica',
@@ -17,8 +12,15 @@ const fonts = {
   },
 };
 
-const urlResolverInstance = new URLResolver(vfs);
-const printer = new PdfPrinter(fonts, vfs, urlResolverInstance);
+let _printerInstance: any = null;
+function getPrinter() {
+  if (!_printerInstance) {
+    const pdfmake = require('pdfmake');
+    const PrinterClass = pdfmake.Printer || (pdfmake.default && pdfmake.default.Printer) || pdfmake.default || pdfmake;
+    _printerInstance = new PrinterClass(fonts);
+  }
+  return _printerInstance;
+}
 
 export interface GenerarPlanillaPDFInput {
   sesion: {
@@ -241,13 +243,12 @@ export class PdfGeneratorService {
 
     return new Promise((resolve, reject) => {
       try {
-        printer.createPdfKitDocument(docDefinition).then((pdfDoc: any) => {
-          const chunks: Buffer[] = [];
-          pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
-          pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-          pdfDoc.on('error', (err: Error) => reject(err));
-          pdfDoc.end();
-        }).catch(reject);
+        const pdfDoc = getPrinter().createPdfKitDocument(docDefinition);
+        const chunks: Buffer[] = [];
+        pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+        pdfDoc.on('error', (err: Error) => reject(err));
+        pdfDoc.end();
       } catch (err) {
         reject(err);
       }

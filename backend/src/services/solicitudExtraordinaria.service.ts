@@ -1,4 +1,9 @@
-import { EstadoSolicitud } from '@prisma/client';
+export enum EstadoSolicitud {
+  PENDIENTE = 'PENDIENTE',
+  APROBADO = 'APROBADO',
+  RECHAZADO = 'RECHAZADO',
+}
+
 import {
   solicitudExtraordinariaRepository,
   ListarSolicitudesFiltros,
