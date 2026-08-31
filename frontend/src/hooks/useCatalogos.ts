@@ -47,8 +47,8 @@ export const useCatalogos = () => {
         httpClient.get('/catalogos/facultades'),
         httpClient.get('/catalogos/carreras'),
       ]);
-      setFacultades(resFac.data.data?.facultades || resFac.data.data || resFac.data || []);
-      setCarreras(resCar.data.data?.carreras || resCar.data.data || resCar.data || []);
+      setFacultades(Array.isArray(resFac.data) ? resFac.data : (resFac.data.data?.facultades || resFac.data.data || []));
+      setCarreras(Array.isArray(resCar.data) ? resCar.data : (resCar.data.data?.carreras || resCar.data.data || []));
     } catch (err: any) {
       const mensaje = err.response?.data?.message || err.message || 'Error al cargar catálogos institucionales.';
       setError(mensaje);

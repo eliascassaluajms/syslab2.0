@@ -3,6 +3,7 @@ import { Can } from '../components/common/Can';
 import { useAuth } from '../hooks/useAuth';
 import { httpClient as api } from '../services/httpClient';
 
+// Alineado con Prisma Schema
 interface Facultad {
   id: number;
   nombre: string;
@@ -13,7 +14,7 @@ interface Facultad {
 interface Carrera {
   id: number;
   nombre: string;
-  sigla?: string;
+  descripcion?: string | null;
   facultadId: number;
   facultad?: { id: number; nombre: string; sigla: string };
 }
@@ -21,7 +22,6 @@ interface Carrera {
 export const CatalogosView: React.FC = () => {
   const { user } = useAuth();
 
-  // Pestaña activa: 'facultades' | 'carreras'
   const [tabActiva, setTabActiva] = useState<'facultades' | 'carreras'>('facultades');
 
   // Datos
@@ -30,20 +30,27 @@ export const CatalogosView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Estados de Modales
+  // Filtro
+  const [facultadFiltroId, setFacultadFiltroId] = useState<number | ''>('');
+
+  // Modales y Formulario
   const [modalFacultad, setModalFacultad] = useState<boolean>(false);
   const [modalCarrera, setModalCarrera] = useState<boolean>(false);
   const [guardando, setGuardando] = useState<boolean>(false);
 
-  // Formulario Facultad
   const [nombreFacultad, setNombreFacultad] = useState<string>('');
   const [siglaFacultad, setSiglaFacultad] = useState<string>('');
 
-  // Formulario Carrera (Sin campo sigla para evitar errores con la base de datos)
   const [nombreCarrera, setNombreCarrera] = useState<string>('');
   const [facultadIdSeleccionada, setFacultadIdSeleccionada] = useState<number | ''>('');
 
-  // Cargar Catálogos según Permisos
+  // Extraer datos de respuesta de forma segura
+  const extractData = (res: any) => {
+    if (Array.isArray(res.data)) return res.data;
+    if (Array.isArray(res.data?.data)) return res.data.data;
+    return [];
+  };
+
   const cargarCatalogos = async () => {
     setLoading(true);
     setError(null);
@@ -57,21 +64,20 @@ export const CatalogosView: React.FC = () => {
       if (tienePermisoFacultades) {
         peticiones.push(api.get('/catalogos/facultades'));
       } else {
-        peticiones.push(Promise.resolve({ data: { data: [] } }));
+        peticiones.push(Promise.resolve({ data: [] }));
       }
 
       if (tienePermisoCarreras) {
         peticiones.push(api.get('/catalogos/carreras'));
       } else {
-        peticiones.push(Promise.resolve({ data: { data: [] } }));
+        peticiones.push(Promise.resolve({ data: [] }));
       }
 
       const [resFacultades, resCarreras] = await Promise.all(peticiones);
 
-      setFacultades(resFacultades.data?.data || []);
-      setCarreras(resCarreras.data?.data || []);
+      setFacultades(extractData(resFacultades));
+      setCarreras(extractData(resCarreras));
 
-      // Ajustar pestaña por defecto si no tiene acceso a facultades
       if (!tienePermisoFacultades && tienePermisoCarreras) {
         setTabActiva('carreras');
       }
@@ -86,16 +92,16 @@ export const CatalogosView: React.FC = () => {
     cargarCatalogos();
   }, []);
 
-  // Guardar Nueva Facultad
   const handleCrearFacultad = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombreFacultad.trim()) return;
+    if (!nombreFacultad.trim() || !siglaFacultad.trim()) return;
     setGuardando(true);
+    setError(null);
 
     try {
       await api.post('/catalogos/facultades', {
-        nombre: nombreFacultad,
-        sigla: siglaFacultad,
+        nombre: nombreFacultad.trim(),
+        sigla: siglaFacultad.trim().toUpperCase(),
       });
 
       setNombreFacultad('');
@@ -109,15 +115,15 @@ export const CatalogosView: React.FC = () => {
     }
   };
 
-  // Guardar Nueva Carrera
   const handleCrearCarrera = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombreCarrera.trim() || !facultadIdSeleccionada) return;
     setGuardando(true);
+    setError(null);
 
     try {
       await api.post('/catalogos/carreras', {
-        nombre: nombreCarrera,
+        nombre: nombreCarrera.trim(),
         facultadId: Number(facultadIdSeleccionada),
       });
 
@@ -132,6 +138,10 @@ export const CatalogosView: React.FC = () => {
     }
   };
 
+  const carrerasFiltradas = facultadFiltroId
+    ? carreras.filter((c) => c.facultadId === Number(facultadFiltroId))
+    : carreras;
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] justify-center items-center">
@@ -145,7 +155,7 @@ export const CatalogosView: React.FC = () => {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      {/* Encabezado Principal */}
+      {/* Encabezado */}
       <div className="border-b border-gray-800 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
@@ -156,11 +166,10 @@ export const CatalogosView: React.FC = () => {
           </p>
         </div>
 
-        {/* Acciones por Pestaña utilizando Permisos Granulares */}
         {tabActiva === 'facultades' && (
           <Can permiso="facultades:crear">
             <button
-              onClick={() => setModalFacultad(true)}
+              onClick={() => { setError(null); setModalFacultad(true); }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 cursor-pointer border border-blue-500/30"
             >
               ➕ Nueva Facultad
@@ -171,7 +180,7 @@ export const CatalogosView: React.FC = () => {
         {tabActiva === 'carreras' && (
           <Can permiso="carreras:crear">
             <button
-              onClick={() => setModalCarrera(true)}
+              onClick={() => { setError(null); setModalCarrera(true); }}
               disabled={facultades.length === 0}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-600/20 cursor-pointer border border-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -181,15 +190,19 @@ export const CatalogosView: React.FC = () => {
         )}
       </div>
 
-      {/* Alerta de Error */}
       {error && (
-        <div className="rounded-xl bg-red-500/10 p-4 border border-red-500/20 text-sm font-medium text-red-400 flex items-center gap-3">
-          <span>⚠️</span>
-          <span>{error}</span>
+        <div className="rounded-xl bg-red-500/10 p-4 border border-red-500/20 text-sm font-medium text-red-400 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span>⚠️</span>
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError(null)} className="text-xs text-red-400 hover:underline">
+            Descartar
+          </button>
         </div>
       )}
 
-      {/* Navegación por Pestañas Protegidas */}
+      {/* Navegación por Pestañas */}
       <div className="flex border-b border-gray-800 space-x-2">
         <Can permiso="facultades:listar">
           <button
@@ -218,16 +231,9 @@ export const CatalogosView: React.FC = () => {
         </Can>
       </div>
 
-      {/* TAB 1: TABLA DE FACULTADES */}
+      {/* TAB 1: FACULTADES */}
       {tabActiva === 'facultades' && (
-        <Can
-          permiso="facultades:listar"
-          fallback={
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center text-gray-400 text-sm">
-              🚫 No posee permisos para listar las facultades institucionales.
-            </div>
-          }
-        >
+        <Can permiso="facultades:listar" fallback={<div className="bg-gray-900 p-8 text-center text-gray-400 text-sm border border-gray-800 rounded-2xl">🚫 No posee permisos para listar facultades.</div>}>
           <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -245,7 +251,7 @@ export const CatalogosView: React.FC = () => {
                       <tr key={f.id} className="hover:bg-gray-800/40 transition-colors">
                         <td className="py-4 px-6 text-gray-500 font-mono text-xs">#{f.id}</td>
                         <td className="py-4 px-6 font-semibold text-white">{f.nombre}</td>
-                        <td className="py-4 px-6 font-mono text-xs text-blue-400 font-bold">{f.sigla || '-'}</td>
+                        <td className="py-4 px-6 font-mono text-xs text-blue-400 font-bold">{f.sigla}</td>
                         <td className="py-4 px-6 text-center">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             {f._count?.carreras ?? carreras.filter((c) => c.facultadId === f.id).length} carrera(s)
@@ -256,7 +262,7 @@ export const CatalogosView: React.FC = () => {
                   ) : (
                     <tr>
                       <td colSpan={4} className="py-8 text-center text-gray-500 text-xs italic">
-                        No hay facultades creadas. Haz clic en "Nueva Facultad" para iniciar.
+                        No hay facultades creadas.
                       </td>
                     </tr>
                   )}
@@ -267,51 +273,63 @@ export const CatalogosView: React.FC = () => {
         </Can>
       )}
 
-      {/* TAB 2: TABLA DE CARRERAS */}
+      {/* TAB 2: CARRERAS */}
       {tabActiva === 'carreras' && (
-        <Can
-          permiso="carreras:listar"
-          fallback={
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center text-gray-400 text-sm">
-              🚫 No posee permisos para listar las carreras universitarias.
+        <Can permiso="carreras:listar" fallback={<div className="bg-gray-900 p-8 text-center text-gray-400 text-sm border border-gray-800 rounded-2xl">🚫 No posee permisos para listar carreras.</div>}>
+          <div className="space-y-4">
+            {/* Filtro dinámico por facultad */}
+            <div className="flex items-center gap-3 bg-gray-900/90 p-3.5 border border-gray-800 rounded-xl">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Filtrar por Facultad:</label>
+              <select
+                value={facultadFiltroId}
+                onChange={(e) => setFacultadFiltroId(e.target.value ? Number(e.target.value) : '')}
+                className="bg-gray-800 border border-gray-700 text-white text-xs rounded-lg p-2 focus:outline-none focus:border-blue-500 cursor-pointer min-w-[240px]"
+              >
+                <option value="">-- Todas las Facultades --</option>
+                {facultades.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nombre} ({f.sigla})
+                  </option>
+                ))}
+              </select>
             </div>
-          }
-        >
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-950/60 border-b border-gray-800 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    <th className="py-4 px-6">ID</th>
-                    <th className="py-4 px-6">Nombre de Carrera</th>
-                    <th className="py-4 px-6">Facultad Perteneciente</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/60 text-sm">
-                  {carreras.length > 0 ? (
-                    carreras.map((c) => {
-                      const facultad = facultades.find((f) => f.id === c.facultadId) || c.facultad;
-                      return (
-                        <tr key={c.id} className="hover:bg-gray-800/40 transition-colors">
-                          <td className="py-4 px-6 text-gray-500 font-mono text-xs">#{c.id}</td>
-                          <td className="py-4 px-6 font-semibold text-white">{c.nombre}</td>
-                          <td className="py-4 px-6">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                              {facultad ? facultad.nombre : `Facultad #${c.facultadId}`}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="py-8 text-center text-gray-500 text-xs italic">
-                        No hay carreras registradas. Asegúrate de tener al menos una Facultad antes de crear Carreras.
-                      </td>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-950/60 border-b border-gray-800 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                      <th className="py-4 px-6">ID</th>
+                      <th className="py-4 px-6">Nombre de Carrera</th>
+                      <th className="py-4 px-6">Facultad Perteneciente</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/60 text-sm">
+                    {carrerasFiltradas.length > 0 ? (
+                      carrerasFiltradas.map((c) => {
+                        const facultad = facultades.find((f) => f.id === c.facultadId) || c.facultad;
+                        return (
+                          <tr key={c.id} className="hover:bg-gray-800/40 transition-colors">
+                            <td className="py-4 px-6 text-gray-500 font-mono text-xs">#{c.id}</td>
+                            <td className="py-4 px-6 font-semibold text-white">{c.nombre}</td>
+                            <td className="py-4 px-6">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                {facultad ? `${facultad.nombre} (${facultad.sigla})` : `Facultad #${c.facultadId}`}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="py-8 text-center text-gray-500 text-xs italic">
+                          {facultadFiltroId ? 'No hay carreras registradas para la facultad seleccionada.' : 'No hay carreras registradas.'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </Can>
@@ -325,15 +343,12 @@ export const CatalogosView: React.FC = () => {
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>🏢</span> Registrar Nueva Facultad
               </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Estructura superior institucional UAJMS.
-              </p>
             </div>
 
             <form onSubmit={handleCrearFacultad} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Nombre de la Facultad
+                  Nombre de la Facultad *
                 </label>
                 <input
                   type="text"
@@ -347,14 +362,16 @@ export const CatalogosView: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-                  Sigla o Abreviatura
+                  Sigla o Abreviatura *
                 </label>
                 <input
                   type="text"
+                  required
+                  maxLength={20}
                   placeholder="Ej. FICYT"
                   value={siglaFacultad}
                   onChange={(e) => setSiglaFacultad(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 font-mono uppercase"
                 />
               </div>
 
@@ -387,9 +404,6 @@ export const CatalogosView: React.FC = () => {
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>🎓</span> Registrar Nueva Carrera
               </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Asocie la carrera a una Facultad previamente registrada.
-              </p>
             </div>
 
             <form onSubmit={handleCrearCarrera} className="space-y-4">
@@ -401,12 +415,12 @@ export const CatalogosView: React.FC = () => {
                   required
                   value={facultadIdSeleccionada}
                   onChange={(e) => setFacultadIdSeleccionada(Number(e.target.value))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
                 >
                   <option value="">-- Seleccionar Facultad --</option>
                   {facultades.map((f) => (
                     <option key={f.id} value={f.id}>
-                      {f.nombre} ({f.sigla || `#${f.id}`})
+                      {f.nombre} ({f.sigla})
                     </option>
                   ))}
                 </select>
