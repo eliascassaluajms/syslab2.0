@@ -72,6 +72,9 @@ model Usuario {
   incidenciasReportadas Incidencia[] @relation("IncidenciasReportadas")
   incidenciasAsignadas  Incidencia[] @relation("IncidenciasAsignadas")
   horariosDocente       Horario[]    @relation("HorariosDocente")
+  solicitudesDocente    SolicitudHorarioExtraordinario[] @relation("DocenteSolicitudes")
+  bitacorasDocente      SesionBitacora[]                 @relation("DocenteBitacoras")
+  asistenciasEstudiante AsistenciaEstudiante[]           @relation("AsistenciasEstudiante")
 
   @@map("usuarios")
 }
@@ -148,6 +151,7 @@ model Materia {
   
   planEstudio PlanEstudio @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   horarios    Horario[]
+  bitacoras   SesionBitacora[]
 
   @@map("materias")
 }
@@ -173,9 +177,11 @@ model Laboratorio {
   carreraId     Int?     @map("carrera_id")
   carrera       Carrera? @relation(fields: [carreraId], references: [id], onDelete: SetNull)
 
-  equipos       Equipo[]
-  horarios      Horario[]
-  activities    Activity[]
+  equipos                    Equipo[]
+  horarios                   Horario[]
+  activities                 Activity[]
+  solicitudesExtraordinarias SolicitudHorarioExtraordinario[]
+  bitacoras                  SesionBitacora[]
   @@map("laboratorios")
 }
 
@@ -367,4 +373,74 @@ model EventoPaymentConfig {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("evento_payment_configs")
+}
+
+// =========================================================================
+// MÓDULO DE BITÁCORA, HORARIOS EXTRAORDINARIOS Y ASISTENCIA ESTUDIANTIL
+// =========================================================================
+
+enum EstadoSolicitud {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+enum TipoUsoLaboratorio {
+  REGULAR
+  EXTRAORDINARIO
+}
+
+// 1. Solicitudes de Horarios Extraordinarios
+model SolicitudHorarioExtraordinario {
+  id                    Int               @id @default(autoincrement())
+  laboratorioId         Int
+  laboratorio           Laboratorio       @relation(fields: [laboratorioId], references: [id])
+  docenteId             Int?
+  docente               Usuario?          @relation("DocenteSolicitudes", fields: [docenteId], references: [id])
+  solicitadoPorDirector Boolean           @default(false)
+  nombreAyudante        String?
+  materia               String
+  fecha                 DateTime          @db.Date
+  horaInicio            String
+  horaFin               String
+  motivo                String
+  estado                EstadoSolicitud   @default(PENDIENTE)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+// 2. Sesiones de Bitácora de Uso
+model SesionBitacora {
+  id                 Int                   @id @default(autoincrement())
+  laboratorioId      Int
+  laboratorio        Laboratorio           @relation(fields: [laboratorioId], references: [id])
+  materiaId          Int?
+  materia            Materia?              @relation(fields: [materiaId], references: [id])
+  docenteId          Int?
+  docente            Usuario?              @relation("DocenteBitacoras", fields: [docenteId], references: [id])
+  nombreAyudante     String?
+  materiaNombre      String?
+  fecha              DateTime              @db.Date
+  horaInicio         String
+  horaFin            String
+  practicaRealizada  String?
+  cumplio            Boolean               @default(false)
+  tipoUso            TipoUsoLaboratorio    @default(REGULAR)
+  tokenQR            String                @unique
+  asistencias        AsistenciaEstudiante[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+}
+
+// 3. Registro de Asistencia de Estudiantes
+model AsistenciaEstudiante {
+  id                Int            @id @default(autoincrement())
+  sesionBitacoraId  Int
+  sesionBitacora    SesionBitacora @relation(fields: [sesionBitacoraId], references: [id], onDelete: Cascade)
+  estudianteId      Int
+  estudiante        Usuario        @relation("AsistenciasEstudiante", fields: [estudianteId], references: [id])
+  fechaHora         DateTime       @default(now())
+
+  // Evita que un estudiante marque asistencia más de una vez en la misma sesión
+  @@unique([sesionBitacoraId, estudianteId])
 }
