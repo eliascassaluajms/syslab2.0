@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import { httpClient } from '../services/httpClient';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { getPublicAssetUrl } from '../utils/urlHelper';
 
 type EstadoInscripcion = 'PRE_INSCRITO' | 'PAGO_VERIFICADO' | 'RECHAZADO' | 'ASISTENCIA_CONFIRMADA';
 type Participante = {
@@ -18,17 +17,6 @@ type Participante = {
   activity?: { id: string; title: string };
   createdAt?: string;
   updatedAt?: string;
-const obtenerUrlComprobante = (url?: string | null) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-
-  // Obtener host base del backend (sin el /api final si está presente)
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  const backendHost = apiBase.replace(/\/api\/?$/, '');
-
-  // Limpiar posibles prefijos duplicados en la cadena
-  const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `${backendHost}${cleanPath.replace(/^\/api\/api/, '/api')}`;
 };
 
 export const ValidacionPagosView: React.FC = () => {
@@ -157,7 +145,7 @@ export const ValidacionPagosView: React.FC = () => {
               {p.comprobanteUrl ? (
                 <div className="space-y-2">
                   <a 
-                    href={obtenerUrlComprobante(p.comprobanteUrl)} 
+                    href={getPublicAssetUrl(p.comprobanteUrl)} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="block text-center py-2 px-3 bg-blue-600/15 border border-blue-500/30 rounded-xl text-blue-400 text-xs font-semibold hover:bg-blue-600/25 transition-colors"
