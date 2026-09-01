@@ -1,14 +1,15 @@
 import { Router } from 'express';
-import { 
-  crearEquipo, 
-  crearLoteEquipos, 
-  listarEquiposPorLaboratorio 
-} from '../controllers/equipos.controller.js';
+import { equipoController } from '../controllers/equipo.controller.js';
+import { verificarJWT } from '../middlewares/auth.middleware.js';
+import { requirePermission } from '../middlewares/authorize.middleware.js';
 
 const router = Router();
+router.use(verificarJWT);
 
-router.post('/', crearEquipo);                  // POST /api/equipos
-router.post('/lote', crearLoteEquipos);          // POST /api/equipos/lote
-router.get('/laboratorio/:laboratorioId', listarEquiposPorLaboratorio); // GET /api/equipos/laboratorio/1
+router.get('/', requirePermission('equipos:listar'), equipoController.listar);
+router.get('/:id', requirePermission('equipos:listar'), equipoController.obtenerPorId);
+router.post('/', requirePermission('equipos:crear'), equipoController.crear);
+router.put('/:id', requirePermission('equipos:editar'), equipoController.actualizar);
+router.delete('/:id', requirePermission('equipos:eliminar'), equipoController.eliminar);
 
 export default router;
