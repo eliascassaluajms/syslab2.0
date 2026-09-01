@@ -268,7 +268,7 @@ export const EventoParticipanteController = {
       console.log('[OCR] Archivo guardado en:', rutaDestino);
 
       // URL accesible
-      const comprobanteUrl = `/api/comprobantes/${nombreArchivoSeguro}`;
+      const comprobanteUrl = `/comprobantes/${nombreArchivoSeguro}`;
 
       // 3. Procesar datos del texto OCR
       const resultado = OcrParserService.procesarTexto(textoOCR, comprobanteUrl);

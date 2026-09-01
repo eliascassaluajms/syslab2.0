@@ -65,9 +65,10 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Servir la carpeta estática para peticiones /api/comprobantes y /comprobantes
-app.use('/api/comprobantes', express.static(uploadDir));
+// Servir la carpeta estática para peticiones /comprobantes, /api/comprobantes y /api/api/comprobantes
 app.use('/comprobantes', express.static(uploadDir));
+app.use('/api/comprobantes', express.static(uploadDir));
+app.use('/api/api/comprobantes', express.static(uploadDir)); // Respaldo para peticiones con prefijo duplicado
 
 // Exposición pública de medios estáticos del frontend
 app.use('/frontend/media', express.static(path.resolve(process.cwd(), '../frontend/media')));

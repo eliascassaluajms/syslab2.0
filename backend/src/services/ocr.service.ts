@@ -26,7 +26,7 @@ export const guardarComprobante = async (buffer: Buffer, filename: string): Prom
   await fs.writeFile(filePath, buffer);
   
   // Retorna la URL relativa que se almacena en la base de datos
-  return `/api/comprobantes/${filename}`;
+  return `/comprobantes/${filename}`;
 };
 
 export class OcrParserService {
