@@ -56,9 +56,9 @@ const menuConfig: MenuItem[] = [
         permiso: 'laboratorios:listar',
       },
       {
-        titulo: 'Inventario de Equipos',
-        ruta: '/admin/equipos',
-        icono: '💻',
+        titulo: 'Inventario de Bienes',
+        ruta: '/admin/inventario',
+        icono: '📦',
         permiso: 'equipos:listar',
       },
       {
