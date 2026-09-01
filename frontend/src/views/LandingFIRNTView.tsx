@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import { activityService } from '../services/activity.service';
-import httpClient from '../services/httpClient';
-
+import { httpClient } from '../services/httpClient';
 interface IActividad {
   id: string | number;
   title: string;
