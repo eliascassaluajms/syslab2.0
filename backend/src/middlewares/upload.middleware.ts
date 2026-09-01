@@ -32,6 +32,8 @@ const fileFilter = (req: any, file: any, cb: any) => {
 
 export const uploadComprobante = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Límite de 5 MB
+  limits: { fileSize: 3 * 1024 * 1024 }, // Límite estricto de 3 MB
   fileFilter
 });
+
+export const uploadComprobanteMiddleware = uploadComprobante;
