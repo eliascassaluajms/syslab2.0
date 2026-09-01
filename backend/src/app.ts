@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import authRouter from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -24,25 +25,49 @@ import asistenciaRoutes from './routes/asistencia.routes.js';
 
 const app: Application = express();
 
-const rawOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
-const cleanOrigin = rawOrigin.replace(/\/$/, '');
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5000',
   'http://127.0.0.1:5173',
-  cleanOrigin,
-  'http://0.0.0.0:5173',
-];
+  'http://200.87.27.36:5173',
+  'http://200.87.27.36',
+  'http://registrocitren.duckdns.org',
+  'https://registrocitren.duckdns.org',
+  process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : undefined,
+].filter(Boolean) as string[];
 
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: (origin, callback) => {
+      // Permite peticiones locales, server-to-server, curl o de la lista blanca
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes(origin.replace(/\/$/, '')) ||
+        origin.endsWith('.duckdns.org')
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origen no permitido por CORS: ${origin}`));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
 app.use(express.json());
+
+// Directorio físico de comprobantes subidos
+const uploadDir = path.join(process.cwd(), 'uploads', 'comprobantes');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Servir la carpeta estática para peticiones /api/comprobantes y /comprobantes
+app.use('/api/comprobantes', express.static(uploadDir));
+app.use('/comprobantes', express.static(uploadDir));
 
 // Exposición pública de medios estáticos del frontend
 app.use('/frontend/media', express.static(path.resolve(process.cwd(), '../frontend/media')));
