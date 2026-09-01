@@ -23,6 +23,7 @@ import ActivitiesView from '../views/ActivitiesView';
 import { ParticipantesView } from '../views/ParticipantesView';
 import { ValidacionPagosView } from '../views/ValidacionPagosView';
 import { HistorialBitacorasView } from '../views/bitacora/HistorialBitacorasView';
+import IncidenciasView from '../views/incidencias/IncidenciasView';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -55,6 +56,8 @@ export const AppRoutes: React.FC = () => {
             <Route path="solicitudes-extraordinarias" element={<HorariosView />} />
             <Route path="bitacoras" element={<HistorialBitacorasView />} />
             <Route path="uso-laboratorios" element={<HistorialBitacorasView />} />
+            <Route path="incidencias" element={<IncidenciasView />} />
+            <Route path="fallas" element={<IncidenciasView />} />
             
             {/* Actividades y Eventos */}
             <Route path="actividades">
@@ -73,6 +76,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="/horarios" element={<HorariosView />} />
           <Route path="/bitacoras" element={<HistorialBitacorasView />} />
           <Route path="/activities" element={<ActivitiesView />} />
+          <Route path="/incidencias" element={<IncidenciasView />} />
+          <Route path="/admin/incidencias" element={<IncidenciasView />} />
+          <Route path="/admin/fallas" element={<IncidenciasView />} />
           <Route path="/admin/planes-materias" element={<PlanesMateriasView />} />
           <Route path="/admin/actividades" element={<Navigate to="/admin/actividades/categorias" replace />} />
         </Route>

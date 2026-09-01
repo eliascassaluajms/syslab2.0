@@ -74,10 +74,10 @@ const menuConfig: MenuItem[] = [
         permiso: ['solicitudes:listar', 'solicitudes:crear'],
       },
       {
-        titulo: 'Gestión de Incidencias',
-        ruta: '/admin/fallas',
+        titulo: 'Incidencias y Fallas',
+        ruta: '/admin/incidencias',
         icono: '⚠️',
-        permiso: 'fallas:listar',
+        permiso: ['fallas:listar', 'incidencias:listar'],
       },
     ],
   },
