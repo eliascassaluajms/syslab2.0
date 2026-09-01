@@ -35,3 +35,5 @@ postgres_data/
 .docker/
 npm/data/
 npm/letsencrypt/
+uploads/
+backend/uploads/
