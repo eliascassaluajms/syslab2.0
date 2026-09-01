@@ -212,11 +212,20 @@ model Horario {
 // ENUMS Y MODELOS DE EQUIPOS E INCIDENCIAS
 // ==========================================
 
-enum EstadoEquipo {
+enum CategoriaActivo {
+  COMPUTO
+  RED_COMUNICACION
+  MUEBLES_ENSERES
+  HERRAMIENTAS_INSTRUMENTOS
+  AUDIOVISUAL
+  OTRO
+}
+
+enum EstadoActivo {
   OPERATIVO
   EN_MANTENIMIENTO
-  CON_FALLA
-  FUERA_DE_SERVICIO
+  DETERIORADO
+  DE_BAJA
 }
 
 enum EstadoIncidencia {
@@ -234,22 +243,24 @@ enum PrioridadIncidencia {
 }
 
 model Equipo {
-  id               Int           @id @default(autoincrement())
-  codigoInventario String        @unique @map("codigo_inventario")
-  nombre           String
-  marca            String?
-  modelo           String?
-  numSerie         String?       @map("num_serie")
-  especificaciones Json?
-  estado           EstadoEquipo  @default(OPERATIVO)
+  id                Int              @id @default(autoincrement())
+  laboratorioId     Int              @map("laboratorio_id")
+  codigoPatrimonial String?          @unique @map("codigo_patrimonial")
+  nombre            String
+  categoria         CategoriaActivo  @default(COMPUTO)
+  estado            EstadoActivo     @default(OPERATIVO)
+  marca             String?
+  modelo            String?
+  numeroSerie       String?          @map("numero_serie")
+  ubicacionDetalle  String?          @map("ubicacion_detalle")
+  descripcion       String?          @db.Text
+  especificaciones  Json?
+  fechaAdquisicion  DateTime?        @map("fecha_adquisicion")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
-  laboratorioId    Int           @map("laboratorio_id")
-  laboratorio      Laboratorio   @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
-
-  incidencias      Incidencia[]
-
-  creadoEn         DateTime      @default(now()) @map("creado_en")
-  actualizadoEn    DateTime      @updatedAt @map("actualizado_en")
+  laboratorio       Laboratorio      @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+  incidencias       Incidencia[]
 
   @@map("equipos")
 }

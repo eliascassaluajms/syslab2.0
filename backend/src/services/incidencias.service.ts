@@ -1,4 +1,4 @@
-import { EstadoEquipo, EstadoIncidencia, PrioridadIncidencia, Prisma } from '@prisma/client';
+import { EstadoActivo, EstadoIncidencia, PrioridadIncidencia, Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { incidenciasRepository } from '../repositories/incidencias.repository.js';
 import { AppError } from '../utils/appError.js';
@@ -139,10 +139,10 @@ export class IncidenciasService {
         throw new AppError('El equipo especificado no pertenece al laboratorio indicado.', 400);
       }
 
-      // Actualizar estado del equipo a CON_FALLA
+      // Actualizar estado del equipo a EN_MANTENIMIENTO
       await prisma.equipo.update({
         where: { id: equipoId },
-        data: { estado: EstadoEquipo.CON_FALLA },
+        data: { estado: EstadoActivo.EN_MANTENIMIENTO },
       });
     }
 
@@ -223,12 +223,12 @@ export class IncidenciasService {
       if (dto.estado === EstadoIncidencia.RESUELTO || dto.estado === EstadoIncidencia.RECHAZADO) {
         await prisma.equipo.update({
           where: { id: incidenciaExistente.equipoId },
-          data: { estado: EstadoEquipo.OPERATIVO },
+          data: { estado: EstadoActivo.OPERATIVO },
         });
       } else if (dto.estado === EstadoIncidencia.EN_PROCESO) {
         await prisma.equipo.update({
           where: { id: incidenciaExistente.equipoId },
-          data: { estado: EstadoEquipo.EN_MANTENIMIENTO },
+          data: { estado: EstadoActivo.EN_MANTENIMIENTO },
         });
       }
     }

@@ -21,7 +21,7 @@ export class IncidenciaService {
         laboratorio: { select: { id: true, nombre: true } },
         solicitante: { select: { id: true, nombre: true, apellido: true, correo: true } },
         tecnicoAsignado: { select: { id: true, nombre: true, apellido: true } },
-        equipo: { select: { id: true, codigoInventario: true, nombre: true } },
+        equipo: { select: { id: true, codigoPatrimonial: true, nombre: true } },
       },
       orderBy: { fechaReporte: 'desc' },
     });

@@ -38,7 +38,7 @@ export class IncidenciasRepository {
           select: {
             id: true,
             nombre: true,
-            codigoInventario: true,
+            codigoPatrimonial: true,
             estado: true,
           },
         },
@@ -109,7 +109,7 @@ export class IncidenciasRepository {
           select: {
             id: true,
             nombre: true,
-            codigoInventario: true,
+            codigoPatrimonial: true,
             estado: true,
           },
         },

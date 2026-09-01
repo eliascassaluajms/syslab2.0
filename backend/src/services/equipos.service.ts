@@ -1,13 +1,13 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
-import { EstadoEquipo, Prisma } from '@prisma/client';
+import { EstadoActivo, Prisma } from '@prisma/client';
 
 export interface CrearEquipoDTO {
-  codigoInventario: string;
+  codigoPatrimonial?: string;
   nombre: string;
   marca?: string;
   modelo?: string;
-  numSerie?: string;
+  numeroSerie?: string;
   laboratorioId: number;
   especificaciones?: string | object;
 }
@@ -44,21 +44,23 @@ export class EquiposService {
    * Crear un único equipo individual
    */
   static async crearEquipo(data: CrearEquipoDTO) {
-    const existe = await prisma.equipo.findUnique({
-      where: { codigoInventario: data.codigoInventario.trim() },
-    });
+    if (data.codigoPatrimonial && data.codigoPatrimonial.trim()) {
+      const existe = await prisma.equipo.findUnique({
+        where: { codigoPatrimonial: data.codigoPatrimonial.trim() },
+      });
 
-    if (existe) {
-      throw new AppError('El código de inventario ya se encuentra registrado.', 400);
+      if (existe) {
+        throw new AppError('El código patrimonial ya se encuentra registrado.', 400);
+      }
     }
 
     return await prisma.equipo.create({
       data: {
-        codigoInventario: data.codigoInventario.trim(),
+        codigoPatrimonial: data.codigoPatrimonial?.trim() || null,
         nombre: data.nombre.trim(),
         marca: data.marca?.trim() || null,
         modelo: data.modelo?.trim() || null,
-        numSerie: data.numSerie?.trim() || null,
+        numeroSerie: data.numeroSerie?.trim() || null,
         laboratorioId: Number(data.laboratorioId),
         especificaciones: this.parseEspecificaciones(data.especificaciones),
       },
@@ -87,16 +89,16 @@ export class EquiposService {
     for (let i = 0; i < cantidad; i++) {
       const num = Number(correlativoInicio) + i;
       const numPadded = String(num).padStart(Number(digitosCorrelativo), '0');
-      const codigoInventario = `${prefijoCodigo.trim()}${numPadded}`;
+      const codigoPatrimonial = `${prefijoCodigo.trim()}${numPadded}`;
 
       equiposData.push({
-        codigoInventario,
+        codigoPatrimonial,
         nombre: nombre.trim(),
         marca: marca?.trim() || null,
         modelo: modelo?.trim() || null,
         laboratorioId: Number(laboratorioId),
         especificaciones: jsonEspecs,
-        estado: EstadoEquipo.OPERATIVO,
+        estado: EstadoActivo.OPERATIVO,
       });
     }
 
@@ -126,11 +128,11 @@ export class EquiposService {
    */
   static async cambiarEstado(
     equipoId: number,
-    estado: EstadoEquipo | string
+    estado: EstadoActivo | string
   ) {
     return await prisma.equipo.update({
       where: { id: Number(equipoId) },
-      data: { estado: estado as EstadoEquipo },
+      data: { estado: estado as EstadoActivo },
     });
   }
 }

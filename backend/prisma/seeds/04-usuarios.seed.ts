@@ -164,18 +164,19 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
   for (const conf of configuracionLaboratorios) {
     for (let i = 1; i <= conf.cantidad; i++) {
       const numFormatted = i.toString().padStart(2, '0');
-      const codigoInventario = `EQ-${conf.prefijo}-${numFormatted}`;
+      const codigoPatrimonial = `EQ-${conf.prefijo}-${numFormatted}`;
 
       await prisma.equipo.upsert({
-        where: { codigoInventario: codigoInventario },
+        where: { codigoPatrimonial: codigoPatrimonial },
         update: { laboratorioId: conf.labId },
         create: {
-          codigoInventario: codigoInventario,
+          codigoPatrimonial: codigoPatrimonial,
           nombre: `Estación de Trabajo ${conf.prefijo}-${numFormatted}`,
+          categoria: 'COMPUTO',
+          estado: 'OPERATIVO',
           marca: i % 2 === 0 ? 'Dell' : 'HP',
           modelo: i % 2 === 0 ? 'OptiPlex 7090' : 'ProDesk 400 G6',
-          numSerie: `SN-${conf.prefijo}-${numFormatted}-2026`,
-          estado: 'OPERATIVO',
+          numeroSerie: `SN-${conf.prefijo}-${numFormatted}-2026`,
           especificaciones: {
             procesador: i % 2 === 0 ? 'Intel Core i7-10700' : 'Intel Core i5-10500',
             ram: '16 GB DDR4',
