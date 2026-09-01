@@ -70,7 +70,7 @@ model Usuario {
   asignacionesRoles AsignacionAmbito[]
 
   incidenciasReportadas Incidencia[] @relation("IncidenciasReportadas")
-  incidenciasAsignadas  Incidencia[] @relation("IncidenciasAsignadas")
+  incidenciasTecnico    Incidencia[] @relation("IncidenciasTecnico")
   horariosDocente       Horario[]    @relation("HorariosDocente")
   solicitudesDocente    SolicitudHorarioExtraordinario[] @relation("DocenteSolicitudes")
   bitacorasDocente      SesionBitacora[]                 @relation("DocenteBitacoras")
@@ -182,6 +182,7 @@ model Laboratorio {
   activities                 Activity[]
   solicitudesExtraordinarias SolicitudHorarioExtraordinario[]
   bitacoras                  SesionBitacora[]
+  incidencias                Incidencia[]
   @@map("laboratorios")
 }
 
@@ -219,12 +220,10 @@ enum EstadoEquipo {
 }
 
 enum EstadoIncidencia {
-  REPORTADA
-  EN_DIAGNOSTICO
-  EN_REPARACION
-  RESUELTA
-  CERRADA
-  CANCELADA
+  PENDIENTE
+  EN_PROCESO
+  RESUELTO
+  RECHAZADO
 }
 
 enum PrioridadIncidencia {
@@ -257,26 +256,24 @@ model Equipo {
 
 model Incidencia {
   id              Int                 @id @default(autoincrement())
-  codigo          String              @unique
+  laboratorioId   Int                 @map("laboratorio_id")
+  solicitanteId   Int                 @map("solicitante_id")
+  tecnicoId       Int?                @map("tecnico_id")
+  equipoId        Int?                @map("equipo_id")
   titulo          String
   descripcion     String              @db.Text
   prioridad       PrioridadIncidencia @default(MEDIA)
-  estado          EstadoIncidencia    @default(REPORTADA)
-
-  equipoId        Int                 @map("equipo_id")
-  equipo          Equipo              @relation(fields: [equipoId], references: [id], onDelete: Cascade)
-
-  reportadoPorId  Int                 @map("reportado_por_id")
-  reportadoPor    Usuario             @relation("IncidenciasReportadas", fields: [reportadoPorId], references: [id])
-
-  asignadoAId     Int?                @map("asignado_a_id")
-  asignadoA       Usuario?            @relation("IncidenciasAsignadas", fields: [asignadoAId], references: [id])
-
+  estado          EstadoIncidencia    @default(PENDIENTE)
   solucion        String?             @db.Text
+  fechaReporte    DateTime            @default(now()) @map("fecha_reporte")
   fechaResolucion DateTime?           @map("fecha_resolucion")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  creadoEn        DateTime            @default(now()) @map("creado_en")
-  actualizadoEn   DateTime            @updatedAt @map("actualizado_en")
+  laboratorio     Laboratorio         @relation(fields: [laboratorioId], references: [id])
+  solicitante     Usuario             @relation("IncidenciasReportadas", fields: [solicitanteId], references: [id])
+  tecnicoAsignado Usuario?            @relation("IncidenciasTecnico", fields: [tecnicoId], references: [id])
+  equipo          Equipo?             @relation(fields: [equipoId], references: [id])
 
   @@map("incidencias")
 }
