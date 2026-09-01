@@ -33,3 +33,5 @@ Thumbs.db
 # Volúmenes locales o temporales de Docker
 postgres_data/
 .docker/
+npm/data/
+npm/letsencrypt/
