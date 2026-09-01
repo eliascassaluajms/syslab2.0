@@ -14,7 +14,7 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const urlAsistencia = `${window.location.origin}/asistencia/${sesion.tokenQR}`;
+  const urlAsistenciaPublica = `${window.location.origin}/asistencia/${sesion.tokenQR}`;
 
   useEffect(() => {
     let activo = true;
@@ -85,7 +85,7 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
           </p>
 
           <div className="bg-white p-4 rounded-2xl shadow-lg border-4 border-emerald-500/20 mb-4">
-            <QRCodeSVG includeMargin={true} level="H" size={220} value={urlAsistencia} />
+            <QRCodeSVG includeMargin={true} level="H" size={220} value={urlAsistenciaPublica} />
           </div>
 
           <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between mt-2">

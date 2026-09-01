@@ -26,8 +26,8 @@ export class AsistenciaController {
     try {
       const { sesionId } = req.params;
 
-      if (!sesionId) {
-        throw new AppError('Se requiere el parámetro sesionId.', 400);
+      if (!sesionId || isNaN(Number(sesionId))) {
+        throw new AppError('El parámetro sesionId es obligatorio y debe ser numérico.', 400);
       }
 
       const asistencias = await asistenciaService.listarPorSesion(Number(sesionId));
@@ -35,7 +35,10 @@ export class AsistenciaController {
       res.status(200).json({
         status: 'success',
         results: asistencias.length,
-        data: { asistencias },
+        data: {
+          total: asistencias.length,
+          asistentes: asistencias,
+        },
       });
     } catch (error) {
       next(error);
