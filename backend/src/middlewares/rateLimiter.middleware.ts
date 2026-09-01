@@ -1,26 +1,38 @@
-import { Request, Response, NextFunction } from 'express';
+import rateLimit from 'express-rate-limit';
 
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
+// Limitador dinámico genérico para rutas públicas
+export const publicRateLimiter = (maxRequests = 30, windowMs = 60 * 1000) =>
+  rateLimit({
+    windowMs,
+    max: maxRequests,
+    message: {
+      status: 'fail',
+      message: 'Demasiadas peticiones públicas enviadas desde esta IP. Intenta más tarde.',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
-export const publicRateLimiter = (maxRequests = 30, windowMs = 60 * 1000) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    const now = Date.now();
-    const record = requestCounts.get(ip);
+// Limitador estricto para el endpoint pesado de OCR (Máx 6 intentos cada 10 minutos por IP)
+export const ocrRateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 6,
+  message: {
+    status: 'fail',
+    message: 'Has superado el límite de intentos de escaneo de comprobante. Por favor, espera unos minutos o introduce el número manualmente.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-    if (!record || now > record.resetTime) {
-      requestCounts.set(ip, { count: 1, resetTime: now + windowMs });
-      return next();
-    }
-
-    if (record.count >= maxRequests) {
-      res.status(429).json({
-        error: 'Demasiadas solicitudes. Por favor, intente nuevamente en un minuto.'
-      });
-      return;
-    }
-
-    record.count++;
-    next();
-  };
-};
+// Limitador general para el registro de preinscripciones (Máx 15 registros cada 15 minutos por IP)
+export const preinscripcionRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: {
+    status: 'fail',
+    message: 'Demasiadas solicitudes de inscripción desde esta conexión. Intenta más tarde.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

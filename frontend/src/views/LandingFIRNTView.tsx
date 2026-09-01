@@ -44,7 +44,11 @@ export const LandingFIRNTView: React.FC = () => {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [numeroTransaccion, setNumeroTransaccion] = useState('');
+  const [monto, setMonto] = useState<string | number>('');
   const [configPago, setConfigPago] = useState<IConfigPago | null>(null);
+
+  const [honeypot, setHoneypot] = useState('');
+  const [formStartTime] = useState<number>(() => Date.now());
 
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(false);
@@ -132,6 +136,13 @@ export const LandingFIRNTView: React.FC = () => {
 
   const handleFinalizarPreinscripcion = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Verificación rápida en frontend contra envíos instantáneos / bots
+    if ((Date.now() - formStartTime) < 2500 || honeypot !== '') {
+      setErrorMsg('Por favor completa el formulario de manera habitual.');
+      return;
+    }
+
     const codigoLimpio = numeroTransaccion.trim();
 
     const regexTransaccion = /^\d{6,25}$/;
@@ -158,7 +169,9 @@ export const LandingFIRNTView: React.FC = () => {
         activityId: actividadSeleccionada.id,
         codigoTransaccion: codigoLimpio,
         comprobanteUrl: (window as any).__comprobanteUrlSubido || undefined,
-      });
+        honeypot,
+        formStartTime,
+      } as any);
       setMensajeExito(true);
       setModalAbierto(false);
       setNumeroTransaccion('');
@@ -439,6 +452,19 @@ export const LandingFIRNTView: React.FC = () => {
             )}
 
             <form onSubmit={handleFinalizarPreinscripcion} className="space-y-3">
+              {/* Campo trampa Honeypot (invisible para personas reales) */}
+              <div className="opacity-0 absolute -left-[9999px] top-0 h-0 w-0 z-[-1] pointer-events-none" aria-hidden="true">
+                <label htmlFor="user_fax_website">No completar este campo</label>
+                <input
+                  id="user_fax_website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               {errorMsg && (
                 <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2 rounded text-xs text-center">
                   {errorMsg}
@@ -470,12 +496,16 @@ export const LandingFIRNTView: React.FC = () => {
                             headers: { 'Content-Type': 'multipart/form-data' }
                           });
                           
-                          if (res.data?.codigoTransaccion) {
-                            setNumeroTransaccion(res.data.codigoTransaccion);
+                          const resData = res.data?.data || res.data;
+                          if (resData?.codigoTransaccion) {
+                            setNumeroTransaccion(resData.codigoTransaccion);
                           }
-                          if (res.data?.comprobanteUrl) {
+                          if (resData?.monto !== undefined && resData?.monto !== null) {
+                            setMonto(resData.monto);
+                          }
+                          if (resData?.comprobanteUrl) {
                             // Guardamos opcionalmente la ruta del archivo subido
-                            (window as any).__comprobanteUrlSubido = res.data.comprobanteUrl;
+                            (window as any).__comprobanteUrlSubido = resData.comprobanteUrl;
                           }
                         } catch (err) {
                           setErrorMsg('No se pudo escanear el comprobante automáticamente. Ingrese el número manualmente.');
@@ -486,20 +516,31 @@ export const LandingFIRNTView: React.FC = () => {
                     />
                   </label>
                 </div>
-                <span className="text-[10px] text-slate-500 block">El escaneo OCR detectará automáticamente el Nro. Documento/Transacción.</span>
+                <span className="text-[10px] text-slate-500 block">El escaneo OCR detectará automáticamente el Nro. Documento/Transacción y el Monto (Bs.).</span>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">N° de Comprobante / Nro. Documento *</label>
-                <input
-                  type="text"
-                  required
-                  value={numeroTransaccion}
-                  onChange={(e) => setNumeroTransaccion(e.target.value)}
-                  placeholder="Ej. 5718439691"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
-                />
-                <span className="text-[10px] text-slate-500 mt-1 block">Ingrese el número de documento o transacción del comprobante móvil (solo dígitos).</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">N° de Comprobante *</label>
+                  <input
+                    type="text"
+                    required
+                    value={numeroTransaccion}
+                    onChange={(e) => setNumeroTransaccion(e.target.value)}
+                    placeholder="Ej. 5718439691"
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">Monto Registrado (Bs.)</label>
+                  <input
+                    type="text"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="Ej. 50.00"
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">

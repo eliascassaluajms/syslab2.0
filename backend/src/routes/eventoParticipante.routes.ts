@@ -3,17 +3,19 @@ import { EventoParticipanteController } from '../controllers/eventoParticipante.
 import { verificarJWT } from '../middlewares/auth.middleware.js';
 import { requirePermission } from '../middlewares/authorize.middleware.js';
 import { uploadComprobante } from '../middlewares/upload.middleware.js';
+import { ocrRateLimiter, preinscripcionRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
 
-// POST /api/evento-participantes (crear preinscripción pública)
-router.post('/', (req: Request, res: Response, next: NextFunction) => {
+// POST /api/evento-participantes (crear preinscripción pública protegida)
+router.post('/', preinscripcionRateLimiter, (req: Request, res: Response, next: NextFunction) => {
   EventoParticipanteController.crear(req, res).catch(next);
 });
 
 // POST /api/evento-participantes/ocr (DEBE IR ANTES DE /:id)
-// Endpoint público para escaneo OCR de comprobantes en preinscripción
+// Endpoint público para escaneo OCR de comprobantes protegido con Rate Limit y Multer
 router.post('/ocr', 
+  ocrRateLimiter,
   uploadComprobante.single('comprobante'),
   (req: Request, res: Response, next: NextFunction) => {
     EventoParticipanteController.procesarComprobanteOCR(req, res).catch(next);

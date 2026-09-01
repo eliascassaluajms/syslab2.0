@@ -2,13 +2,30 @@ import { Request, Response } from 'express';
 import { EstadoInscripcion } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
+import Tesseract from 'tesseract.js';
 import { prisma } from '../config/prisma.js';
-import { extraerDatosComprobante, DatosTransaccionOCR } from '../services/ocr.service.js';
+import { extraerDatosComprobante, OcrParserService, DatosTransaccionOCR } from '../services/ocr.service.js';
 
 export const EventoParticipanteController = {
   async crear(req: Request, res: Response): Promise<void> {
     try {
-      const { nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, comprobanteUrl, observaciones } = req.body;
+      const { honeypot, formStartTime, nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, comprobanteUrl, observaciones } = req.body;
+
+      // 1. Detección Honeypot: si el campo trampa tiene contenido, es un bot
+      if (honeypot && typeof honeypot === 'string' && honeypot.trim() !== '') {
+        // Responde con 200 ficticio para engañar al bot sin procesar nada
+        res.status(200).json({ status: 'success', message: 'Preinscripción registrada correctamente.' });
+        return;
+      }
+
+      // 2. Detección por tiempo: un humano tarda al menos 2.5 segundos en interactuar
+      if (formStartTime) {
+        const tiempoTranscurrido = (Date.now() - Number(formStartTime)) / 1000;
+        if (tiempoTranscurrido < 2.5) {
+          res.status(403).json({ message: 'Solicitud bloqueada por comportamiento automatizado.' });
+          return;
+        }
+      }
 
       if (!nombre || !apellido || !correo || !telefono || !activityId || !codigoTransaccion) {
         res.status(400).json({
@@ -213,53 +230,79 @@ export const EventoParticipanteController = {
         size: req.file.size,
       });
 
-      // Procesar OCR del comprobante
-      let datosOcr: DatosTransaccionOCR = { nroOrden: '', nroDocumento: '' };
+      // 1. Extraer texto mediante OCR Tesseract
+      let textoOCR = '';
+      let datosOcrLegacy: DatosTransaccionOCR = {};
       try {
-        datosOcr = await extraerDatosComprobante(req.file.path);
-        console.log('[OCR] Datos extraídos:', datosOcr);
+        const { data: { text } } = await Tesseract.recognize(req.file.path, 'spa', { logger: () => {} });
+        textoOCR = text || '';
+        datosOcrLegacy = await extraerDatosComprobante(req.file.path);
+        console.log('[OCR] Texto extraído exitosamente. Longitud:', textoOCR.length);
       } catch (ocrError) {
-        console.warn('[OCR] Advertencia en extracción OCR, continuando sin datos extraídos:', ocrError);
-        // No lanzar error, continuar con datos vacíos
+        console.warn('[OCR] Advertencia en extracción OCR:', ocrError);
       }
-      
-      // Generar ruta segura para almacenar el comprobante temporalmente
+
+      // 2. Definir ruta accesible en uploads/comprobantes del Backend
       const ext = path.extname(req.file.originalname);
       const nombreArchivoSeguro = `comprobante_${Date.now()}${ext}`;
       
-      // Crear directorio en la carpeta pública del frontend
-      const targetDir = path.resolve(process.cwd(), '../frontend/public/comprobantes');
-      
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-        console.log('[OCR] Directorio creado:', targetDir);
+      const uploadDir = path.join(process.cwd(), 'uploads', 'comprobantes');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+        console.log('[OCR] Directorio creado:', uploadDir);
       }
 
-      const rutaDestino = path.join(targetDir, nombreArchivoSeguro);
-      
-      // Usar copyFileSync y unlinkSync para evitar el error EXDEV entre volúmenes Docker diferentes
+      const rutaDestino = path.join(uploadDir, nombreArchivoSeguro);
       fs.copyFileSync(req.file.path, rutaDestino);
+
+      // Copia adicional a frontend/public/comprobantes por retrocompatibilidad
+      try {
+        const frontendDir = path.resolve(process.cwd(), '../frontend/public/comprobantes');
+        if (!fs.existsSync(frontendDir)) fs.mkdirSync(frontendDir, { recursive: true });
+        fs.copyFileSync(req.file.path, path.join(frontendDir, nombreArchivoSeguro));
+      } catch (fErr) {
+        // Ignorar si el frontend no está montado en la misma jerarquía
+      }
+
       fs.unlinkSync(req.file.path);
       console.log('[OCR] Archivo guardado en:', rutaDestino);
 
-      // URL pública para el comprobante (relativa al frontend)
-      const comprobanteUrl = `/comprobantes/${nombreArchivoSeguro}`;
+      // URL accesible
+      const comprobanteUrl = `/api/comprobantes/${nombreArchivoSeguro}`;
+
+      // 3. Procesar datos del texto OCR
+      const resultado = OcrParserService.procesarTexto(textoOCR, comprobanteUrl);
+      if (!resultado.codigoTransaccion && (datosOcrLegacy.nroOrden || datosOcrLegacy.nroDocumento)) {
+        resultado.codigoTransaccion = datosOcrLegacy.nroOrden || datosOcrLegacy.nroDocumento || null;
+      }
+      if (resultado.monto === null && datosOcrLegacy.monto) {
+        const parsed = parseFloat(datosOcrLegacy.monto);
+        if (!isNaN(parsed)) resultado.monto = parsed;
+      }
 
       console.log('[OCR] Respuesta exitosa:', {
-        codigoTransaccion: datosOcr.nroOrden || datosOcr.nroDocumento || '',
-        comprobanteUrl
+        codigoTransaccion: resultado.codigoTransaccion,
+        monto: resultado.monto,
+        comprobanteUrl: resultado.comprobanteUrl,
       });
 
       res.status(200).json({
-        codigoTransaccion: datosOcr.nroOrden || datosOcr.nroDocumento || '',
-        comprobanteUrl: comprobanteUrl,
-        datosOcr: datosOcr,
+        status: 'success',
+        data: {
+          codigoTransaccion: resultado.codigoTransaccion,
+          monto: resultado.monto,
+          comprobanteUrl: resultado.comprobanteUrl,
+          valido: Boolean(resultado.codigoTransaccion && resultado.monto),
+        },
+        codigoTransaccion: resultado.codigoTransaccion || '',
+        monto: resultado.monto,
+        comprobanteUrl: resultado.comprobanteUrl,
+        datosOcr: resultado,
         message: 'Comprobante procesado correctamente'
       });
     } catch (error) {
       console.error('[OCR] Error al procesar comprobante:', error);
       
-      // Limpiar archivo temporal en caso de error
       if (req.file && fs.existsSync(req.file.path)) {
         try {
           fs.unlinkSync(req.file.path);
