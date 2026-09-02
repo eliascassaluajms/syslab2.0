@@ -127,3 +127,14 @@ export async function extraerDatosComprobante(filePath: string): Promise<DatosTr
     return {};
   }
 }
+
+export class OCRService {
+  async analizarBuffer(buffer: Buffer): Promise<ResultadoOCR> {
+    const { data: { text } } = await Tesseract.recognize(buffer, 'spa', { logger: () => {} });
+    const textoOCR = text || '';
+    return OcrParserService.procesarTexto(textoOCR, '');
+  }
+}
+
+export const ocrService = new OCRService();
+

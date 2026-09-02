@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { EventoParticipanteController } from '../controllers/eventoParticipante.controller.js';
 import { verificarJWT } from '../middlewares/auth.middleware.js';
 import { requirePermission } from '../middlewares/authorize.middleware.js';
-import { uploadComprobante } from '../middlewares/upload.middleware.js';
+import { uploadComprobante, uploadComprobanteMemory } from '../middlewares/upload.middleware.js';
 import { ocrRateLimiter, preinscripcionRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
@@ -13,12 +13,12 @@ router.post('/', preinscripcionRateLimiter, (req: Request, res: Response, next: 
 });
 
 // POST /api/evento-participantes/ocr (DEBE IR ANTES DE /:id)
-// Endpoint público para escaneo OCR de comprobantes protegido con Rate Limit y Multer
+// Endpoint público para escaneo OCR de comprobantes protegido con Rate Limit y Multer en memoria
 router.post('/ocr', 
   ocrRateLimiter,
-  uploadComprobante.single('comprobante'),
+  uploadComprobanteMemory.single('comprobante'),
   (req: Request, res: Response, next: NextFunction) => {
-    EventoParticipanteController.procesarComprobanteOCR(req, res).catch(next);
+    EventoParticipanteController.procesarComprobanteOCR(req, res, next).catch(next);
   }
 );
 

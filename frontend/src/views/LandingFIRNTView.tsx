@@ -47,12 +47,64 @@ export const LandingFIRNTView: React.FC = () => {
   const [monto, setMonto] = useState<string | number>('');
   const [configPago, setConfigPago] = useState<IConfigPago | null>(null);
 
+  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [advertenciaOCR, setAdvertenciaOCR] = useState<string | null>(null);
+
   const [honeypot, setHoneypot] = useState('');
   const [formStartTime] = useState<number>(() => Date.now());
 
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const limpiarComprobante = () => {
+    setComprobanteFile(null);
+    setPreviewUrl(null);
+    setAdvertenciaOCR(null);
+    delete (window as any).__comprobanteUrlSubido;
+  };
+
+  const handleArchivoSeleccionado = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Selecciona un archivo de imagen válido (JPEG, PNG, WebP).');
+      return;
+    }
+
+    // Previsualización local inmediata
+    setComprobanteFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setAdvertenciaOCR(null);
+    setErrorMsg('');
+    setCargando(true);
+
+    const formData = new FormData();
+    formData.append('comprobante', file);
+
+    try {
+      const res = await httpClient.post('/evento-participantes/ocr', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const resData = res.data?.data || res.data;
+      if (resData?.codigoTransaccion) {
+        setNumeroTransaccion(resData.codigoTransaccion);
+      }
+      if (resData?.monto !== undefined && resData?.monto !== null) {
+        setMonto(resData.monto);
+      }
+      if (resData?.comprobanteUrl) {
+        (window as any).__comprobanteUrlSubido = resData.comprobanteUrl;
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        'No se pudo extraer la información automáticamente.';
+      setAdvertenciaOCR(msg);
+    } finally {
+      setCargando(false);
+    }
+  };
 
   useEffect(() => {
     const cargarCatalogos = async () => {
@@ -471,74 +523,92 @@ export const LandingFIRNTView: React.FC = () => {
                 </div>
               )}
 
-              {/* Sección de Subida de Comprobante y Escaneo OCR */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-slate-300">Comprobante de Pago (Imagen / Voucher) *</label>
-                <div className="flex items-center gap-2">
-                  <label className="flex-1 flex items-center justify-center px-3 py-2 bg-slate-950 border border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-emerald-500 transition-colors text-xs text-slate-400">
-                    <span>📁 Subir imagen de comprobante</span>
-                    <input 
-                      type="file" 
-                      accept="image/*"
-                      className="hidden" 
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        
-                        const formData = new FormData();
-                        formData.append('comprobante', file);
+              {/* Sección de Comprobante con Soporte de Reintento y Fallback Manual */}
+              <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Comprobante de Pago (Voucher / QR)
+                  </label>
+                  <span className="text-[10px] text-slate-500">Opcional / Escaneo OCR</span>
+                </div>
 
-                        try {
-                          setCargando(true);
-                          setErrorMsg('');
-                          // Petición al endpoint OCR preparado en el backend
-                          const res = await httpClient.post('/evento-participantes/ocr', formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
-                          });
-                          
-                          const resData = res.data?.data || res.data;
-                          if (resData?.codigoTransaccion) {
-                            setNumeroTransaccion(resData.codigoTransaccion);
-                          }
-                          if (resData?.monto !== undefined && resData?.monto !== null) {
-                            setMonto(resData.monto);
-                          }
-                          if (resData?.comprobanteUrl) {
-                            // Guardamos opcionalmente la ruta del archivo subido
-                            (window as any).__comprobanteUrlSubido = resData.comprobanteUrl;
-                          }
-                        } catch (err) {
-                          setErrorMsg('No se pudo escanear el comprobante automáticamente. Ingrese el número manualmente.');
-                        } finally {
-                          setCargando(false);
-                        }
+                {!previewUrl ? (
+                  <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-emerald-500/70 rounded-xl cursor-pointer bg-slate-900/40 transition-colors">
+                    <span className="text-xl mb-1">📸</span>
+                    <span className="text-xs font-medium text-slate-300">Subir foto o captura del comprobante</span>
+                    <span className="text-[10px] text-slate-500 mt-1">El sistema leerá el código y monto automáticamente</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleArchivoSeleccionado(f);
                       }}
                     />
                   </label>
-                </div>
-                <span className="text-[10px] text-slate-500 block">El escaneo OCR detectará automáticamente el Nro. Documento/Transacción y el Monto (Bs.).</span>
+                ) : (
+                  <div className="flex items-center gap-3 bg-slate-900 p-2.5 rounded-lg border border-slate-700/80">
+                    <img
+                      src={previewUrl}
+                      alt="Voucher Preview"
+                      className="w-14 h-14 object-cover rounded-md border border-slate-700 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-slate-200 font-medium truncate">{comprobanteFile?.name}</p>
+                      <p className="text-[10px] text-emerald-400 font-mono">
+                        {cargando ? 'Escaneando datos...' : 'Comprobante adjuntado'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={limpiarComprobante}
+                      className="px-2.5 py-1 text-[11px] text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-md transition-colors cursor-pointer"
+                    >
+                      Cambiar foto
+                    </button>
+                  </div>
+                )}
+
+                {/* Aviso si la imagen fue descartada o no legible */}
+                {advertenciaOCR && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] p-2 rounded-lg flex items-start gap-2">
+                    <span>⚠️</span>
+                    <div>
+                      <span>{advertenciaOCR}</span>
+                      <p className="font-semibold mt-0.5 text-amber-200">
+                        Puedes ingresar el número de transacción y monto manualmente abajo.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Campos Numéricos Siempre Editables */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">N° de Comprobante *</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    N° de Comprobante / Transacción *
+                  </label>
                   <input
                     type="text"
                     required
                     value={numeroTransaccion}
                     onChange={(e) => setNumeroTransaccion(e.target.value)}
-                    placeholder="Ej. 5718439691"
-                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
+                    placeholder="Ej. 10142026083007"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Monto Registrado (Bs.)</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    Monto Pagado (Bs.)
+                  </label>
                   <input
                     type="text"
                     value={monto}
                     onChange={(e) => setMonto(e.target.value)}
                     placeholder="Ej. 50.00"
-                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>

@@ -1,10 +1,17 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { EstadoInscripcion } from '@prisma/client';
 import path from 'path';
 import fs from 'fs';
 import Tesseract from 'tesseract.js';
 import { prisma } from '../config/prisma.js';
-import { extraerDatosComprobante, OcrParserService, DatosTransaccionOCR } from '../services/ocr.service.js';
+import { extraerDatosComprobante, OcrParserService, DatosTransaccionOCR, ocrService } from '../services/ocr.service.js';
+
+// Diccionario de términos bancarios comunes en Bolivia
+const TERMINOS_BANCARIOS = [
+  'transferencia', 'comprobante', 'transaccion', 'operacion', 'monto',
+  'importe', 'bs', 'bob', 'banco', 'union', 'bnb', 'bcp', 'mercantil',
+  'ganadero', 'fie', 'qr', 'cuenta', 'origen', 'destino', 'exitoso'
+];
 
 export const EventoParticipanteController = {
   async crear(req: Request, res: Response): Promise<void> {
@@ -36,6 +43,14 @@ export const EventoParticipanteController = {
 
       const tipoNormalizado = tipo === 'PROFESIONAL' ? 'PROFESIONAL' : 'ESTUDIANTE';
 
+      let comprobanteUrlLimpia = comprobanteUrl;
+      if (typeof comprobanteUrlLimpia === 'string') {
+        comprobanteUrlLimpia = comprobanteUrlLimpia.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, '');
+        if (comprobanteUrlLimpia && !comprobanteUrlLimpia.startsWith('/') && !comprobanteUrlLimpia.startsWith('http')) {
+          comprobanteUrlLimpia = `/${comprobanteUrlLimpia}`;
+        }
+      }
+
       const participanteCreado = await prisma.eventoParticipante.create({
         data: {
           nombre,
@@ -45,7 +60,7 @@ export const EventoParticipanteController = {
           tipo: tipoNormalizado,
           activityId: String(activityId),
           codigoTransaccion,
-          ...(comprobanteUrl && { comprobanteUrl }),
+          ...(comprobanteUrlLimpia && { comprobanteUrl: comprobanteUrlLimpia }),
           ...(observaciones !== undefined && { observaciones }),
           estado: EstadoInscripcion.PRE_INSCRITO,
         },
@@ -114,11 +129,19 @@ export const EventoParticipanteController = {
   async actualizar(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { nombre, apellido, correo, telefono, tipo, estado, codigoTransaccion, observaciones } = req.body;
+      const { nombre, apellido, correo, telefono, tipo, estado, codigoTransaccion, comprobanteUrl, observaciones } = req.body;
 
       if (!Object.values(EstadoInscripcion).includes(estado as EstadoInscripcion) && estado !== undefined) {
         res.status(400).json({ error: 'El estado especificado no es válido.' });
         return;
+      }
+
+      let comprobanteUrlLimpia = comprobanteUrl;
+      if (typeof comprobanteUrlLimpia === 'string') {
+        comprobanteUrlLimpia = comprobanteUrlLimpia.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, '');
+        if (comprobanteUrlLimpia && !comprobanteUrlLimpia.startsWith('/') && !comprobanteUrlLimpia.startsWith('http')) {
+          comprobanteUrlLimpia = `/${comprobanteUrlLimpia}`;
+        }
       }
 
       const participanteActualizado = await prisma.eventoParticipante.update({
@@ -131,6 +154,7 @@ export const EventoParticipanteController = {
           ...(tipo && { tipo }),
           ...(estado && { estado: estado as EstadoInscripcion }),
           ...(codigoTransaccion !== undefined && { codigoTransaccion }),
+          ...(comprobanteUrlLimpia !== undefined && { comprobanteUrl: comprobanteUrlLimpia }),
           ...(observaciones !== undefined && { observaciones }),
         },
         include: {
@@ -216,107 +240,105 @@ export const EventoParticipanteController = {
     }
   },
 
-  async procesarComprobanteOCR(req: Request, res: Response): Promise<void> {
+  async procesarComprobanteOCR(req: Request, res: Response, next?: NextFunction): Promise<void> {
     try {
       if (!req.file) {
         res.status(400).json({ error: 'No se proporcionó ningún archivo de comprobante.' });
         return;
       }
 
-      console.log('[OCR] Archivo recibido:', {
-        filename: req.file.filename,
-        path: req.file.path,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-      });
-
-      // 1. Extraer texto mediante OCR Tesseract
-      let textoOCR = '';
-      let datosOcrLegacy: DatosTransaccionOCR = {};
-      try {
-        const { data: { text } } = await Tesseract.recognize(req.file.path, 'spa', { logger: () => {} });
-        textoOCR = text || '';
-        datosOcrLegacy = await extraerDatosComprobante(req.file.path);
-        console.log('[OCR] Texto extraído exitosamente. Longitud:', textoOCR.length);
-      } catch (ocrError) {
-        console.warn('[OCR] Advertencia en extracción OCR:', ocrError);
+      const buffer = req.file.buffer || (req.file.path && fs.existsSync(req.file.path) ? fs.readFileSync(req.file.path) : null);
+      if (!buffer) {
+        res.status(400).json({ error: 'No se pudo leer la imagen del comprobante.' });
+        return;
       }
 
-      // 2. Definir ruta accesible en uploads/comprobantes del Backend
-      const ext = path.extname(req.file.originalname);
-      const nombreArchivoSeguro = `comprobante_${Date.now()}${ext}`;
-      
+      // 1. Analizar directamente el buffer en memoria (RAM)
+      const resultadoOCR = await ocrService.analizarBuffer(buffer);
+      const textoLimpio = (resultadoOCR.textoCompleto || '').toLowerCase();
+
+      // 2. Comprobar coincidencias con términos bancarios
+      const coincidencias = TERMINOS_BANCARIOS.filter((termino) =>
+        textoLimpio.includes(termino)
+      );
+
+      // Si no detecta transaccion NI al menos 2 términos bancarios, se rechaza
+      const pareceComprobante = Boolean(
+        resultadoOCR.codigoTransaccion || coincidencias.length >= 2
+      );
+
+      if (!pareceComprobante) {
+        if (req.file.path && fs.existsSync(req.file.path)) {
+          try { fs.unlinkSync(req.file.path); } catch (e) {}
+        }
+        // El buffer se desecha automáticamente sin tocar el disco
+        res.status(422).json({
+          status: 'fail',
+          valido: false,
+          message: 'La imagen subida no parece ser un comprobante o voucher bancario legible. Puedes intentar con otra foto o registrar el número manualmente.',
+        });
+        return;
+      }
+
+      // 3. Si superó el filtro, se persiste físicamente en el disco
       const uploadDir = path.join(process.cwd(), 'uploads', 'comprobantes');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
-        console.log('[OCR] Directorio creado:', uploadDir);
       }
 
-      const rutaDestino = path.join(uploadDir, nombreArchivoSeguro);
-      fs.copyFileSync(req.file.path, rutaDestino);
+      const extension = path.extname(req.file.originalname) || '.jpeg';
+      const filename = `comprobante_${Date.now()}${extension}`;
+      const targetPath = path.join(uploadDir, filename);
+
+      fs.writeFileSync(targetPath, buffer);
 
       // Copia adicional a frontend/public/comprobantes por retrocompatibilidad
       try {
         const frontendDir = path.resolve(process.cwd(), '../frontend/public/comprobantes');
         if (!fs.existsSync(frontendDir)) fs.mkdirSync(frontendDir, { recursive: true });
-        fs.copyFileSync(req.file.path, path.join(frontendDir, nombreArchivoSeguro));
+        fs.writeFileSync(path.join(frontendDir, filename), buffer);
       } catch (fErr) {
         // Ignorar si el frontend no está montado en la misma jerarquía
       }
 
-      fs.unlinkSync(req.file.path);
-      console.log('[OCR] Archivo guardado en:', rutaDestino);
-
-      // URL accesible
-      const comprobanteUrl = `/comprobantes/${nombreArchivoSeguro}`;
-
-      // 3. Procesar datos del texto OCR
-      const resultado = OcrParserService.procesarTexto(textoOCR, comprobanteUrl);
-      if (!resultado.codigoTransaccion && (datosOcrLegacy.nroOrden || datosOcrLegacy.nroDocumento)) {
-        resultado.codigoTransaccion = datosOcrLegacy.nroOrden || datosOcrLegacy.nroDocumento || null;
-      }
-      if (resultado.monto === null && datosOcrLegacy.monto) {
-        const parsed = parseFloat(datosOcrLegacy.monto);
-        if (!isNaN(parsed)) resultado.monto = parsed;
+      if (req.file.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
       }
 
-      console.log('[OCR] Respuesta exitosa:', {
-        codigoTransaccion: resultado.codigoTransaccion,
-        monto: resultado.monto,
-        comprobanteUrl: resultado.comprobanteUrl,
-      });
+      const comprobanteUrl = `/comprobantes/${filename}`;
 
       res.status(200).json({
         status: 'success',
+        valido: true,
         data: {
-          codigoTransaccion: resultado.codigoTransaccion,
-          monto: resultado.monto,
-          comprobanteUrl: resultado.comprobanteUrl,
-          valido: Boolean(resultado.codigoTransaccion && resultado.monto),
+          codigoTransaccion: resultadoOCR.codigoTransaccion || '',
+          monto: resultadoOCR.monto || null,
+          comprobanteUrl,
         },
-        codigoTransaccion: resultado.codigoTransaccion || '',
-        monto: resultado.monto,
-        comprobanteUrl: resultado.comprobanteUrl,
-        datosOcr: resultado,
+        codigoTransaccion: resultadoOCR.codigoTransaccion || '',
+        monto: resultadoOCR.monto || null,
+        comprobanteUrl,
+        datosOcr: resultadoOCR,
         message: 'Comprobante procesado correctamente'
       });
     } catch (error) {
-      console.error('[OCR] Error al procesar comprobante:', error);
-      
-      if (req.file && fs.existsSync(req.file.path)) {
-        try {
-          fs.unlinkSync(req.file.path);
-          console.log('[OCR] Archivo temporal eliminado');
-        } catch (deleteError) {
-          console.error('[OCR] Error al eliminar archivo temporal:', deleteError);
-        }
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch (e) {}
       }
-      
-      res.status(500).json({ 
-        error: 'Error al procesar el comprobante. Por favor intente nuevamente.',
-        details: (error as any)?.message || 'Error desconocido'
-      });
+      console.error('[OCR] Error al procesar comprobante:', error);
+      if (next) {
+        next(error);
+      } else {
+        res.status(500).json({
+          error: 'Error al procesar el comprobante. Por favor intente nuevamente.',
+          details: (error as any)?.message || 'Error desconocido'
+        });
+      }
     }
+  },
+
+  async procesarOCR(req: Request, res: Response, next?: NextFunction): Promise<void> {
+    return this.procesarComprobanteOCR(req, res, next);
   },
 
   async eliminar(req: Request, res: Response): Promise<void> {
