@@ -1,23 +1,30 @@
 export const getPublicAssetUrl = (path?: string | null): string => {
   if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
 
-  // 1. Obtener la URL base de la API configurada (ej. http://registrocitren.duckdns.org/api o http://200.87.27.36:5000/api)
-  const apiUrl = import.meta.env.VITE_API_URL || '';
+  // 1. Eliminar cualquier prefijo rígido de localhost o 127.0.0.1 guardado previamente en BD
+  let rutaLimpia = path.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, '');
 
-  let baseUrl = '';
-  if (apiUrl) {
-    // Elimina el sufijo /api para obtener el host raíz
-    baseUrl = apiUrl.replace(/\/api\/?$/, '');
-  } else {
-    // Si no hay variable definida, toma el host del navegador
-    const isStandardPort = window.location.port === '' || window.location.port === '80' || window.location.port === '443';
-    baseUrl = isStandardPort 
-      ? `${window.location.protocol}//${window.location.hostname}`
-      : `${window.location.protocol}//${window.location.hostname}:5000`;
+  // 2. Corregir posibles duplicaciones de prefijos en la ruta relativa
+  rutaLimpia = rutaLimpia.replace(/^\/api\/api\//, '/api/');
+  rutaLimpia = rutaLimpia.startsWith('/') ? rutaLimpia : `/${rutaLimpia}`;
+
+  // 3. Si es una URL externa legítima (S3, Cloudinary u otro servidor que no sea localhost), respetarla
+  if (rutaLimpia.startsWith('http://') || rutaLimpia.startsWith('https://')) {
+    return rutaLimpia;
   }
 
-  // 2. Limpieza de barras y prefijos duplicados
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl}${cleanPath}`;
+  // 4. Detectar dinámicamente el host real desde la barra de direcciones del navegador
+  const hostname = window.location.hostname; // ej. registrocitren.duckdns.org, 200.87.27.36 o localhost
+  const protocol = window.location.protocol;
+
+  // Caso A: Si se accede a través del dominio DuckDNS (Nginx Proxy Manager maneja puertos 80/443)
+  if (hostname.includes('duckdns.org')) {
+    return `${protocol}//${hostname}${rutaLimpia}`;
+  }
+
+  // Caso B: Si se accede por IP pública o red local (el backend corre en el puerto 5000)
+  const isDevLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const backendPort = isDevLocalhost ? '5000' : '5000';
+
+  return `${protocol}//${hostname}:${backendPort}${rutaLimpia}`;
 };
