@@ -12,9 +12,11 @@ export interface ICategoriaEvento {
   nombre: string;
   descripcion?: string;
   tipo: TipoEvento;
-  requiereAprobacion: boolean;
-  permiteInscripcionForm: boolean;
-  estado: boolean;
+  requiereAprobacion?: boolean;
+  permiteInscripcionForm?: boolean;
+  activo?: boolean;
+  activa?: boolean;
+  estado?: string | boolean;
   facultadId?: number;
   carreraId?: number;
   createdAt?: string;
@@ -37,7 +39,8 @@ export interface IActualizarCategoriaEventoDTO {
   tipo?: TipoEvento;
   requiereAprobacion?: boolean;
   permiteInscripcionForm?: boolean;
-  estado?: boolean;
+  activo?: boolean;
+  estado?: boolean | string;
 }
 
 export const categoriaEventoService = {
@@ -56,6 +59,11 @@ export const categoriaEventoService = {
 
   actualizar: async (id: number, dto: IActualizarCategoriaEventoDTO) => {
     const response = await httpClient.patch<ICategoriaEvento>(`/actividades/categorias/${id}`, dto);
+    return response.data;
+  },
+
+  cambiarEstado: async (id: number, activo?: boolean) => {
+    const response = await httpClient.patch<ICategoriaEvento>(`/actividades/categorias/${id}`, { activo });
     return response.data;
   },
 

@@ -141,6 +141,15 @@ export const CategoriasEventosView: React.FC = () => {
     }
   };
 
+  const handleToggleEstado = async (id: number, isActivo: boolean) => {
+    try {
+      await categoriaEventoService.cambiarEstado(id, !isActivo);
+      await cargarCategorias();
+    } catch (error) {
+      console.error('Error al cambiar estado de la categoría:', error);
+    }
+  };
+
   const listaSegura = Array.isArray(categorias) ? categorias : [];
 
   return (
@@ -237,40 +246,52 @@ export const CategoriasEventosView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800/60">
-              {listaSegura.map((cat) => (
-                <tr key={cat.id} className="hover:bg-gray-800/30 transition">
-                  <td className="p-4 font-semibold text-white">{cat.nombre}</td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md text-[10px] font-bold">
-                      {cat.tipo}
-                    </span>
-                  </td>
-                  <td className="p-4 text-gray-400 max-w-md truncate">{cat.descripcion || 'Sin descripción'}</td>
-                  <td className="p-4 text-center">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        cat.estado ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-                      }`}
-                    >
-                      {cat.estado ? 'Activa' : 'Inactiva'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right space-x-2">
-                    <button
-                      onClick={() => handleAbrirEditar(cat)}
-                      className="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition cursor-pointer"
-                    >
-                      ✏️ Editar
-                    </button>
-                    <button
-                      onClick={() => handleAbrirEliminar(cat)}
-                      className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition cursor-pointer"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {listaSegura.map((cat) => {
+                const isActivo = Boolean(cat.activo ?? cat.activa ?? (cat.estado === 'ACTIVO' || cat.estado === true));
+
+                return (
+                  <tr key={cat.id} className="hover:bg-gray-800/30 transition">
+                    <td className="p-4 font-semibold text-white">{cat.nombre}</td>
+                    <td className="p-4">
+                      <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md text-[10px] font-bold">
+                        {cat.tipo}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-400 max-w-md truncate">{cat.descripcion || 'Sin descripción'}</td>
+                    <td className="p-4 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          isActivo
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                        }`}
+                      >
+                        {isActivo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right space-x-2">
+                      <button
+                        onClick={() => handleToggleEstado(cat.id, isActivo)}
+                        className="text-xs text-gray-400 hover:text-white bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-700 transition cursor-pointer"
+                      >
+                        {isActivo ? 'Desactivar' : 'Activar'}
+                      </button>
+                      <button
+                        onClick={() => handleAbrirEditar(cat)}
+                        className="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition cursor-pointer"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleAbrirEliminar(cat)}
+                        className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition cursor-pointer"
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
