@@ -142,4 +142,36 @@ export class ParticipanteEventoService {
       ],
     });
   }
+
+  static async actualizar(id: string, data: { nombre?: string; apellido?: string; correo?: string; telefono?: string }) {
+    const participante = await prisma.eventoParticipante.findUnique({ where: { id } });
+    if (!participante) {
+      throw new AppError('Participante no encontrado.', 404);
+    }
+    return await prisma.eventoParticipante.update({
+      where: { id },
+      data,
+    });
+  }
+
+  static async cambiarEstadoPago(id: string, estado: any, observaciones?: string) {
+    const participante = await prisma.eventoParticipante.findUnique({ where: { id } });
+    if (!participante) {
+      throw new AppError('Participante no encontrado.', 404);
+    }
+    return await prisma.eventoParticipante.update({
+      where: { id },
+      data: {
+        estado,
+        ...(observaciones !== undefined && { observaciones }),
+      },
+    });
+  }
+
+  static async obtenerPorId(id: string) {
+    return await prisma.eventoParticipante.findUnique({
+      where: { id },
+      include: { activity: true },
+    });
+  }
 }

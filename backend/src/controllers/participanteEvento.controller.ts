@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ParticipanteEventoService } from '../services/participanteEvento.service';
+import { ParticipanteEventoService } from '../services/participanteEvento.service.js';
 
 export class ParticipanteEventoController {
   /**
