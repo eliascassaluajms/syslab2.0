@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { ModalCambiarPasswordPersonal } from '../usuario/ModalCambiarPasswordPersonal';
 
 interface SubMenuItem {
   titulo: string;
@@ -94,7 +95,7 @@ const menuConfig: MenuItem[] = [
       },
       {
         titulo: 'Actividades Académicas',
-        ruta: '/admin/actividades/gestion', // 👈 Apunta a la vista de gestión
+        ruta: '/admin/actividades/gestion',
         icono: '🎪',
         permiso: 'actividades:listar',
       },
@@ -118,6 +119,11 @@ const menuConfig: MenuItem[] = [
     icono: '🛡️',
     subItems: [
       {
+        titulo: 'Mi Perfil',
+        ruta: '/admin/perfil',
+        icono: '👤',
+      },
+      {
         titulo: 'Gestión de Usuarios',
         ruta: '/admin/usuarios',
         icono: '👥',
@@ -138,6 +144,7 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
 
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+  const [mostrarModalPassword, setMostrarModalPassword] = useState(false);
 
   const esAdmin =
     user?.rol === 'Administrador' ||
@@ -160,7 +167,6 @@ export const Sidebar: React.FC = () => {
     return localStorage.getItem('syslab_ambito_activo') || (asignacionesArray[0]?.id ?? '');
   });
 
-  // Identificar el rol/asignación activa actualmente seleccionada en el select
   const asignacionActiva = asignacionesArray.find(
     (asig: any, index: number) => String(asig.id || asig.codigo || index) === String(ambitoActivoId)
   );
@@ -171,19 +177,12 @@ export const Sidebar: React.FC = () => {
     const nuevoId = e.target.value;
     setAmbitoActivoId(nuevoId);
     localStorage.setItem('syslab_ambito_activo', nuevoId);
-    // Forzar evento o recarga limpia para recalcular permisos del sub-rol activo
     window.location.reload();
   };
 
   const evaluarPermiso = (permisoReq?: string | string[]): boolean => {
     if (!permisoReq) return true;
     if (esAdmin) return true;
-
-    // Si hay un rol activo específico seleccionado, podemos filtrar o restringir opcionalmente
-    // según las capacidades de ese rol (por ejemplo, si es "Docente" puro vs "Director de Carrera")
-    if (rolActivoNombre.toLowerCase().includes('docente') && !rolActivoNombre.toLowerCase().includes('director')) {
-      // Restricciones específicas de solo docente si fuera necesario
-    }
 
     if (Array.isArray(permisoReq)) {
       return permisoReq.some((p) => {
@@ -243,146 +242,163 @@ export const Sidebar: React.FC = () => {
   }
 
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between h-screen sticky top-0 select-none text-slate-200">
-      <div>
-        <div className="p-6 border-b border-gray-800/80 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg shadow-lg shadow-blue-500/10">
-            SL
+    <>
+      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between h-screen sticky top-0 select-none text-slate-200">
+        <div>
+          <div className="p-6 border-b border-gray-800/80 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg shadow-lg shadow-blue-500/10">
+              SL
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-white tracking-tight">SysLab 2.0</h2>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">UAJMS - Yacuiba</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base font-extrabold text-white tracking-tight">SysLab 2.0</h2>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">UAJMS - Yacuiba</p>
-          </div>
-        </div>
 
-        <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-220px)]">
-          <div>
-            <p className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">
-              Menú Principal
-            </p>
-            <ul className="space-y-1.5">
-              {menuFiltrado.map((item) => {
-                const isOpen = !!openSubmenus[item.id];
-                const hasSubItems = item.subItems && item.subItems.length > 0;
+          <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-220px)]">
+            <div>
+              <p className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">
+                Menú Principal
+              </p>
+              <ul className="space-y-1.5">
+                {menuFiltrado.map((item) => {
+                  const isOpen = !!openSubmenus[item.id];
+                  const hasSubItems = item.subItems && item.subItems.length > 0;
 
-                if (hasSubItems) {
-                  return (
-                    <li key={item.id} className="space-y-1">
-                      <button
-                        onClick={() => toggleSubmenu(item.id)}
-                        className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-gray-800/60 text-gray-300"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-base">{item.icono}</span>
-                          <span>{item.titulo}</span>
-                        </div>
-                        <svg
-                          className={`w-3.5 h-3.5 transition-transform duration-200 text-gray-400 ${
-                            isOpen ? 'rotate-180 text-blue-400' : ''
-                          }`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                  if (hasSubItems) {
+                    return (
+                      <li key={item.id} className="space-y-1">
+                        <button
+                          onClick={() => toggleSubmenu(item.id)}
+                          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all hover:bg-gray-800/60 text-gray-300 cursor-pointer"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
+                          <div className="flex items-center gap-3">
+                            <span className="text-base">{item.icono}</span>
+                            <span>{item.titulo}</span>
+                          </div>
+                          <svg
+                            className={`w-3.5 h-3.5 transition-transform duration-200 text-gray-400 ${
+                              isOpen ? 'rotate-180 text-blue-400' : ''
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
 
-                      {isOpen && (
-                        <ul className="pl-4 space-y-1 border-l border-gray-800 ml-4 py-1">
-                          {item.subItems!.map((sub) => (
-                            <li key={sub.ruta}>
-                              <NavLink
-                                to={sub.ruta}
-                                className={({ isActive }) =>
-                                  `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                                    isActive
-                                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20 font-semibold'
-                                      : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40'
-                                  }`
-                                }
-                              >
-                                {sub.icono && <span className="text-xs">{sub.icono}</span>}
-                                <span>{sub.titulo}</span>
-                              </NavLink>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                        {isOpen && (
+                          <ul className="pl-4 space-y-1 border-l border-gray-800 ml-4 py-1">
+                            {item.subItems!.map((sub) => (
+                              <li key={sub.ruta}>
+                                <NavLink
+                                  to={sub.ruta}
+                                  className={({ isActive }) =>
+                                    `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                                      isActive
+                                        ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20 font-semibold'
+                                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40'
+                                    }`
+                                  }
+                                >
+                                  {sub.icono && <span className="text-xs">{sub.icono}</span>}
+                                  <span>{sub.titulo}</span>
+                                </NavLink>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li key={item.ruta || item.id}>
+                      <NavLink
+                        to={item.ruta!}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                            isActive
+                              ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-md shadow-blue-600/10'
+                              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'
+                          }`
+                        }
+                      >
+                        <span className="text-base">{item.icono}</span>
+                        <span>{item.titulo}</span>
+                      </NavLink>
                     </li>
                   );
-                }
-
-                return (
-                  <li key={item.ruta || item.id}>
-                    <NavLink
-                      to={item.ruta!}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                          isActive
-                            ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 shadow-md shadow-blue-600/10'
-                            : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'
-                        }`
-                      }
-                    >
-                      <span className="text-base">{item.icono}</span>
-                      <span>{item.titulo}</span>
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </nav>
-      </div>
-
-      <div className="p-4 border-t border-gray-800 bg-gray-950/60 space-y-3">
-        <div className="px-3 py-2 rounded-xl bg-gray-900/80 border border-gray-800 text-[11px] space-y-1.5">
-          <div className="flex items-center justify-between text-gray-400 font-medium">
-            <span>📍 Ámbito / Rol Activo:</span>
-          </div>
-          {esAdmin ? (
-            <span className="text-emerald-400 font-semibold block truncate">🌐 Administrador Global</span>
-          ) : asignacionesArray.length > 0 ? (
-            <select
-              value={ambitoActivoId}
-              onChange={handleCambiarAmbito}
-              className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5 text-[10px] text-blue-400 font-semibold focus:outline-none focus:border-blue-500 cursor-pointer"
-            >
-              {asignacionesArray.map((asig: any, index: number) => (
-                <option key={asig.id || asig.codigo || index} value={asig.id || asig.codigo || index}>
-                  {asig.rol?.nombre || asig.rol || asig.nombreAmbito || 'Rol'} - {asig.carrera?.nombre || asig.facultad?.nombre || asig.nombre || 'General'}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-amber-400 font-semibold block truncate">⚠️ Sin ámbitos asignados</span>
-          )}
+                })}
+              </ul>
+            </div>
+          </nav>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex-shrink-0 flex items-center justify-center text-blue-400 text-xs font-bold">
-              {user?.nombre?.substring(0, 2).toUpperCase() || 'US'}
+        <div className="p-4 border-t border-gray-800 bg-gray-950/60 space-y-3">
+          <div className="px-3 py-2 rounded-xl bg-gray-900/80 border border-gray-800 text-[11px] space-y-1.5">
+            <div className="flex items-center justify-between text-gray-400 font-medium">
+              <span>📍 Ámbito / Rol Activo:</span>
             </div>
-            <div className="overflow-hidden max-w-[120px]">
-              <p className="text-xs font-semibold text-white truncate" title={user?.nombre}>
-                {user?.nombre || 'Usuario'}
-              </p>
-              <p className="text-[10px] text-gray-400 truncate" title={rolActivoNombre || nombreRol}>
-                {rolActivoNombre || nombreRol}
-              </p>
+            {esAdmin ? (
+              <span className="text-emerald-400 font-semibold block truncate">🌐 Administrador Global</span>
+            ) : asignacionesArray.length > 0 ? (
+              <select
+                value={ambitoActivoId}
+                onChange={handleCambiarAmbito}
+                className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5 text-[10px] text-blue-400 font-semibold focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                {asignacionesArray.map((asig: any, index: number) => (
+                  <option key={asig.id || asig.codigo || index} value={asig.id || asig.codigo || index}>
+                    {asig.rol?.nombre || asig.rol || asig.nombreAmbito || 'Rol'} - {asig.carrera?.nombre || asig.facultad?.nombre || asig.nombre || 'General'}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-amber-400 font-semibold block truncate">⚠️ Sin ámbitos asignados</span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <NavLink to="/admin/perfil" className="flex items-center gap-3 overflow-hidden group">
+              <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex-shrink-0 flex items-center justify-center text-blue-400 text-xs font-bold group-hover:border-blue-400 transition-colors">
+                {user?.nombre?.substring(0, 2).toUpperCase() || 'US'}
+              </div>
+              <div className="overflow-hidden max-w-[100px]">
+                <p className="text-xs font-semibold text-white truncate group-hover:text-blue-400 transition-colors" title={user?.nombre}>
+                  {user?.nombre || 'Usuario'}
+                </p>
+                <p className="text-[10px] text-gray-400 truncate" title={rolActivoNombre || nombreRol}>
+                  {rolActivoNombre || nombreRol}
+                </p>
+              </div>
+            </NavLink>
+            
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setMostrarModalPassword(true)}
+                title="Cambiar Mi Contraseña"
+                className="text-gray-400 hover:text-amber-400 p-1.5 rounded-lg hover:bg-amber-500/10 transition-colors cursor-pointer"
+              >
+                🔒
+              </button>
+              <button
+                onClick={logout}
+                title="Cerrar Sesión"
+                className="text-gray-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+              >
+                🚪
+              </button>
             </div>
           </div>
-          <button
-            onClick={logout}
-            title="Cerrar Sesión"
-            className="text-gray-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
-          >
-            🚪
-          </button>
         </div>
-      </div>
-    </aside>
+      </aside>
+
+      <ModalCambiarPasswordPersonal
+        modalAbierto={mostrarModalPassword}
+        onClose={() => setMostrarModalPassword(false)}
+      />
+    </>
   );
 };

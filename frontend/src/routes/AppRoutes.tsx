@@ -14,6 +14,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 // Vistas del Sistema
 import { CatalogosView } from '../views/CatalogosView';
 import { UsuariosView } from '../views/UsuariosView';
+import { PerfilView } from '../views/PerfilView';
 import { GestionRolesView } from '../views/GestionRolesView';
 import { LaboratoriosView } from '../views/LaboratoriosView';
 import { PlanesMateriasView } from '../views/PlanesMateriasView';
@@ -49,6 +50,7 @@ export const AppRoutes: React.FC = () => {
           {/* Módulos de Administración Centralizada */}
           <Route path="/admin">
             <Route index element={<Navigate to="/admin/catalogos" replace />} />
+            <Route path="perfil" element={<PerfilView />} />
             <Route path="catalogos" element={<CatalogosView />} />
             <Route path="usuarios" element={<UsuariosView />} />
             <Route path="roles" element={<GestionRolesView />} />
@@ -73,6 +75,7 @@ export const AppRoutes: React.FC = () => {
           </Route>
 
           {/* Accesos directos compatibles */}
+          <Route path="/perfil" element={<PerfilView />} />
           <Route path="/usuarios" element={<UsuariosView />} />
           <Route path="/roles" element={<GestionRolesView />} />
           <Route path="/laboratorios" element={<LaboratoriosView />} />
