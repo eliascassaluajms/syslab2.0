@@ -11,4 +11,7 @@ router.get('/', publicRateLimiter(60, 60 * 1000), ActivityController.listar);
 // POST /api/activities - Crear actividad
 router.post('/', verificarJWT, ActivityController.crear);
 
+// PATCH /api/activities/:id/estado - Cambiar estado (activo/inactivo)
+router.patch('/:id/estado', verificarJWT, ActivityController.cambiarEstado);
+
 export default router;

@@ -12,6 +12,24 @@ router.post('/', preinscripcionRateLimiter, (req: Request, res: Response, next: 
   EventoParticipanteController.crear(req, res).catch(next);
 });
 
+// POST /api/evento-participantes/matricular-manual (matriculación directa por admin)
+router.post('/matricular-manual',
+  verificarJWT,
+  requirePermission('actividades:participantes_listar'),
+  (req: Request, res: Response, next: NextFunction) => {
+    EventoParticipanteController.matricularManual(req, res).catch(next);
+  }
+);
+
+// GET /api/evento-participantes/verificados/:activityId (lista de verificados para impresión)
+router.get('/verificados/:activityId',
+  verificarJWT,
+  requirePermission('actividades:participantes_listar'),
+  (req: Request, res: Response, next: NextFunction) => {
+    EventoParticipanteController.listarVerificadosPorActividad(req, res).catch(next);
+  }
+);
+
 // POST /api/evento-participantes/ocr (DEBE IR ANTES DE /:id)
 // Endpoint público para escaneo OCR de comprobantes protegido con Rate Limit y Multer en memoria
 router.post('/ocr', 

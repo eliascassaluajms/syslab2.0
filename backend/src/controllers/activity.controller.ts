@@ -8,8 +8,26 @@ export class ActivityController {
     try {
       const careerScope = (req.user?.carreras ?? []).map((career) => String(career));
       const role = (req.user as any)?.role ?? req.user?.rol ?? '';
+      const soloActivos = req.query.soloActivos === 'true';
 
-      const result = await service.getActivities(careerScope.join(','), role);
+      const result = await service.getActivities(careerScope.join(','), role, soloActivos);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async cambiarEstado(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { activo } = req.body;
+
+      if (typeof activo !== 'boolean') {
+        res.status(400).json({ error: 'El parámetro "activo" debe ser un valor booleano (true o false).' });
+        return;
+      }
+
+      const result = await service.cambiarEstado(id, activo);
       res.status(200).json(result);
     } catch (error) {
       next(error);

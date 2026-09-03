@@ -384,6 +384,76 @@ export const EventoParticipanteController = {
       console.error(`Error al eliminar participante ${req.params.id}:`, error);
       res.status(500).json({ error: 'Error al eliminar el participante de la base de datos.' });
     }
+  },
+
+  async matricularManual(req: Request, res: Response): Promise<void> {
+    try {
+      const { nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, estadoPago, observaciones } = req.body;
+
+      if (!nombre || !apellido || !correo || !activityId) {
+        res.status(400).json({ error: 'Nombres, apellidos, correo y la actividad son campos requeridos.' });
+        return;
+      }
+
+      const tipoNormalizado = tipo === 'PROFESIONAL' ? 'PROFESIONAL' : 'ESTUDIANTE';
+      const estadoDefinido = (estadoPago || 'PAGO_VERIFICADO') as EstadoInscripcion;
+
+      const participanteCreado = await prisma.eventoParticipante.create({
+        data: {
+          nombre,
+          apellido,
+          correo,
+          telefono: telefono || '',
+          tipo: tipoNormalizado,
+          activityId: String(activityId),
+          codigoTransaccion: codigoTransaccion || `MANUAL-${Date.now()}`,
+          estado: estadoDefinido,
+          observaciones: observaciones || 'Matriculación manual por admin',
+        },
+        include: {
+          activity: { select: { id: true, title: true } },
+        },
+      });
+
+      res.status(201).json(participanteCreado);
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        res.status(400).json({ error: 'Ya existe una inscripción registrada con ese correo para esta actividad.' });
+        return;
+      }
+      console.error('Error al matricular manualmente:', error);
+      res.status(500).json({ error: 'Error al procesar la matriculación manual.' });
+    }
+  },
+
+  async listarVerificadosPorActividad(req: Request, res: Response): Promise<void> {
+    try {
+      const { activityId } = req.params;
+
+      if (!activityId) {
+        res.status(400).json({ error: 'El ID de la actividad es requerido.' });
+        return;
+      }
+
+      const verificados = await prisma.eventoParticipante.findMany({
+        where: {
+          activityId: String(activityId),
+          estado: EstadoInscripcion.PAGO_VERIFICADO,
+        },
+        include: {
+          activity: { select: { id: true, title: true } },
+        },
+        orderBy: [
+          { apellido: 'asc' },
+          { nombre: 'asc' },
+        ],
+      });
+
+      res.status(200).json(verificados);
+    } catch (error) {
+      console.error(`Error al listar verificados para actividad ${req.params.activityId}:`, error);
+      res.status(500).json({ error: 'Error al obtener la lista de participantes verificados.' });
+    }
   }
 };
 

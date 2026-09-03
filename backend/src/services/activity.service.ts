@@ -1,13 +1,17 @@
-import { ActivityRepository } from '../repositories/activity.repository';
-import { CreateActivityDTO, UpdateActivityDTO } from '../interfaces/activity.interface';
-import { AppError } from '../utils/appError';
+import { ActivityRepository } from '../repositories/activity.repository.js';
+import { CreateActivityDTO, UpdateActivityDTO } from '../interfaces/activity.interface.js';
+import { AppError } from '../utils/appError.js';
 
 export class ActivityService {
   private activityRepo = new ActivityRepository();
 
-  async getActivities(userCareerScope?: string, userRole?: string) {
+  async getActivities(userCareerScope?: string, userRole?: string, soloActivos: boolean = false) {
     const scope = userRole === 'ADMIN_GLOBAL' ? undefined : userCareerScope;
-    return this.activityRepo.findAll(scope);
+    return this.activityRepo.findAll(scope, soloActivos);
+  }
+
+  async listar(soloActivos: boolean = false) {
+    return this.activityRepo.findAll(undefined, soloActivos);
   }
 
   async createActivity(data: CreateActivityDTO, userCareerScope: string, userRole: string) {
@@ -21,6 +25,12 @@ export class ActivityService {
     const existing = await this.activityRepo.findById(id);
     if (!existing) throw new AppError('Actividad no encontrada', 404);
     return this.activityRepo.update(id, data);
+  }
+
+  async cambiarEstado(id: string, activo: boolean) {
+    const existing = await this.activityRepo.findById(id);
+    if (!existing) throw new AppError('Actividad no encontrada', 404);
+    return this.activityRepo.cambiarEstado(id, activo);
   }
 
   async deleteActivity(id: string) {

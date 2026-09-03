@@ -3,9 +3,17 @@ import { Prisma } from '@prisma/client';
 import { CreateActivityDTO, UpdateActivityDTO } from '../interfaces/activity.interface.js';
 
 export class ActivityRepository {
-  async findAll(careerScope?: string) {
+  async findAll(careerScope?: string, soloActivos: boolean = false) {
+    const where: Prisma.ActivityWhereInput = {};
+    if (careerScope) {
+      where.careerScope = careerScope;
+    }
+    if (soloActivos) {
+      where.activo = true;
+    }
+
     return prisma.activity.findMany({
-      where: careerScope ? { careerScope } : undefined,
+      where: Object.keys(where).length > 0 ? where : undefined,
       include: { lab: true },
     });
   }
@@ -20,6 +28,10 @@ export class ActivityRepository {
 
   async update(id: string, data: UpdateActivityDTO) {
     return prisma.activity.update({ where: { id }, data, include: { lab: true } });
+  }
+
+  async cambiarEstado(id: string, activo: boolean) {
+    return prisma.activity.update({ where: { id }, data: { activo }, include: { lab: true } });
   }
 
   async delete(id: string) {

@@ -79,4 +79,67 @@ export class ParticipanteEventoService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  static async matricularManual(data: {
+    nombre: string;
+    apellido: string;
+    correo: string;
+    telefono: string;
+    tipo: string;
+    activityId: string;
+    codigoTransaccion?: string;
+    estadoPago?: string;
+    observaciones?: string;
+  }) {
+    if (!data.nombre || !data.apellido || !data.correo || !data.activityId) {
+      throw new AppError('Nombres, apellidos, correo y la actividad son campos obligatorios.', 400);
+    }
+
+    const actividad = await prisma.activity.findUnique({
+      where: { id: data.activityId },
+    });
+    if (!actividad) {
+      throw new AppError('La actividad seleccionada no existe.', 404);
+    }
+
+    const tipoNormalizado = data.tipo === 'PROFESIONAL' ? 'PROFESIONAL' : 'ESTUDIANTE';
+    const estadoDefinido = (data.estadoPago || 'PAGO_VERIFICADO') as any;
+
+    return await prisma.eventoParticipante.create({
+      data: {
+        nombre: data.nombre,
+        apellido: data.apellido,
+        correo: data.correo,
+        telefono: data.telefono,
+        tipo: tipoNormalizado,
+        activityId: data.activityId,
+        codigoTransaccion: data.codigoTransaccion || `MANUAL-${Date.now()}`,
+        estado: estadoDefinido,
+        observaciones: data.observaciones || 'Matriculación manual realizada por administración',
+      },
+      include: {
+        activity: { select: { id: true, title: true } },
+      },
+    });
+  }
+
+  static async listarVerificadosPorActividad(activityId: string) {
+    if (!activityId) {
+      throw new AppError('El ID de la actividad es requerido.', 400);
+    }
+
+    return await prisma.eventoParticipante.findMany({
+      where: {
+        activityId,
+        estado: 'PAGO_VERIFICADO',
+      },
+      include: {
+        activity: { select: { id: true, title: true } },
+      },
+      orderBy: [
+        { apellido: 'asc' },
+        { nombre: 'asc' },
+      ],
+    });
+  }
 }
