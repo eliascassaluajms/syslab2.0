@@ -16,6 +16,9 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
   const [categoriaId, setCategoriaId] = useState('');
   const [carreraId, setCarreraId] = useState('');
   const [labId, setLabId] = useState('');
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
+  const [activo, setActivo] = useState(true);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [carreras, setCarreras] = useState<any[]>([]);
   const [laboratorios, setLaboratorios] = useState<any[]>([]);
@@ -46,12 +49,18 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
       setCategoriaId(actividad.categoriaId || actividad.categoria_id || '');
       setCarreraId(actividad.careerScope || actividad.carreraId || '');
       setLabId(actividad.labId || actividad.lab_id || '');
+      setFechaInicio(actividad.fechaInicio ? actividad.fechaInicio.split('T')[0] : '');
+      setFechaFin(actividad.fechaFin ? actividad.fechaFin.split('T')[0] : '');
+      setActivo(actividad.activo !== false);
     } else {
       setNombre('');
       setDescripcion('');
       setCategoriaId('');
       setCarreraId('');
       setLabId('');
+      setFechaInicio('');
+      setFechaFin('');
+      setActivo(true);
     }
 
     const fetchCatalogos = async () => {
@@ -99,7 +108,10 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
       carreraId: carreraId ? Number(carreraId) : 1,
       carrera_id: carreraId ? Number(carreraId) : 1,
       labId: labId ? Number(labId) : (laboratorios[0]?.id || 1),
-      lab_id: labId ? Number(labId) : (laboratorios[0]?.id || 1)
+      lab_id: labId ? Number(labId) : (laboratorios[0]?.id || 1),
+      fechaInicio: fechaInicio ? new Date(fechaInicio).toISOString() : null,
+      fechaFin: fechaFin ? new Date(fechaFin).toISOString() : null,
+      activo
     };
 
     if (categoriaId !== '') {
@@ -216,6 +228,44 @@ export const FormActividadModal: React.FC<Props> = ({ isOpen, actividad, onClose
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Fecha Inicio (Opcional)
+              </label>
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                Fecha Fin (Opcional)
+              </label>
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 py-1">
+            <input
+              type="checkbox"
+              id="activo-check"
+              checked={activo}
+              onChange={(e) => setActivo(e.target.checked)}
+              className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <label htmlFor="activo-check" className="text-sm font-medium text-slate-300 cursor-pointer">
+              Actividad Abierta (Habilitada para inscripciones públicas en el landing)
+            </label>
           </div>
 
           <div>

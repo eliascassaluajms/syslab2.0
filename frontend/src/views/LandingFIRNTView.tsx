@@ -11,6 +11,7 @@ interface IActividad {
   fechaInicio?: string;
   fechaFin?: string;
   fecha?: string;
+  activo?: boolean;
 }
 
 interface IConfigPago {
@@ -107,7 +108,7 @@ export const LandingFIRNTView: React.FC = () => {
   };
 
   useEffect(() => {
-    const cargarCatalogos = async () => {
+    const cargarCatalogosPublicos = async () => {
       try {
         const config = await (EventoParticipanteService as any).obtenerConfiguracionPago?.();
         if (config) {
@@ -116,12 +117,24 @@ export const LandingFIRNTView: React.FC = () => {
 
         const listaActividades = await activityService.listar();
         const items: IActividad[] = Array.isArray(listaActividades) ? listaActividades : [];
-        setActividades(items);
+        
+        // Filtrar estrictamente las que tengan activo !== false y vigencia de fecha
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        const activasVigentes = items.filter((act: any) => {
+          if (act.activo === false) return false;
+          const fechaRef = act.fechaFin || act.fecha || act.fechaInicio;
+          if (!fechaRef) return true;
+          return new Date(fechaRef) >= hoy;
+        });
+
+        setActividades(activasVigentes);
       } catch (err) {
-        console.error('Error al cargar catálogos e información inicial:', err);
+        console.error('Error al cargar actividades públicas:', err);
       }
     };
-    cargarCatalogos();
+    cargarCatalogosPublicos();
   }, []);
 
   // Filtrado de eventos vigentes por fecha
@@ -129,6 +142,7 @@ export const LandingFIRNTView: React.FC = () => {
   hoy.setHours(0, 0, 0, 0);
 
   const eventosVigentes = actividades.filter((act) => {
+    if (act.activo === false) return false;
     const fechaRef = act.fechaFin || act.fecha || act.fechaInicio;
     if (!fechaRef) return true;
     const fechaEvento = new Date(fechaRef);

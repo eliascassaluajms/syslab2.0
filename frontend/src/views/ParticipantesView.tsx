@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
+import { activityService } from '../services/activity.service';
 
 export const ParticipantesView: React.FC = () => {
   const [participantes, setParticipantes] = useState<any[]>([]);
@@ -119,16 +120,133 @@ export const ParticipantesView: React.FC = () => {
     cargarParticipantes();
   }, []);
 
+  const [modalMatriculaManualOpen, setModalMatriculaManualOpen] = useState<boolean>(false);
+  const [manualFormData, setManualFormData] = useState<any>({
+    nombre: '',
+    apellido: '',
+    correo: '',
+    telefono: '',
+    tipo: 'ESTUDIANTE',
+    activityId: '',
+    codigoTransaccion: '',
+    observaciones: 'Matriculación manual por administración',
+  });
+  const [actividadesDisponibles, setActividadesDisponibles] = useState<any[]>([]);
+
+  // Estados para el reporte de impresión
+  const [modalReporteOpen, setModalReporteOpen] = useState<boolean>(false);
+  const [verificadosReporte, setVerificadosReporte] = useState<any[]>([]);
+  const [reporteActividadNombre, setReporteActividadNombre] = useState<string>('');
+  const [cargandoReporte, setCargandoReporte] = useState<boolean>(false);
+
+  const cargarActividadesLista = async () => {
+    try {
+      const items = await activityService.listar();
+      setActividadesDisponibles(Array.isArray(items) ? items : []);
+    } catch (e) {
+      console.error('Error al obtener lista de actividades para matriculación:', e);
+    }
+  };
+
+  useEffect(() => {
+    cargarActividadesLista();
+  }, []);
+
+  const handleAbrirMatriculaManual = () => {
+    setManualFormData({
+      nombre: '',
+      apellido: '',
+      correo: '',
+      telefono: '',
+      tipo: 'ESTUDIANTE',
+      activityId: actividadesDisponibles[0]?.id || '',
+      codigoTransaccion: `MANUAL-${Date.now().toString().slice(-6)}`,
+      observaciones: 'Matriculación manual por administración',
+    });
+    setModalMatriculaManualOpen(true);
+  };
+
+  const handleGuardarMatriculaManual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setGuardando(true);
+      await EventoParticipanteService.matricularManual(manualFormData);
+      await cargarParticipantes();
+      setModalMatriculaManualOpen(false);
+    } catch (err: any) {
+      console.error('Error en matriculación manual:', err);
+      setError(err?.response?.data?.error || 'Error al matricular manualmente al alumno.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const handleGenerarReporteImpresion = async () => {
+    // Buscar ID de actividad seleccionada en el filtro o usar la primera disponible
+    let targetActId = '';
+    let targetActTitle = 'Todas las Actividades';
+
+    if (eventoSeleccionado) {
+      const actObj = actividadesDisponibles.find(
+        (a) => (a.title || a.nombre) === eventoSeleccionado
+      );
+      if (actObj) {
+        targetActId = actObj.id;
+        targetActTitle = actObj.title || actObj.nombre;
+      }
+    }
+
+    if (!targetActId && actividadesDisponibles.length > 0) {
+      targetActId = actividadesDisponibles[0].id;
+      targetActTitle = actividadesDisponibles[0].title || actividadesDisponibles[0].nombre;
+    }
+
+    if (!targetActId) {
+      alert('No hay actividades registradas para generar el reporte de verificados.');
+      return;
+    }
+
+    try {
+      setCargandoReporte(true);
+      setReporteActividadNombre(targetActTitle);
+      const datosVerificados = await EventoParticipanteService.listarVerificadosPorActividad(targetActId);
+      setVerificadosReporte(Array.isArray(datosVerificados) ? datosVerificados : []);
+      setModalReporteOpen(true);
+    } catch (err) {
+      console.error('Error al generar reporte:', err);
+      alert('Error al obtener la lista de verificados para la actividad.');
+    } finally {
+      setCargandoReporte(false);
+    }
+  };
+
   return (
     <div className="p-8 space-y-6 text-slate-200">
       {/* Encabezado */}
-      <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">
-          Inscritos y Participantes
-        </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Gestión de registros y estados de inscripción a eventos.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            Inscritos y Participantes
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Gestión de registros, matriculación manual y emisión de reportes oficiales.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleAbrirMatriculaManual}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-colors"
+          >
+            ➕ Matricular Alumno Manualmente
+          </button>
+          <button
+            onClick={handleGenerarReporteImpresion}
+            disabled={cargandoReporte}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-blue-600/20 transition-colors disabled:opacity-50"
+          >
+            🖨️ {cargandoReporte ? 'Generando...' : 'Reporte de Impresión'}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -345,6 +463,237 @@ export const ParticipantesView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Matriculación Manual */}
+      {modalMatriculaManualOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                ➕ Matriculación Manual de Alumno
+              </h2>
+              <button
+                onClick={() => setModalMatriculaManualOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardarMatriculaManual} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Nombres *</label>
+                  <input
+                    type="text"
+                    required
+                    value={manualFormData.nombre}
+                    onChange={(e) => setManualFormData({ ...manualFormData, nombre: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ej. Juan Carlos"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Apellidos *</label>
+                  <input
+                    type="text"
+                    required
+                    value={manualFormData.apellido}
+                    onChange={(e) => setManualFormData({ ...manualFormData, apellido: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ej. Pérez Gómez"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico *</label>
+                  <input
+                    type="email"
+                    required
+                    value={manualFormData.correo}
+                    onChange={(e) => setManualFormData({ ...manualFormData, correo: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="juan.perez@uajms.edu.bo"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Teléfono / Celular</label>
+                  <input
+                    type="tel"
+                    value={manualFormData.telefono}
+                    onChange={(e) => setManualFormData({ ...manualFormData, telefono: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="71234567"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Tipo de Participante *</label>
+                  <select
+                    value={manualFormData.tipo}
+                    onChange={(e) => setManualFormData({ ...manualFormData, tipo: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="ESTUDIANTE">Estudiante</option>
+                    <option value="PROFESIONAL">Profesional</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Actividad / Evento *</label>
+                  <select
+                    required
+                    value={manualFormData.activityId}
+                    onChange={(e) => setManualFormData({ ...manualFormData, activityId: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="">Seleccione actividad...</option>
+                    {actividadesDisponibles.map((act) => (
+                      <option key={act.id} value={act.id}>
+                        {act.title || act.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Código de Transacción</label>
+                <input
+                  type="text"
+                  value={manualFormData.codigoTransaccion}
+                  onChange={(e) => setManualFormData({ ...manualFormData, codigoTransaccion: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Observaciones / Notas</label>
+                <textarea
+                  rows={2}
+                  value={manualFormData.observaciones}
+                  onChange={(e) => setManualFormData({ ...manualFormData, observaciones: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setModalMatriculaManualOpen(false)}
+                  className="flex-1 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={guardando}
+                  className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {guardando ? 'Matriculando...' : 'Confirmar Matriculación'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Reporte de Impresión */}
+      {modalReporteOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-2xl flex flex-col">
+            <div className="p-4 border-b border-slate-800 flex justify-between items-center no-print">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                🖨️ Vista Previa del Reporte de Verificados
+              </h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/20"
+                >
+                  Imprimir Reporte
+                </button>
+                <button
+                  onClick={() => setModalReporteOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 overflow-y-auto flex-1 text-slate-900 bg-white" id="printable-report">
+              {/* Encabezado Institucional UAJMS - FIRNT */}
+              <div className="border-b-2 border-slate-900 pb-4 mb-6 text-center">
+                <h1 className="text-lg font-bold uppercase tracking-wider text-slate-900">
+                  Universidad Autónoma Juan Misael Saracho
+                </h1>
+                <h2 className="text-sm font-semibold text-slate-700">
+                  Facultad de Ciencias de la Ingeniería (FIRNT) - SysLab 2.0
+                </h2>
+                <h3 className="text-base font-bold text-blue-900 mt-2">
+                  REPORTE OFICIAL DE PARTICIPANTES CON PAGO VERIFICADO
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">
+                  <strong>Actividad:</strong> {reporteActividadNombre} | <strong>Fecha de emisión:</strong> {new Date().toLocaleDateString('es-BO')}
+                </p>
+              </div>
+
+              {verificadosReporte.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-sm italic">
+                  No existen participantes con pago verificado registrados para esta actividad.
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 border-b border-slate-300 uppercase">
+                      <th className="p-2 border border-slate-300 text-center w-10">N°</th>
+                      <th className="p-2 border border-slate-300">Apellidos y Nombres</th>
+                      <th className="p-2 border border-slate-300">Correo Electrónico</th>
+                      <th className="p-2 border border-slate-300">Teléfono</th>
+                      <th className="p-2 border border-slate-300 text-center">Tipo</th>
+                      <th className="p-2 border border-slate-300">Código Transacción</th>
+                      <th className="p-2 border border-slate-300 text-center">Estado Pago</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {verificadosReporte.map((p, idx) => (
+                      <tr key={p.id || idx}>
+                        <td className="p-2 border border-slate-300 text-center font-bold">{idx + 1}</td>
+                        <td className="p-2 border border-slate-300 font-semibold">{p.apellido}, {p.nombre}</td>
+                        <td className="p-2 border border-slate-300">{p.correo}</td>
+                        <td className="p-2 border border-slate-300">{p.telefono || 'N/A'}</td>
+                        <td className="p-2 border border-slate-300 text-center font-medium">{p.tipo}</td>
+                        <td className="p-2 border border-slate-300 font-mono text-[11px]">{p.codigoTransaccion}</td>
+                        <td className="p-2 border border-slate-300 text-center font-bold text-emerald-700">PAGO VERIFICADO</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {/* Firmas institucionales */}
+              <div className="mt-16 grid grid-cols-2 gap-12 text-center text-xs text-slate-800">
+                <div>
+                  <div className="border-t border-slate-400 pt-2 font-bold">
+                    Responsable de Laboratorio / Coordinador
+                  </div>
+                  <div className="text-slate-500">SysLab 2.0 - FIRNT / UAJMS</div>
+                </div>
+                <div>
+                  <div className="border-t border-slate-400 pt-2 font-bold">
+                    Administración / Decanato FIRNT
+                  </div>
+                  <div className="text-slate-500">Facultad de Ciencias de la Ingeniería</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

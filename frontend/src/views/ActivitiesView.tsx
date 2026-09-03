@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Calendar, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Edit2, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { activityService } from '../services/activity.service';
 import { FormActividadModal } from '../components/eventos/FormActividadModal';
 
@@ -33,6 +33,22 @@ export const ActivitiesView: React.FC = () => {
   const handleEditar = (act: any) => {
     setActividadSeleccionada(act);
     setIsModalOpen(true);
+  };
+
+  const handleToggleEstado = async (act: any) => {
+    const nuevoEstado = act.activo === false ? true : false;
+    const confirmMsg = nuevoEstado
+      ? `¿Desea abrir nuevamente la actividad "${act.title || act.titulo}"?`
+      : `¿Desea cerrar la actividad "${act.title || act.titulo}"? Dejará de mostrarse en el landing público.`;
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await activityService.cambiarEstado(act.id, nuevoEstado);
+      await cargarActividades();
+    } catch (err) {
+      console.error('Error al cambiar estado:', err);
+    }
   };
 
   const handleEliminar = async (id: string) => {
@@ -71,19 +87,20 @@ export const ActivitiesView: React.FC = () => {
               <th className="p-4">Descripción</th>
               <th className="p-4">Categoría</th>
               <th className="p-4">Laboratorio Asignado</th>
+              <th className="p-4 text-center">Estado</th>
               <th className="p-4 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-sm text-slate-300">
             {loading ? (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-slate-500">
+                <td colSpan={6} className="p-6 text-center text-slate-500">
                   Cargando actividades...
                 </td>
               </tr>
             ) : actividades.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-500">
+                <td colSpan={6} className="p-8 text-center text-slate-500">
                   No hay actividades registradas actualmente.
                 </td>
               </tr>
@@ -106,7 +123,37 @@ export const ActivitiesView: React.FC = () => {
                     {act.lab?.nombre || act.laboratorio?.nombre || 'Por asignar'}
                   </td>
                   <td className="p-4 text-center">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        act.activo !== false
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                      }`}
+                    >
+                      {act.activo !== false ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Abierto
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-3.5 h-3.5" /> Cerrado
+                        </>
+                      )}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleToggleEstado(act)}
+                        className={`p-1.5 rounded-lg transition-colors text-xs font-medium px-2 py-1 flex items-center gap-1 ${
+                          act.activo !== false
+                            ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20'
+                        }`}
+                        title={act.activo !== false ? 'Cerrar Curso' : 'Abrir Curso'}
+                      >
+                        {act.activo !== false ? 'Cerrar' : 'Abrir'}
+                      </button>
                       <button
                         onClick={() => handleEditar(act)}
                         className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
