@@ -5,9 +5,15 @@ import { AppError } from '../utils/appError.js';
 import { ScopeService } from './scope.service.js';
 
 export class AuthService {
-  async login(correo: string, passwordPlain: string) {
-    const user = await prisma.usuario.findUnique({
-      where: { correo },
+  async login(identificador: string, passwordPlain: string) {
+    const term = identificador.trim().toLowerCase();
+    const user = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          { correo: term },
+          { username: term },
+        ]
+      },
       include: {
         asignacionesRoles: {
           include: {
@@ -53,6 +59,8 @@ export class AuthService {
     const tokenPayload = {
       id: user.id,
       nombre: user.nombre,
+      apellido: user.apellido,
+      username: user.username,
       correo: user.correo,
       esGlobal: user.esGlobal,
       roles: Array.from(rolesSet),
@@ -71,6 +79,8 @@ export class AuthService {
       usuario: {
         id: tokenPayload.id,
         nombre: tokenPayload.nombre,
+        apellido: tokenPayload.apellido,
+        username: tokenPayload.username,
         correo: tokenPayload.correo,
         esGlobal: tokenPayload.esGlobal,
         roles: tokenPayload.roles,

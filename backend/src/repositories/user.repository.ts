@@ -10,6 +10,8 @@ export class UserRepository {
       select: {
         id: true,
         nombre: true,
+        apellido: true,
+        username: true,
         correo: true,
         activo: true,
         creadoEn: true,
@@ -78,6 +80,8 @@ export class UserRepository {
       select: {
         id: true,
         nombre: true,
+        apellido: true,
+        username: true,
         correo: true,
         activo: true,
         rolId: true
@@ -88,13 +92,15 @@ export class UserRepository {
   /**
    * Modifica los datos básicos de control del usuario.[cite: 13]
    */
-  async update(id: number, data: { rolId?: number; activo?: boolean; nombre?: string; correo?: string }) {
+  async update(id: number, data: { rolId?: number; activo?: boolean; nombre?: string; apellido?: string; correo?: string }) {
     return await prisma.usuario.update({
       where: { id },
       data,
       select: {
         id: true,
         nombre: true,
+        apellido: true,
+        username: true,
         correo: true,
         activo: true,
         rolId: true
@@ -109,6 +115,7 @@ export class UserRepository {
     usuarioId: number, 
     data: { 
       nombre?: string; 
+      apellido?: string; 
       correo?: string; 
       rolId: number; 
       rolIds?: number[]; 
@@ -124,6 +131,7 @@ export class UserRepository {
         where: { id: usuarioId },
         data: {
           ...(data.nombre !== undefined && { nombre: data.nombre }),
+          ...(data.apellido !== undefined && { apellido: data.apellido }),
           ...(data.correo !== undefined && { correo: data.correo }),
           rolId: data.rolId,
           activo: data.activo !== undefined ? data.activo : undefined

@@ -9,6 +9,8 @@ export class UserService {
       select: {
         id: true,
         nombre: true,
+        apellido: true,
+        username: true,
         correo: true,
         esGlobal: true,
         activo: true,
@@ -67,8 +69,8 @@ export class UserService {
     });
   }
 
-  // 4. Actualizar datos generales del usuario (Nombre, Correo, Estado)
-  async actualizarUsuario(usuarioId: number, data: { nombre?: string; correo?: string; activo?: boolean }) {
+  // 4. Actualizar datos generales del usuario (Nombre, Apellido, Correo, Estado)
+  async actualizarUsuario(usuarioId: number, data: { nombre?: string; apellido?: string; correo?: string; activo?: boolean }) {
     const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
     if (!usuario) {
       throw new AppError('Usuario no encontrado.', 404);
@@ -78,6 +80,7 @@ export class UserService {
       where: { id: usuarioId },
       data: {
         nombre: data.nombre !== undefined ? data.nombre : usuario.nombre,
+        apellido: data.apellido !== undefined ? data.apellido : usuario.apellido,
         correo: data.correo !== undefined ? data.correo : usuario.correo,
         activo: data.activo !== undefined ? data.activo : usuario.activo,
       },

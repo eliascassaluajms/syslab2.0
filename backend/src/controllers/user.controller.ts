@@ -5,6 +5,33 @@ import { userRepository } from '../repositories/user.repository.js';
 import { AppError } from '../utils/appError.js';
 import { prisma } from '../config/prisma.js';
 
+// Función auxiliar para generar username único (Ej: Elias Cassal -> ecassal)
+export const generarUsernameUnico = async (nombre: string, apellido: string): Promise<string> => {
+  const inicial = nombre.trim().charAt(0).toLowerCase();
+  const apellidoLimpio = apellido
+    .trim()
+    .split(' ')[0]
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+  
+  let baseUsername = `${inicial}${apellidoLimpio}`;
+  if (!baseUsername || baseUsername.length < 2) {
+    baseUsername = `user${Math.floor(Math.random() * 1000)}`;
+  }
+  let usernameFinal = baseUsername;
+  let contador = 1;
+
+  while (true) {
+    const existe = await prisma.usuario.findUnique({ where: { username: usernameFinal } });
+    if (!existe) break;
+    usernameFinal = `${baseUsername}${contador}`;
+    contador++;
+  }
+  return usernameFinal;
+};
+
 // 1. Obtener lista de usuarios registrados con sus roles y ámbitos perimetrales
 export const obtenerUsuarios = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -12,6 +39,8 @@ export const obtenerUsuarios = async (req: Request, res: Response, next: NextFun
       select: {
         id: true,
         nombre: true,
+        apellido: true,
+        username: true,
         correo: true,
         activo: true,
         esGlobal: true,
@@ -56,6 +85,8 @@ export const obtenerUsuarios = async (req: Request, res: Response, next: NextFun
       return {
         id: u.id,
         nombre: u.nombre,
+        apellido: u.apellido,
+        username: u.username,
         correo: u.correo,
         activo: u.activo,
         esGlobal: u.esGlobal,
@@ -74,13 +105,13 @@ export const obtenerUsuarios = async (req: Request, res: Response, next: NextFun
   }
 };
 
-// 2. Registrar usuario básico con asignación múltiple inicial
+// 2. Registrar usuario básico con asignación múltiple inicial y username automático
 export const crearUsuarioBasico = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { nombre, correo, password, rolIds, rolId } = req.body;
+    const { nombre, apellido, correo, password, rolIds, rolId } = req.body;
 
-    if (!nombre || !correo || !password) {
-      throw new AppError('El nombre, correo y contraseña son campos obligatorios.', 400);
+    if (!nombre || !apellido || !correo || !password) {
+      throw new AppError('El nombre, apellido, correo y contraseña son campos obligatorios.', 400);
     }
 
     const usuarioExistente = await prisma.usuario.findUnique({
@@ -90,6 +121,8 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
     if (usuarioExistente) {
       throw new AppError('El correo electrónico ya se encuentra registrado.', 400);
     }
+
+    const usernameGenerado = await generarUsernameUnico(nombre, apellido);
 
     let idsRolesFinales: number[] = [];
     if (Array.isArray(rolIds) && rolIds.length > 0) {
@@ -116,7 +149,8 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
       const user = await tx.usuario.create({
         data: {
           nombre: nombre.trim(),
-          apellido: '',
+          apellido: apellido.trim(),
+          username: usernameGenerado,
           correo: correo.trim().toLowerCase(),
           password: hashedPassword,
           rolId: idsRolesFinales[0],
@@ -140,7 +174,7 @@ export const crearUsuarioBasico = async (req: Request, res: Response, next: Next
 
     res.status(201).json({
       status: 'success',
-      message: 'Usuario registrado exitosamente.',
+      message: `Usuario registrado exitosamente. Su usuario de acceso es: ${usernameGenerado}`,
       data: nuevoUsuario
     });
   } catch (error) {
@@ -159,7 +193,7 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
       throw new AppError('El identificador del usuario debe ser un número entero válido.', 400);
     }
 
-    const { nombre, correo, rolIds, rolId, activo, facultades, carreras } = req.body;
+    const { nombre, apellido, correo, rolIds, rolId, activo, facultades, carreras } = req.body;
 
     let idsRolesNumericos: number[] = [];
     if (Array.isArray(rolIds)) {
@@ -177,10 +211,12 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
     const idsCarreras = Array.isArray(carreras) ? carreras.map((c: any) => parseInt(c, 10)).filter((c: number) => !isNaN(c)) : [];
 
     const nombreStr = typeof nombre === 'string' ? nombre.trim() : undefined;
+    const apellidoStr = typeof apellido === 'string' ? apellido.trim() : undefined;
     const correoStr = typeof correo === 'string' ? correo.trim().toLowerCase() : undefined;
 
     await userRepository.actualizarPerfilYPerimetros(usuarioIdNumerico, {
       nombre: nombreStr,
+      apellido: apellidoStr,
       correo: correoStr,
       rolId: idsRolesNumericos[0],
       rolIds: idsRolesNumericos,
@@ -192,6 +228,39 @@ export const modificarUsuarioYPerimetros = async (req: Request, res: Response, n
     res.status(200).json({
       status: 'success',
       message: 'Usuario, roles y ámbitos perimetrales actualizados con éxito.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Nuevo endpoint: Cambiar Contraseña de Usuario
+export const cambiarPasswordUsuario = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const rawId = req.params.id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : (rawId || '');
+    const userId = parseInt(idStr, 10);
+
+    if (isNaN(userId)) {
+      throw new AppError('El identificador del usuario debe ser un número entero válido.', 400);
+    }
+
+    const { nuevaPassword } = req.body;
+
+    if (!nuevaPassword || typeof nuevaPassword !== 'string' || nuevaPassword.trim().length < 6) {
+      throw new AppError('La nueva contraseña debe tener al menos 6 caracteres.', 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(nuevaPassword.trim(), 10);
+
+    await prisma.usuario.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Contraseña actualizada correctamente.'
     });
   } catch (error) {
     next(error);
@@ -299,6 +368,46 @@ export const obtenerEstudiantesPublico = async (req: Request, res: Response, nex
     }));
 
     res.status(200).json(resultado);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 7. Cambiar contraseña del propio usuario autenticado
+export const cambiarPasswordPersonal = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).usuario?.id || (req as any).user?.id;
+    const { passwordActual, nuevaPassword } = req.body;
+
+    if (!passwordActual || !nuevaPassword) {
+      throw new AppError('La contraseña actual y la nueva contraseña son obligatorias.', 400);
+    }
+
+    if (nuevaPassword.length < 6) {
+      throw new AppError('La nueva contraseña debe tener al menos 6 caracteres.', 400);
+    }
+
+    const usuario = await prisma.usuario.findUnique({ where: { id: userId } });
+    if (!usuario) {
+      throw new AppError('Usuario no encontrado.', 404);
+    }
+
+    const passwordValido = await bcrypt.compare(passwordActual, usuario.password);
+    if (!passwordValido) {
+      throw new AppError('La contraseña actual es incorrecta.', 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(nuevaPassword, 10);
+
+    await prisma.usuario.update({
+      where: { id: userId },
+      data: { password: hashedPassword }
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Contraseña actualizada correctamente.'
+    });
   } catch (error) {
     next(error);
   }

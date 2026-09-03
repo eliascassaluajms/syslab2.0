@@ -6,6 +6,8 @@ import {
   crearUsuarioBasico,
   modificarUsuarioYPerimetros, 
   cambiarEstadoUsuario,
+  cambiarPasswordUsuario,
+  cambiarPasswordPersonal,
   obtenerEstudiantesPublico
 } from '../controllers/user.controller.js';
 
@@ -16,6 +18,9 @@ router.get('/estudiantes', obtenerEstudiantesPublico);
 
 // Proteger todas las rutas posteriores con verificación de sesión JWT
 router.use(verificarJWT);
+
+// PATCH /api/usuarios/perfil/password (Permite a cualquier usuario cambiar su propia contraseña)
+router.patch('/perfil/password', cambiarPasswordPersonal);
 
 // Endpoints ABM de Personal con permisos dinámicos
 // GET /api/usuarios
@@ -44,6 +49,13 @@ router.patch(
   '/:id/estado', 
   requirePermission('usuarios:editar'), 
   cambiarEstadoUsuario
+);
+
+// PATCH /api/usuarios/:id/password
+router.patch(
+  '/:id/password',
+  requirePermission('usuarios:editar'),
+  cambiarPasswordUsuario
 );
 
 export default router;
