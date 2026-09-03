@@ -24,15 +24,22 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
 
   const { rolAdminId, rolJefeId, rolDocenteId, rolDirectorCarreraId, carreraInfoId, facultadId, labs, passwordHash } = params;
 
+  const generarUsername = (nombre: string, apellido: string) => {
+    const inicial = nombre.trim().charAt(0).toLowerCase();
+    const primerApellido = apellido.trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    return `${inicial}${primerApellido}`;
+  };
+
   // =========================================================================
   // 1. USUARIOS ADMINISTRATIVOS Y DIRECTIVOS
   // =========================================================================
   const userAdmin = await prisma.usuario.upsert({
     where: { correo: 'admin@uajms.edu.bo' },
-    update: {},
+    update: { username: 'admin' },
     create: {
       nombre: 'Administrador',
       apellido: 'Sistema',
+      username: 'admin',
       correo: 'admin@uajms.edu.bo',
       password: passwordHash,
       rolId: rolAdminId,
@@ -43,10 +50,11 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
 
   const userJefe = await prisma.usuario.upsert({
     where: { correo: 'jefe.labs@uajms.edu.bo' },
-    update: {},
+    update: { username: 'ecassal' },
     create: {
       nombre: 'Elias',
       apellido: 'Cassal Baldiviezo',
+      username: 'ecassal',
       correo: 'jefe.labs@uajms.edu.bo',
       password: passwordHash,
       rolId: rolJefeId,
@@ -57,10 +65,11 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
 
   const userYovana = await prisma.usuario.upsert({
     where: { correo: 'yovana.sanchez@uajms.edu.bo' },
-    update: {},
+    update: { username: 'ysanchez' },
     create: {
       nombre: 'Yovana',
       apellido: 'Sanchez',
+      username: 'ysanchez',
       correo: 'yovana.sanchez@uajms.edu.bo',
       password: passwordHash,
       rolId: rolDirectorCarreraId,
@@ -91,12 +100,14 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
 
   const usuariosDocentes = [];
   for (const d of docentesData) {
+    const uname = generarUsername(d.nombre, d.apellido);
     const user = await prisma.usuario.upsert({
       where: { correo: d.correo },
-      update: {},
+      update: { username: uname },
       create: {
         nombre: d.nombre,
         apellido: d.apellido,
+        username: uname,
         correo: d.correo,
         password: passwordHash,
         rolId: rolDocenteId,

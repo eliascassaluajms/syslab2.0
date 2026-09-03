@@ -56,7 +56,8 @@ model RolPermiso {
 model Usuario {
   id            Int      @id @default(autoincrement())
   nombre        String   @db.VarChar(100)
-  apellido      String
+  apellido      String   @db.VarChar(100)
+  username      String   @unique @db.VarChar(50)
   correo        String   @unique @db.VarChar(150)
   password      String   @db.VarChar(255)
   esGlobal      Boolean  @default(false) @map("es_global")
