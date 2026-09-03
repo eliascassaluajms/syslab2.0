@@ -10,6 +10,7 @@ interface Props {
 
 export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, usuario, onActualizar }) => {
   const [editNombre, setEditNombre] = useState<string>('');
+  const [editApellido, setEditApellido] = useState<string>('');
   const [editCorreo, setEditCorreo] = useState<string>('');
   const [guardando, setGuardando] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +18,7 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
   useEffect(() => {
     if (usuario) {
       setEditNombre(usuario.nombre || '');
+      setEditApellido(usuario.apellido || '');
       setEditCorreo(usuario.correo || '');
       setError(null);
     }
@@ -32,7 +34,6 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
     try {
       const rolIds = usuario.roles?.map(r => r.id) || (usuario.rol ? [usuario.rol.id] : []);
 
-      // Mapeo corregido para leer facultades y carreras desde las propiedades reales del objeto
       const facultades = usuario.facultades 
         ?? usuario.asignacionesRoles?.map(a => a.facultadId).filter(Boolean) 
         ?? [];
@@ -43,6 +44,7 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
 
       const payload = {
         nombre: editNombre,
+        apellido: editApellido,
         correo: editCorreo,
         rolIds,
         roles: rolIds,
@@ -54,7 +56,7 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
       await onActualizar(usuario.id, payload);
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al actualizar los datos del usuario.');
+      setError(err.response?.data?.message || err.message || 'Error al actualizar los datos del usuario.');
     } finally {
       setGuardando(false);
     }
@@ -71,7 +73,7 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
               <span>✏️</span> Modificar Datos de Usuario
             </h3>
             <p className="text-xs text-gray-400 mt-1">
-              Actualice el nombre o correo institucional.
+              Actualice el nombre, apellido o correo institucional.
             </p>
           </div>
           <button
@@ -82,6 +84,16 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
           </button>
         </div>
 
+        {/* Informacion de Username */}
+        {usuario.username && (
+          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
+            <span className="text-xs font-medium text-gray-300">Nombre de Usuario (Nick):</span>
+            <span className="px-2.5 py-1 text-xs font-mono font-semibold bg-blue-500/20 text-blue-300 rounded-lg border border-blue-400/30">
+              @{usuario.username}
+            </span>
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex items-center gap-2">
@@ -91,17 +103,31 @@ export const ModalModificarUsuario: React.FC<Props> = ({ modalAbierto, onClose, 
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              required
-              value={editNombre}
-              onChange={(e) => setEditNombre(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                Nombres
+              </label>
+              <input
+                type="text"
+                required
+                value={editNombre}
+                onChange={(e) => setEditNombre(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                Apellidos
+              </label>
+              <input
+                type="text"
+                required
+                value={editApellido}
+                onChange={(e) => setEditApellido(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
 
           <div>

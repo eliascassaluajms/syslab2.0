@@ -25,6 +25,8 @@ export interface AsignacionRolDetalle {
 export interface UsuarioLista {
   id: number;
   nombre: string;
+  apellido?: string;
+  username?: string;
   correo: string;
   activo: boolean;
   esGlobal?: boolean;

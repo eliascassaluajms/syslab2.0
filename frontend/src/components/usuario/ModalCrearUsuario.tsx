@@ -8,6 +8,7 @@ interface Props {
 
 export const ModalCrearUsuario: React.FC<Props> = ({ modalAbierto, onClose, onCrear }) => {
   const [nuevoNombre, setNuevoNombre] = useState<string>('');
+  const [nuevoApellido, setNuevoApellido] = useState<string>('');
   const [nuevoCorreo, setNuevoCorreo] = useState<string>('');
   const [nuevaPassword, setNuevaPassword] = useState<string>('');
   const [guardando, setGuardando] = useState<boolean>(false);
@@ -23,15 +24,17 @@ export const ModalCrearUsuario: React.FC<Props> = ({ modalAbierto, onClose, onCr
     try {
       await onCrear({
         nombre: nuevoNombre,
+        apellido: nuevoApellido,
         correo: nuevoCorreo,
         password: nuevaPassword,
       });
       setNuevoNombre('');
+      setNuevoApellido('');
       setNuevoCorreo('');
       setNuevaPassword('');
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrar el usuario.');
+      setError(err.response?.data?.message || err.message || 'Error al registrar el usuario.');
     } finally {
       setGuardando(false);
     }
@@ -48,7 +51,7 @@ export const ModalCrearUsuario: React.FC<Props> = ({ modalAbierto, onClose, onCr
               <span>👤</span> Registrar Nuevo Usuario
             </h3>
             <p className="text-xs text-gray-400 mt-1">
-              Ingrese la información básica de identidad y acceso.
+              Ingrese la información de nombres, apellidos y credenciales de acceso.
             </p>
           </div>
           <button
@@ -68,18 +71,33 @@ export const ModalCrearUsuario: React.FC<Props> = ({ modalAbierto, onClose, onCr
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Ej. Ing. Carlos Mendoza"
-              value={nuevoNombre}
-              onChange={(e) => setNuevoNombre(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                Nombres
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ej. Carlos"
+                value={nuevoNombre}
+                onChange={(e) => setNuevoNombre(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                Apellidos
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ej. Mendoza"
+                value={nuevoApellido}
+                onChange={(e) => setNuevoApellido(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
           </div>
 
           <div>

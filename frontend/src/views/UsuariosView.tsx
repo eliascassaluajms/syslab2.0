@@ -6,10 +6,11 @@ import { ModalAsignarAmbito } from '../components/usuario/ModalAsignarAmbito.js'
 import { ModalModificarUsuario } from '../components/usuario/ModalModificarUsuario.js';
 import { ModalEliminarUsuario } from '../components/usuario/ModalEliminarUsuario.js';
 import { ModalCrearUsuario } from '../components/usuario/ModalCrearUsuario.js';
+import { ModalCambiarPassword } from '../components/usuario/ModalCambiarPassword.js';
 import { useToast } from '../context/ToastContext';
 
 export const UsuariosView: React.FC = () => {
-  const { usuarios, loading, error, cambiarEstado, actualizarUsuario, crearUsuarioBasico, recargarUsuarios } = useUsuarios() as any;
+  const { usuarios, loading, error, cambiarEstado, actualizarUsuario, crearUsuarioBasico, cambiarPassword, recargarUsuarios } = useUsuarios() as any;
   const { mostrarToast } = useToast();
 
   // Estados para Filtros y Búsqueda
@@ -19,21 +20,26 @@ export const UsuariosView: React.FC = () => {
   // Estados para Modales
   const [usuarioEditarAmbito, setUsuarioEditarAmbito] = useState<UsuarioLista | null>(null);
   const [usuarioModificarDatos, setUsuarioModificarDatos] = useState<UsuarioLista | null>(null);
+  const [usuarioCambiarPassword, setUsuarioCambiarPassword] = useState<UsuarioLista | null>(null);
   const [usuarioEliminarLogico, setUsuarioEliminarLogico] = useState<UsuarioLista | null>(null);
   const [mostrarModalCrear, setMostrarModalCrear] = useState<boolean>(false);
 
   const cerrarModales = () => {
     setUsuarioEditarAmbito(null);
     setUsuarioModificarDatos(null);
+    setUsuarioCambiarPassword(null);
     setUsuarioEliminarLogico(null);
     setMostrarModalCrear(false);
   };
 
-  // Filtrado computado de usuarios en tiempo real
+  // Filtrado computado de usuarios en tiempo real por nombre, apellido, username y correo
   const usuariosFiltrados = usuarios.filter((u: UsuarioLista) => {
+    const termino = filtroBusqueda.toLowerCase();
     const coincideTexto =
-      u.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-      u.correo.toLowerCase().includes(filtroBusqueda.toLowerCase());
+      (u.nombre || '').toLowerCase().includes(termino) ||
+      (u.apellido || '').toLowerCase().includes(termino) ||
+      (u.username || '').toLowerCase().includes(termino) ||
+      (u.correo || '').toLowerCase().includes(termino);
 
     const coincideEstado =
       filtroEstado === 'todos' ? true :
@@ -75,7 +81,7 @@ export const UsuariosView: React.FC = () => {
             <span className="text-blue-500">👥</span> Administración de Personal
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Gestión centralizada de roles, estados y perímetros institucionales UAJMS
+            Gestión centralizada de identidades, usernames, roles y ámbitos institucionales UAJMS
           </p>
         </div>
 
@@ -105,7 +111,7 @@ export const UsuariosView: React.FC = () => {
           </span>
           <input
             type="text"
-            placeholder="Buscar por nombre o correo institucional..."
+            placeholder="Buscar por nombre, apellido, @usuario o correo..."
             value={filtroBusqueda}
             onChange={(e) => setFiltroBusqueda(e.target.value)}
             className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 transition-colors"
@@ -133,7 +139,7 @@ export const UsuariosView: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-950/60 border-b border-gray-800 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                <th className="py-4 px-6">Usuario / Correo</th>
+                <th className="py-4 px-6">Usuario / Nombre Completo</th>
                 <th className="py-4 px-6">Roles</th>
                 <th className="py-4 px-6">Ámbito / Perímetro</th>
                 <th className="py-4 px-6 text-center">Estado</th>
@@ -148,100 +154,117 @@ export const UsuariosView: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                usuariosFiltrados.map((u: UsuarioLista) => (
-                  <tr key={u.id} className="hover:bg-gray-800/40 transition-colors group">
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <div className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                        {u.nombre}
-                      </div>
-                      <div className="text-xs text-gray-400 font-mono mt-0.5">{u.correo}</div>
-                    </td>
-
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {u.roles && u.roles.length > 0 ? (
-                          u.roles.map((r) => (
-                            <span key={`r-${r.id}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                              {r.nombre}
-                            </span>
-                          ))
-                        ) : u.rol ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                            {u.rol.nombre}
+                usuariosFiltrados.map((u: UsuarioLista) => {
+                  const nombreCompleto = [u.nombre, u.apellido].filter(Boolean).join(' ');
+                  return (
+                    <tr key={u.id} className="hover:bg-gray-800/40 transition-colors group">
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                            {nombreCompleto}
                           </span>
-                        ) : (
-                          <span className="text-xs italic text-gray-500">Sin Rol</span>
-                        )}
-                      </div>
-                    </td>
+                          {u.username && (
+                            <span className="px-2 py-0.5 text-[11px] font-mono font-medium bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
+                              @{u.username}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400 font-mono mt-0.5">{u.correo}</div>
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {u.asignacionesRoles && u.asignacionesRoles.length > 0 ? (
-                          u.asignacionesRoles.map((a: any, idx: number) => (
-                            <React.Fragment key={`amb-${idx}-${a.id || idx}`}>
-                              {a.facultad && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  Facultad: {a.facultad.sigla || a.facultad.nombre}
-                                </span>
-                              )}
-                              {a.carrera && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                                  Carrera: {a.carrera.nombre}
-                                </span>
-                              )}
-                            </React.Fragment>
-                          ))
-                        ) : null}
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {u.roles && u.roles.length > 0 ? (
+                            u.roles.map((r) => (
+                              <span key={`r-${r.id}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                {r.nombre}
+                              </span>
+                            ))
+                          ) : u.rol ? (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                              {u.rol.nombre}
+                            </span>
+                          ) : (
+                            <span className="text-xs italic text-gray-500">Sin Rol</span>
+                          )}
+                        </div>
+                      </td>
 
-                        {(!u.asignacionesRoles || u.asignacionesRoles.length === 0) && (
-                          <span className="text-xs italic text-gray-500">Global / Sin restricción</span>
-                        )}
-                      </div>
-                    </td>
+                      <td className="py-4 px-6">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {u.asignacionesRoles && u.asignacionesRoles.length > 0 ? (
+                            u.asignacionesRoles.map((a: any, idx: number) => (
+                              <React.Fragment key={`amb-${idx}-${a.id || idx}`}>
+                                {a.facultad && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    Facultad: {a.facultad.sigla || a.facultad.nombre}
+                                  </span>
+                                )}
+                                {a.carrera && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                                    Carrera: {a.carrera.nombre}
+                                  </span>
+                                )}
+                              </React.Fragment>
+                            ))
+                          ) : null}
 
-                    <td className="py-4 px-6 whitespace-nowrap text-center">
-                      <button
-                        onClick={() => handleCambiarEstadoDirecto(u.id, !u.activo)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${u.activo
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                          : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
-                          }`}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${u.activo ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                        {u.activo ? 'Activo' : 'Inactivo'}
-                      </button>
-                    </td>
+                          {(!u.asignacionesRoles || u.asignacionesRoles.length === 0) && (
+                            <span className="text-xs italic text-gray-500">Global / Sin restricción</span>
+                          )}
+                        </div>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap text-right text-sm">
-                      <div className="flex items-center justify-end gap-2">
-                        <Can permiso="usuarios:editar">
-                          <button
-                            onClick={() => setUsuarioModificarDatos(u)}
-                            title="Modificar Datos"
-                            className="text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                          >
-                            ✏️ Modificar
-                          </button>
-                          <button
-                            onClick={() => setUsuarioEditarAmbito(u)}
-                            title="Asignar Roles y Ámbito"
-                            className="text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                          >
-                            🛡️ Roles y Ámbito
-                          </button>
-                          <button
-                            onClick={() => setUsuarioEliminarLogico(u)}
-                            title="Eliminación Lógica"
-                            className="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                          >
-                            🗑️ Eliminar
-                          </button>
-                        </Can>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      <td className="py-4 px-6 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleCambiarEstadoDirecto(u.id, !u.activo)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${u.activo
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                            : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                            }`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${u.activo ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                          {u.activo ? 'Activo' : 'Inactivo'}
+                        </button>
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap text-right text-sm">
+                        <div className="flex items-center justify-end gap-2">
+                          <Can permiso="usuarios:editar">
+                            <button
+                              onClick={() => setUsuarioModificarDatos(u)}
+                              title="Modificar Datos"
+                              className="text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                            >
+                              ✏️ Modificar
+                            </button>
+                            <button
+                              onClick={() => setUsuarioCambiarPassword(u)}
+                              title="Cambiar Contraseña"
+                              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                            >
+                              🔑 Contraseña
+                            </button>
+                            <button
+                              onClick={() => setUsuarioEditarAmbito(u)}
+                              title="Asignar Roles y Ámbito"
+                              className="text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                            >
+                              🛡️ Roles y Ámbito
+                            </button>
+                            <button
+                              onClick={() => setUsuarioEliminarLogico(u)}
+                              title="Eliminación Lógica"
+                              className="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                            >
+                              🗑️ Eliminar
+                            </button>
+                          </Can>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -254,8 +277,9 @@ export const UsuariosView: React.FC = () => {
         onClose={cerrarModales}
         onCrear={async (payload) => {
           try {
-            await crearUsuarioBasico(payload);
-            mostrarToast('Usuario registrado exitosamente.', 'success');
+            const res = await crearUsuarioBasico(payload);
+            const msg = res?.message || 'Usuario registrado exitosamente.';
+            mostrarToast(msg, 'success');
             cerrarModales();
             if (typeof recargarUsuarios === 'function') {
               recargarUsuarios();
@@ -285,7 +309,19 @@ export const UsuariosView: React.FC = () => {
         }}
       />
 
-      {/* MODAL 3: ASIGNAR ROLES Y ÁMBITO */}
+      {/* MODAL 3: CAMBIAR CONTRASEÑA */}
+      <ModalCambiarPassword
+        modalAbierto={Boolean(usuarioCambiarPassword)}
+        onClose={cerrarModales}
+        usuario={usuarioCambiarPassword}
+        onCambiarPassword={async (id, nuevaPassword) => {
+          const res = await cambiarPassword(id, nuevaPassword);
+          mostrarToast('Contraseña de usuario actualizada.', 'success');
+          return res;
+        }}
+      />
+
+      {/* MODAL 4: ASIGNAR ROLES Y ÁMBITO */}
       <ModalAsignarAmbito
         modalAbierto={Boolean(usuarioEditarAmbito)}
         onClose={cerrarModales}
@@ -299,7 +335,7 @@ export const UsuariosView: React.FC = () => {
         }}
       />
 
-      {/* MODAL 4: ELIMINACIÓN LÓGICA */}
+      {/* MODAL 5: ELIMINACIÓN LÓGICA */}
       <ModalEliminarUsuario
         modalAbierto={Boolean(usuarioEliminarLogico)}
         onClose={cerrarModales}
