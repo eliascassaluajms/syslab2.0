@@ -524,16 +524,18 @@ export const LandingFIRNTView: React.FC = () => {
 
       {/* Modal de Confirmación de Pago */}
       {modalAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 relative">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-md sm:p-4">
+          <div className="my-auto flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-800 p-4 sm:p-5">
               <h4 className="font-bold text-slate-100 text-sm">Resumen de Inscripción & Pago — CITREN</h4>
-              <button onClick={() => setModalAbierto(false)} className="text-slate-400 hover:text-white text-xs cursor-pointer">
+              <button type="button" onClick={() => setModalAbierto(false)} className="p-1 text-slate-400 hover:text-white text-xs cursor-pointer" aria-label="Cerrar resumen de pago">
                 ✕
               </button>
             </div>
 
-            <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+            <form onSubmit={handleFinalizarPreinscripcion} className="flex min-h-0 flex-1 flex-col">
+              <div className="flex-1 overflow-y-auto space-y-4 p-4 sm:p-6">
+              <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
               <img
                 src={actividadSeleccionada?.bannerUrl || '/media/imagenes/default-banner.jpeg'}
                 alt="Miniatura"
@@ -559,7 +561,6 @@ export const LandingFIRNTView: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handleFinalizarPreinscripcion} className="space-y-3">
               {/* Campo trampa Honeypot (invisible para personas reales) */}
               <div className="opacity-0 absolute -left-[9999px] top-0 h-0 w-0 z-[-1] pointer-events-none" aria-hidden="true">
                 <label htmlFor="user_fax_website">No completar este campo</label>
@@ -672,7 +673,9 @@ export const LandingFIRNTView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
+              </div>
+
+              <div className="flex shrink-0 gap-2 border-t border-slate-800 bg-slate-900/90 p-4">
                 <button
                   type="button"
                   onClick={() => setModalAbierto(false)}
