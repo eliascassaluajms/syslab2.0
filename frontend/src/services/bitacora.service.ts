@@ -7,6 +7,8 @@ export interface IniciarSesionDTO {
   nombreAyudante?: string;
   materiaNombre?: string;
   tipoUso: 'REGULAR' | 'EXTRAORDINARIO';
+  solicitudExtraordinariaId?: number;
+  practicaRealizada?: string;
 }
 
 export interface SesionActivaResponse {
@@ -23,7 +25,11 @@ export interface SesionActivaResponse {
 
 export interface AsistenteItem {
   id?: number;
-  fechaHora: string;
+  fechaHora?: string | null;
+  estado?: 'PRESENTE' | 'ATRASO' | 'LICENCIA' | 'FALTA';
+  origen?: string;
+  justificativo?: string | null;
+  equipo?: { id: number; nombre: string; codigoPatrimonial?: string | null } | null;
   estudiante?: {
     id: number;
     nombre: string;
@@ -36,6 +42,17 @@ export interface AsistenteItem {
 export interface AsistentesSesionResponse {
   total: number;
   asistentes: AsistenteItem[];
+}
+
+export interface ListaConsolidadaResponse {
+  sesion: SesionActivaResponse;
+  listaConfirmada: boolean;
+  totalInscritos: number;
+  presentes: number;
+  atrasos: number;
+  licencias: number;
+  faltas: number;
+  estudiantes: Array<AsistenteItem & { estudiante: NonNullable<AsistenteItem['estudiante']>; asistenciaId: number | null }>;
 }
 
 export const bitacoraService = {
@@ -77,6 +94,25 @@ export const bitacoraService = {
     };
   },
 
+  obtenerListaConsolidada: async (sesionId: number): Promise<ListaConsolidadaResponse> => {
+    const response = await httpClient.get(`/bitacora/${sesionId}/asistencia`);
+    return response.data?.data || response.data;
+  },
+
+  actualizarAsistencia: async (sesionId: number, estudianteId: number, datos: {
+    estado: 'PRESENTE' | 'ATRASO' | 'LICENCIA' | 'FALTA';
+    justificativo?: string;
+    equipoId?: number;
+  }) => {
+    const response = await httpClient.put(`/bitacora/${sesionId}/asistencia/${estudianteId}`, datos);
+    return response.data?.data?.asistencia || response.data?.data || response.data;
+  },
+
+  confirmarAsistencia: async (sesionId: number): Promise<ListaConsolidadaResponse> => {
+    const response = await httpClient.post(`/bitacora/${sesionId}/confirmar-asistencia`);
+    return response.data?.data || response.data;
+  },
+
   // Consultar si hay una sesión activa para un laboratorio
   obtenerSesionActiva: async (laboratorioId: number): Promise<SesionActivaResponse | null> => {
     try {
@@ -92,7 +128,7 @@ export const bitacoraService = {
 
   // Descargar Planilla de Control y Asistencia en PDF
   descargarPdf: async (sesionId: number, nombreArchivo: string = 'Planilla_Bitacora.pdf'): Promise<void> => {
-    const response = await httpClient.get(`/bitacora/${sesionId}/pdf`, {
+    const response = await httpClient.get(`/bitacora/${sesionId}/asistencia-pdf`, {
       responseType: 'blob',
     });
 

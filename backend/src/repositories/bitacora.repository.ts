@@ -8,9 +8,13 @@ export interface IniciarSesionBitacoraInput {
   nombreAyudante?: string | null;
   materiaNombre?: string | null;
   tipoUso?: TipoUsoLaboratorio;
+  grupo?: number;
+  semestre?: number;
+  gestion?: number;
   fecha: Date;
   horaInicio: string;
   tokenQR: string;
+  practicaRealizada?: string | null;
 }
 
 export interface FinalizarSesionBitacoraInput {
@@ -42,9 +46,13 @@ export class BitacoraRepository {
         nombreAyudante: data.nombreAyudante ?? null,
         materiaNombre: data.materiaNombre ?? null,
         tipoUso: data.tipoUso ?? 'REGULAR',
+        grupo: data.grupo ?? 1,
+        semestre: data.semestre ?? 1,
+        gestion: data.gestion ?? new Date().getFullYear(),
         fecha: data.fecha,
         horaInicio: data.horaInicio,
         horaFin: '',
+        practicaRealizada: data.practicaRealizada ?? null,
         cumplio: false,
         tokenQR: data.tokenQR,
       },
@@ -57,6 +65,13 @@ export class BitacoraRepository {
         },
         docente: {
           select: { id: true, nombre: true, apellido: true, correo: true },
+        },
+        asistencias: {
+          include: {
+            estudiante: { select: { id: true, nombre: true, apellido: true, correo: true } },
+            equipo: { select: { id: true, nombre: true, codigoPatrimonial: true } },
+          },
+          orderBy: { estudiante: { apellido: 'asc' } },
         },
       },
     });

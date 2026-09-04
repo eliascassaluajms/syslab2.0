@@ -10,12 +10,17 @@ import {
   actualizarLaboratorio,
   cambiarEstadoLaboratorio,
   obtenerEstadoLaboratoriosReal, // 🟢 1. Importar la función de tiempo real
+  obtenerMisHorariosActivos,
+  obtenerMisReservasAprobadasHoy,
 } from '../controllers/laboratorios.controller.js';
 
 const router = Router();
 
 // Proteger todas las rutas del módulo con verificación de sesión JWT
 router.use(verificarJWT);
+
+router.get('/mis-horarios-activos', requirePermission('bitacora:iniciar'), obtenerMisHorariosActivos);
+router.get('/mis-reservas-aprobadas-hoy', requirePermission('bitacora:iniciar'), obtenerMisReservasAprobadasHoy);
 
 // GET /api/laboratorios/estado-actual - Estado en tiempo real (DEBE IR ANTES de /:id)
 router.get(

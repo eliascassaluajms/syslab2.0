@@ -1,9 +1,11 @@
 import crypto from 'crypto';
 import { TipoUsoLaboratorio } from '@prisma/client';
+import { prisma } from '../config/prisma.js';
 import { bitacoraRepository } from '../repositories/bitacora.repository.js';
 import { asistenciaRepository } from '../repositories/asistencia.repository.js';
 import { pdfGeneratorService } from './pdfGenerator.service.js';
 import { AppError } from '../utils/appError.js';
+import { timeToMinutes } from './horario.service.js';
 
 export interface IniciarBitacoraDTO {
   laboratorioId: number;
@@ -13,6 +15,7 @@ export interface IniciarBitacoraDTO {
   materiaNombre?: string;
   tipoUso?: TipoUsoLaboratorio;
   solicitudExtraordinariaId?: number;
+  practicaRealizada?: string;
 }
 
 export interface FinalizarBitacoraDTO {
@@ -29,9 +32,10 @@ export class BitacoraService {
       nombreAyudante,
       materiaNombre,
       tipoUso,
+      practicaRealizada,
     } = data;
 
-    if (!laboratorioId) {
+    if (!laboratorioId || !docenteId) {
       throw new AppError('El id del laboratorio es obligatorio para iniciar la bitácora.', 400);
     }
 
@@ -54,6 +58,51 @@ export class BitacoraService {
       throw new AppError('El laboratorio ya cuenta con una sesión de bitácora activa en este momento.', 400);
     }
 
+    const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][now.getDay()];
+    const minutoActual = now.getHours() * 60 + now.getMinutes();
+    const horarios = await prisma.horario.findMany({
+      where: {
+        laboratorioId: Number(laboratorioId),
+        docenteId: Number(docenteId),
+        diaSemana,
+        ...(materiaId ? { materiaId: Number(materiaId) } : {}),
+      },
+    });
+    const horarioValido = horarios.find((horario) => {
+      const inicio = timeToMinutes(horario.horaInicio);
+      const fin = timeToMinutes(horario.horaFin);
+      return minutoActual >= inicio - 15 && minutoActual <= fin - 10;
+    });
+
+    let tipoUsoAutorizado: TipoUsoLaboratorio = TipoUsoLaboratorio.REGULAR;
+    let materiaAutorizada = horarioValido?.materiaId;
+    let grupoAutorizado = horarioValido?.grupo ?? 1;
+    let semestreAutorizado = horarioValido?.semestre ?? 1;
+    let gestionAutorizada = horarioValido?.gestion ?? now.getFullYear();
+    if (!horarioValido) {
+      const solicitudes = await prisma.solicitudHorarioExtraordinario.findMany({
+        where: {
+          id: data.solicitudExtraordinariaId,
+          laboratorioId: Number(laboratorioId),
+          docenteId: Number(docenteId),
+          estado: 'APROBADO',
+          fecha: { gte: fechaInicioDia, lte: fechaFinDia },
+        },
+      });
+      const solicitudValida = solicitudes.find((solicitud) => {
+        const inicio = timeToMinutes(solicitud.horaInicio);
+        const fin = timeToMinutes(solicitud.horaFin);
+        return minutoActual >= inicio - 15 && minutoActual <= fin - 10;
+      });
+      if (!solicitudValida) {
+        throw new AppError(
+          'No tiene un horario regular programado ni una reserva extraordinaria aprobada para este laboratorio en este momento.',
+          403
+        );
+      }
+      tipoUsoAutorizado = TipoUsoLaboratorio.EXTRAORDINARIO;
+    }
+
     // 2. Genera un token QR único y seguro
     const tokenQR = crypto.randomUUID();
 
@@ -65,14 +114,18 @@ export class BitacoraService {
     // 4. Registra la entrada en SesionBitacora
     return bitacoraRepository.crear({
       laboratorioId: Number(laboratorioId),
-      materiaId: materiaId ? Number(materiaId) : null,
+      materiaId: materiaAutorizada ?? (materiaId ? Number(materiaId) : null),
+      grupo: grupoAutorizado,
+      semestre: semestreAutorizado,
+      gestion: gestionAutorizada,
       docenteId: docenteId ? Number(docenteId) : null,
       nombreAyudante: nombreAyudante ? nombreAyudante.trim() : null,
       materiaNombre: materiaNombre ? materiaNombre.trim() : null,
-      tipoUso: tipoUso ?? TipoUsoLaboratorio.REGULAR,
+      tipoUso: tipoUsoAutorizado,
       fecha: now,
       horaInicio,
       tokenQR,
+      practicaRealizada: practicaRealizada?.trim() || null,
     });
   }
 
@@ -139,7 +192,11 @@ export class BitacoraService {
 
     const asistencias = asistenciasDb.map((a) => ({
       fechaHora: a.fechaHora,
+      estado: a.estado,
+      justificativo: a.justificativo,
+      equipo: a.equipo,
       estudiante: {
+        id: a.estudiante.id,
         nombre: a.estudiante.nombre,
         apellido: a.estudiante.apellido,
         correo: a.estudiante.correo,

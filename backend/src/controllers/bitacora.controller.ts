@@ -14,13 +14,18 @@ export class BitacoraController {
         materiaNombre,
         tipoUso,
         solicitudExtraordinariaId,
+        practicaRealizada,
       } = req.body;
 
       if (!laboratorioId) {
         throw new AppError('El parámetro laboratorioId es requerido.', 400);
       }
 
-      const idDocenteFinal = docenteId ? Number(docenteId) : (req.user?.id ? Number(req.user.id) : undefined);
+      const idDocenteFinal = req.user?.id ? Number(req.user.id) : undefined;
+
+      if (docenteId && Number(docenteId) !== idDocenteFinal) {
+        throw new AppError('El docente de la sesión debe coincidir con el usuario autenticado.', 403);
+      }
 
       const sesion = await bitacoraService.iniciarSesion({
         laboratorioId: Number(laboratorioId),
@@ -30,6 +35,7 @@ export class BitacoraController {
         materiaNombre: materiaNombre ? String(materiaNombre) : undefined,
         tipoUso: tipoUso as TipoUsoLaboratorio | undefined,
         solicitudExtraordinariaId: solicitudExtraordinariaId ? Number(solicitudExtraordinariaId) : undefined,
+        practicaRealizada: practicaRealizada ? String(practicaRealizada) : undefined,
       });
 
       res.status(201).json({

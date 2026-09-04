@@ -16,6 +16,7 @@ router.post('/iniciar', requirePermission('bitacora:iniciar'), bitacoraControlle
 router.patch('/:id/finalizar', requirePermission('bitacora:finalizar'), bitacoraController.finalizar);
 router.get('/', requirePermission('bitacora:consultar'), bitacoraController.listar);
 router.get('/:id/pdf', requirePermission('bitacora:consultar'), bitacoraController.descargarPDF);
+router.get('/:sesionId/asistencia-pdf', requirePermission('bitacora:consultar'), bitacoraController.descargarPDF);
 
 // Sondeo en tiempo real de estudiantes que marcaron asistencia
 router.get(
@@ -23,5 +24,8 @@ router.get(
   requirePermission('bitacora:consultar'),
   asistenciaController.listarPorSesion
 );
+router.get('/:sesionId/asistencia', requirePermission('bitacora:consultar'), asistenciaController.obtenerListaConsolidada);
+router.put('/:sesionId/asistencia/:estudianteId', requirePermission('bitacora:finalizar'), asistenciaController.actualizar);
+router.post('/:sesionId/confirmar-asistencia', requirePermission('bitacora:finalizar'), asistenciaController.confirmar);
 
 export default router;

@@ -89,6 +89,11 @@ export class PdfGeneratorService {
           : (sesion.nombreAyudante || 'Docente Responsable');
         const materiaNombre = sesion.materiaNombre || sesion.materia?.nombre || 'Práctica Libre / Taller';
         const labNombre = sesion.laboratorio?.nombre || 'Laboratorio';
+        const resumen = (asistenciasList || []).reduce((conteo: Record<string, number>, asistencia: any) => {
+          const estado = asistencia.estado || 'PRESENTE';
+          conteo[estado] = (conteo[estado] || 0) + 1;
+          return conteo;
+        }, {});
 
         const filasAsistentes = (asistenciasList || []).map((asist: any, idx: number) => [
           { text: (idx + 1).toString(), alignment: 'center', fontSize: 9 },
@@ -96,12 +101,14 @@ export class PdfGeneratorService {
           { text: `${asist.estudiante?.apellido || ''} ${asist.estudiante?.nombre || ''}`.trim() || asist.estudiante?.nombre || 'Estudiante', fontSize: 9 },
           { text: asist.equipo?.codigoPatrimonial || asist.equipo?.nombre || 'General / Propio', fontSize: 9 },
           { text: (asist.fechaMarcado || asist.fechaHora) ? new Date(asist.fechaMarcado || asist.fechaHora).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : '-', alignment: 'center', fontSize: 9 },
+          { text: ({ PRESENTE: 'P', ATRASO: 'A', LICENCIA: 'L', FALTA: 'F' } as Record<string, string>)[asist.estado || 'PRESENTE'], alignment: 'center', fontSize: 9 },
+          { text: asist.justificativo || '', fontSize: 8 },
         ]);
 
         if (filasAsistentes.length === 0) {
           filasAsistentes.push([
-            { text: 'Sin registros de asistencia digital en esta sesión', colSpan: 5, alignment: 'center', italics: true, fontSize: 9 },
-            {}, {}, {}, {}
+            { text: 'Sin registros de asistencia digital en esta sesión', colSpan: 7, alignment: 'center', italics: true, fontSize: 9 },
+            {}, {}, {}, {}, {}, {}
           ]);
         }
 
@@ -111,7 +118,7 @@ export class PdfGeneratorService {
           pageMargins: [35, 35, 35, 35],
           content: [
             { text: 'UNIVERSIDAD AUTÓNOMA JUAN MISAEL SARACHO', style: 'headerUni', alignment: 'center' },
-            { text: 'FACULTAD DE CIENCIAS INTEGRADAS DE YACUIBA', style: 'headerFac', alignment: 'center' },
+            { text: 'FACULTAD DE CIENCIAS INTEGRADAS DEL GRAN CHACO', style: 'headerFac', alignment: 'center' },
             { text: 'PLANILLA OFICIAL DE CONTROL Y USO DE LABORATORIO', style: 'headerDoc', alignment: 'center', margin: [0, 4, 0, 14] },
             {
               table: {
@@ -148,7 +155,7 @@ export class PdfGeneratorService {
             {
               table: {
                 headerRows: 1,
-                widths: ['6%', '18%', '46%', '18%', '12%'],
+                widths: ['6%', '18%', '32%', '14%', '10%', '8%', '12%'],
                 body: [
                   [
                     { text: '#', bold: true, fillColor: '#0f172a', color: '#ffffff', alignment: 'center', fontSize: 9 },
@@ -156,6 +163,8 @@ export class PdfGeneratorService {
                     { text: 'Apellidos y Nombres', bold: true, fillColor: '#0f172a', color: '#ffffff', fontSize: 9 },
                     { text: 'Equipo / Puesto', bold: true, fillColor: '#0f172a', color: '#ffffff', fontSize: 9 },
                     { text: 'Hora', bold: true, fillColor: '#0f172a', color: '#ffffff', alignment: 'center', fontSize: 9 },
+                    { text: 'Estado', bold: true, fillColor: '#0f172a', color: '#ffffff', alignment: 'center', fontSize: 9 },
+                    { text: 'Observaciones', bold: true, fillColor: '#0f172a', color: '#ffffff', fontSize: 9 },
                   ],
                   ...filasAsistentes,
                 ],
@@ -179,6 +188,11 @@ export class PdfGeneratorService {
                   ],
                 },
               ],
+            },
+            {
+              text: `Programados: ${asistenciasList.length} | Presentes: ${resumen.PRESENTE || 0} | Atrasos: ${resumen.ATRASO || 0} | Licencias: ${resumen.LICENCIA || 0} | Faltas: ${resumen.FALTA || 0}`,
+              fontSize: 9,
+              margin: [0, 0, 0, 24],
             },
           ],
           styles: {

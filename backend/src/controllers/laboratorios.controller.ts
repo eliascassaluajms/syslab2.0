@@ -1,6 +1,62 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma.js';
 import { ScopeService } from '../services/scope.service.js';
+import { timeToMinutes } from '../services/horario.service.js';
+
+const obtenerContextoHorario = (ahora: Date) => {
+  const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const horaActual = ahora.getHours() * 60 + ahora.getMinutes();
+  return { diaSemana: diasSemana[ahora.getDay()], horaActual };
+};
+
+export const obtenerMisHorariosActivos = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const docenteId = Number((req as any).user?.id);
+    const ahora = new Date();
+    const { diaSemana, horaActual } = obtenerContextoHorario(ahora);
+    const horarios = await prisma.horario.findMany({
+      where: { docenteId, diaSemana, gestion: ahora.getFullYear() },
+      include: {
+        laboratorio: { select: { id: true, nombre: true, codigo: true } },
+        materia: { select: { id: true, nombre: true, codigo: true } },
+      },
+      orderBy: { horaInicio: 'asc' },
+    });
+    const horariosActivos = horarios.filter((horario) => (
+      horaActual >= timeToMinutes(horario.horaInicio) - 15 &&
+      horaActual <= timeToMinutes(horario.horaFin) - 10
+    ));
+    const laboratorios = Array.from(new Map(horariosActivos.map((horario) => [horario.laboratorio.id, horario.laboratorio])).values());
+    res.status(200).json({ status: 'success', data: { materias: horariosActivos, laboratorios } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const obtenerMisReservasAprobadasHoy = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const docenteId = Number((req as any).user?.id);
+    const ahora = new Date();
+    const inicioDia = new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()));
+    const finDia = new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59));
+    const { horaActual } = obtenerContextoHorario(ahora);
+    const reservas = await prisma.solicitudHorarioExtraordinario.findMany({
+      where: { docenteId, estado: 'APROBADO', fecha: { gte: inicioDia, lte: finDia } },
+      include: {
+        laboratorio: { select: { id: true, nombre: true, codigo: true } },
+        docente: { select: { id: true, nombre: true, apellido: true } },
+      },
+      orderBy: { horaInicio: 'asc' },
+    });
+    const reservasActivas = reservas.filter((reserva) => (
+      horaActual >= timeToMinutes(reserva.horaInicio) - 15 &&
+      horaActual <= timeToMinutes(reserva.horaFin) - 10
+    ));
+    res.status(200).json({ status: 'success', data: reservasActivas });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // ==========================================
 // 1. OBTENER LABORATORIOS (FILTRADO POR ÁMBITO)

@@ -5,11 +5,8 @@ import { requirePermission } from '../middlewares/authorize.middleware.js';
 
 const router = Router();
 
-// Endpoint público para registro de asistencia del estudiante
-router.post('/registrar', asistenciaController.registrar);
-
-// Rutas protegidas
 router.use(verificarJWT);
+router.post('/registrar', asistenciaController.registrar);
 
 router.get('/sesion/:sesionId', requirePermission('bitacora:consultar'), asistenciaController.listarPorSesion);
 

@@ -26,11 +26,6 @@ interface LaboratorioOption {
   nombre: string;
 }
 
-interface MateriaOption {
-  id: number;
-  nombre: string;
-}
-
 export const HistorialBitacorasView: React.FC = () => {
   const [sesiones, setSesiones] = useState<SesionBitacoraItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -48,11 +43,58 @@ export const HistorialBitacorasView: React.FC = () => {
   // Estados del Modal de Apertura de Sesión
   const [modalApertura, setModalApertura] = useState<boolean>(false);
   const [laboratorios, setLaboratorios] = useState<LaboratorioOption[]>([]);
-  const [materias, setMaterias] = useState<MateriaOption[]>([]);
+  const [horariosActivos, setHorariosActivos] = useState<Array<{
+    id: number;
+    laboratorioId: number;
+    materiaId: number;
+    grupo: number;
+    horaInicio: string;
+    horaFin: string;
+    laboratorio: LaboratorioOption;
+    materia: { id: number; nombre: string; codigo: string };
+  }>>([]);
+  const [reservasAprobadas, setReservasAprobadas] = useState<Array<{
+    id: number;
+    laboratorioId: number;
+    materia: string;
+    horaInicio: string;
+    horaFin: string;
+    motivo: string;
+    laboratorio: LaboratorioOption;
+  }>>([]);
   const [nuevoLabId, setNuevoLabId] = useState<number | ''>('');
   const [nuevaMateriaId, setNuevaMateriaId] = useState<number | ''>('');
+  const [reservaId, setReservaId] = useState<number | ''>('');
+  const [temaPractica, setTemaPractica] = useState('');
   const [nuevoTipoUso, setNuevoTipoUso] = useState<'REGULAR' | 'EXTRAORDINARIO'>('REGULAR');
   const [iniciando, setIniciando] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!modalApertura) return;
+    setError(null);
+    setNuevoLabId('');
+    setNuevaMateriaId('');
+    setReservaId('');
+    setTemaPractica('');
+    const endpoint = nuevoTipoUso === 'REGULAR'
+      ? '/laboratorios/mis-horarios-activos'
+      : '/laboratorios/mis-reservas-aprobadas-hoy';
+    httpClient.get(endpoint)
+      .then((res) => {
+        const data = res.data?.data ?? res.data;
+        if (nuevoTipoUso === 'REGULAR') {
+          const horarios = Array.isArray(data?.materias) ? data.materias : [];
+          setHorariosActivos(horarios);
+          setLaboratorios(Array.isArray(data?.laboratorios) ? data.laboratorios : []);
+          if (horarios.length === 0) setError('No tienes asignaturas regulares habilitadas para el bloque horario actual.');
+        } else {
+          const reservas = Array.isArray(data) ? data : [];
+          setReservasAprobadas(reservas);
+          if (reservas.length === 0) setError('No cuentas con reservas extraordinarias aprobadas y vigentes para hoy.');
+        }
+      })
+      .catch(() => setError('No se pudieron consultar las opciones autorizadas para este tipo de uso.'));
+  }, [modalApertura, nuevoTipoUso]);
 
   // Cargar lista de laboratorios al montar para alimentar el filtro
   useEffect(() => {
@@ -92,25 +134,9 @@ export const HistorialBitacorasView: React.FC = () => {
   }, [filtroLaboratorioId, filtroFecha]);
 
   // 2. Abrir Modal de Nueva Sesión y cargar catálogos
-  const handleAbrirModalInicio = async () => {
-    try {
-      const [resLabs, resMats] = await Promise.all([
-        httpClient.get('/laboratorios'),
-        httpClient.get('/materias'),
-      ]);
-
-      // Extracción segura para laboratorios
-      const rawLabs = resLabs.data?.data?.laboratorios ?? resLabs.data?.data ?? resLabs.data;
-      setLaboratorios(Array.isArray(rawLabs) ? rawLabs : []);
-
-      // Extracción segura para materias (soporta arreglo plano o payload { materias: [...] })
-      const rawMats = resMats.data?.data?.materias ?? resMats.data?.data ?? resMats.data;
-      setMaterias(Array.isArray(rawMats) ? rawMats : []);
-
-      setModalApertura(true);
-    } catch {
-      setError('No se pudieron cargar los catálogos para iniciar la clase.');
-    }
+  const handleAbrirModalInicio = () => {
+    setError(null);
+    setModalApertura(true);
   };
 
   // 3. Confirmar inicio de sesión en backend (Genera QR)
@@ -126,11 +152,15 @@ export const HistorialBitacorasView: React.FC = () => {
         laboratorioId: Number(nuevoLabId),
         materiaId: nuevaMateriaId ? Number(nuevaMateriaId) : undefined,
         tipoUso: nuevoTipoUso,
+        solicitudExtraordinariaId: reservaId ? Number(reservaId) : undefined,
+        practicaRealizada: temaPractica.trim(),
       });
 
       setModalApertura(false);
       setNuevoLabId('');
       setNuevaMateriaId('');
+      setReservaId('');
+      setTemaPractica('');
       // Despliega la pantalla de proyección QR en tiempo real
       setSesionActiva(nuevaSesion);
     } catch (err: unknown) {
@@ -386,55 +416,78 @@ export const HistorialBitacorasView: React.FC = () => {
             <form onSubmit={handleIniciarSesion} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                  Laboratorio a Ocupar *
+                  Tipo de Uso *
                 </label>
-                <select
-                  required
-                  value={nuevoLabId}
-                  onChange={(e) => setNuevoLabId(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
-                >
-                  <option value="">-- Seleccionar Laboratorio --</option>
-                  {Array.isArray(laboratorios) &&
-                    laboratorios.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.nombre}
-                      </option>
-                    ))}
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['REGULAR', 'EXTRAORDINARIO'] as const).map((tipo) => (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => setNuevoTipoUso(tipo)}
+                      className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${nuevoTipoUso === tipo ? 'border-emerald-400 bg-emerald-600 text-white' : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-slate-500'}`}
+                    >
+                      {tipo === 'REGULAR' ? 'Horario regular' : 'Extraordinario aprobado'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                  Materia Curricular (Opcional)
-                </label>
-                <select
-                  value={nuevaMateriaId}
-                  onChange={(e) => setNuevaMateriaId(e.target.value ? Number(e.target.value) : '')}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
-                >
-                  <option value="">-- Seleccionar Materia --</option>
-                  {Array.isArray(materias) &&
-                    materias.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nombre}
-                      </option>
-                    ))}
-                </select>
-              </div>
+              {nuevoTipoUso === 'REGULAR' ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Laboratorio asignado *</label>
+                    <select required value={nuevoLabId} onChange={(e) => setNuevoLabId(e.target.value ? Number(e.target.value) : '')} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                      <option value="">-- Laboratorio del bloque actual --</option>
+                      {laboratorios.map((lab) => <option key={lab.id} value={lab.id}>{lab.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Materia y grupo en curso *</label>
+                    <select
+                      required
+                      value={nuevaMateriaId}
+                      onChange={(e) => {
+                        const materiaId = e.target.value ? Number(e.target.value) : '';
+                        setNuevaMateriaId(materiaId);
+                        const horario = horariosActivos.find((item) => item.materiaId === materiaId);
+                        if (horario) setNuevoLabId(horario.laboratorioId);
+                      }}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value="">-- Materia programada ahora --</option>
+                      {horariosActivos.filter((item) => !nuevoLabId || item.laboratorioId === nuevoLabId).map((item) => (
+                        <option key={item.id} value={item.materiaId}>{item.materia.codigo} - {item.materia.nombre} (G{item.grupo}) [{item.horaInicio} - {item.horaFin}]</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Reserva aprobada para hoy *</label>
+                  <select
+                    required
+                    value={reservaId}
+                    onChange={(e) => {
+                      const id = e.target.value ? Number(e.target.value) : '';
+                      setReservaId(id);
+                      const reserva = reservasAprobadas.find((item) => item.id === id);
+                      if (reserva) {
+                        setNuevoLabId(reserva.laboratorioId);
+                        setTemaPractica(reserva.materia);
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  >
+                    <option value="">-- Seleccionar reserva vigente --</option>
+                    {reservasAprobadas.map((reserva) => <option key={reserva.id} value={reserva.id}>#{reserva.id} | {reserva.laboratorio.nombre} | {reserva.materia} | {reserva.horaInicio} - {reserva.horaFin}</option>)}
+                  </select>
+                  {reservaId && <p className="mt-1 text-[11px] text-emerald-300">Reserva aprobada: {reservasAprobadas.find((item) => item.id === reservaId)?.motivo}</p>}
+                </div>
+              )}
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                  Tipo de Uso
-                </label>
-                <select
-                  value={nuevoTipoUso}
-                  onChange={(e) => setNuevoTipoUso(e.target.value as 'REGULAR' | 'EXTRAORDINARIO')}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
-                >
-                  <option value="REGULAR">Regular (Horario Establecido)</option>
-                  <option value="EXTRAORDINARIO">Extraordinario / Auxiliatura</option>
-                </select>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Tema / práctica *</label>
+                <input required value={temaPractica} onChange={(e) => setTemaPractica(e.target.value)} placeholder="Ej.: Práctica 3 - Redes VLAN" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500" />
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-slate-800">
@@ -447,7 +500,7 @@ export const HistorialBitacorasView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={iniciando || !nuevoLabId}
+                  disabled={iniciando || !nuevoLabId || (nuevoTipoUso === 'REGULAR' ? !nuevaMateriaId : !reservaId)}
                   className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-xl transition-all shadow-lg shadow-emerald-900/30 cursor-pointer"
                 >
                   {iniciando ? 'Iniciando...' : 'Abrir Clase y Generar QR'}

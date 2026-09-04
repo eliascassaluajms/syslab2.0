@@ -32,6 +32,9 @@ export class AsistenciaRepository {
             correo: true,
           },
         },
+        equipo: {
+          select: { id: true, nombre: true, codigoPatrimonial: true },
+        },
       },
     });
   }
@@ -47,6 +50,9 @@ export class AsistenciaRepository {
             apellido: true,
             correo: true,
           },
+        },
+        equipo: {
+          select: { id: true, nombre: true, codigoPatrimonial: true },
         },
       },
       orderBy: { fechaHora: 'asc' },
