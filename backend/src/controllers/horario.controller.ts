@@ -135,6 +135,8 @@ export class HorarioController {
         fecha: String(fecha),
         horaInicio: String(horaInicio),
         horaFin: String(horaFin),
+        usuarioId: req.user?.id ? Number(req.user.id) : undefined,
+        esGlobal: req.user?.esGlobal,
       });
 
       res.status(200).json({

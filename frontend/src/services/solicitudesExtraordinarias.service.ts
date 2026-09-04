@@ -13,6 +13,9 @@ export const solicitudesExtraordinariasService = {
       params: { fecha, horaInicio, horaFin },
     });
     const resData = response.data;
+    if (resData && Array.isArray(resData.data?.laboratorios)) {
+      return resData.data.laboratorios;
+    }
     if (resData && Array.isArray(resData.data)) {
       return resData.data;
     }

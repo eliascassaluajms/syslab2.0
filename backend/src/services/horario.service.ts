@@ -576,10 +576,14 @@ export class HorarioService {
     fecha,
     horaInicio,
     horaFin,
+    usuarioId,
+    esGlobal = false,
   }: {
     fecha: string;
     horaInicio: string;
     horaFin: string;
+    usuarioId?: number;
+    esGlobal?: boolean;
   }) {
     if (!fecha || !horaInicio || !horaFin) {
       throw new AppError('Debe proporcionar fecha, horaInicio y horaFin.', 400);
@@ -643,7 +647,7 @@ export class HorarioService {
           gte: fechaInicioDia,
           lte: fechaFinDia,
         },
-        estado: 'APROBADO',
+        estado: { in: ['APROBADO', 'PENDIENTE'] },
       },
       select: {
         laboratorioId: true,
@@ -669,13 +673,31 @@ export class HorarioService {
     );
 
     // Retorna la lista de laboratorios cuyos IDs NO estén en la lista de ocupados
+    const laboratorioWhere: any = {
+      activo: true,
+      id: { notIn: idsOcupados },
+    };
+
+    if (usuarioId && !esGlobal) {
+      const asignaciones = await prisma.asignacionAmbito.findMany({
+        where: { usuarioId },
+        select: { carreraId: true, facultadId: true },
+      });
+      const carrerasIds = asignaciones
+        .map((asignacion) => asignacion.carreraId)
+        .filter((id): id is number => id !== null);
+      const facultadesIds = asignaciones
+        .map((asignacion) => asignacion.facultadId)
+        .filter((id): id is number => id !== null);
+
+      laboratorioWhere.OR = [
+        ...(carrerasIds.length > 0 ? [{ carreraId: { in: carrerasIds } }] : []),
+        ...(facultadesIds.length > 0 ? [{ facultadId: { in: facultadesIds }, carreraId: null }] : []),
+      ];
+    }
+
     return prisma.laboratorio.findMany({
-      where: {
-        activo: true,
-        id: {
-          notIn: idsOcupados,
-        },
-      },
+      where: laboratorioWhere,
       orderBy: { nombre: 'asc' },
     });
   }
@@ -686,12 +708,16 @@ export class HorarioService {
     horaInicio,
     horaFin,
     excludeSolicitudId,
+    usuarioId,
+    esGlobal = false,
   }: {
     laboratorioId: number;
     fecha: string | Date;
     horaInicio: string;
     horaFin: string;
     excludeSolicitudId?: number;
+    usuarioId?: number;
+    esGlobal?: boolean;
   }): Promise<boolean> {
     const fechaStr = typeof fecha === 'string' 
       ? fecha.split('T')[0] 
@@ -701,6 +727,8 @@ export class HorarioService {
       fecha: fechaStr,
       horaInicio,
       horaFin,
+      usuarioId,
+      esGlobal,
     });
 
     const estaDisponible = labsDisponibles.some((lab) => lab.id === laboratorioId);

@@ -8,6 +8,7 @@ declare global {
         nombre: string;
         correo: string;
         rol: string;
+        esGlobal: boolean;
         permisos: string[];
         carreras: number[]; // IDs planos numéricos del schema.prisma
       };

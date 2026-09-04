@@ -29,6 +29,8 @@ export class SolicitudExtraordinariaController {
         horaInicio: String(horaInicio || ''),
         horaFin: String(horaFin || ''),
         motivo: String(motivo || ''),
+        usuarioId: req.user?.id ? Number(req.user.id) : undefined,
+        esGlobal: req.user?.esGlobal,
       });
 
       res.status(201).json({

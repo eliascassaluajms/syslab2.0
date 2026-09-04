@@ -21,6 +21,8 @@ export interface DTOHorarioExtraordinario {
   horaInicio: string; // HH:mm
   horaFin: string; // HH:mm
   motivo: string;
+  usuarioId?: number;
+  esGlobal?: boolean;
 }
 
 export class SolicitudExtraordinariaService {
@@ -35,6 +37,8 @@ export class SolicitudExtraordinariaService {
       horaInicio,
       horaFin,
       motivo,
+      usuarioId,
+      esGlobal,
     } = data;
 
     if (!laboratorioId || !materia || !fecha || !horaInicio || !horaFin || !motivo) {
@@ -72,6 +76,8 @@ export class SolicitudExtraordinariaService {
       fecha,
       horaInicio,
       horaFin,
+      usuarioId,
+      esGlobal,
     });
 
     if (!estaDisponible) {
