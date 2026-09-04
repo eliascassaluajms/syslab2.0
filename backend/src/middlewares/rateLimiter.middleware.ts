@@ -11,6 +11,7 @@ export const publicRateLimiter = (maxRequests = 30, windowMs = 60 * 1000) =>
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
   });
 
 // Limitador estricto para el endpoint pesado de OCR (Máx 6 intentos cada 10 minutos por IP)
@@ -23,6 +24,7 @@ export const ocrRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // Limitador general para el registro de preinscripciones (Máx 15 registros cada 15 minutos por IP)
@@ -35,4 +37,5 @@ export const preinscripcionRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });

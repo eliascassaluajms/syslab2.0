@@ -26,6 +26,8 @@ import defensaRoutes from './routes/defensa.routes.js';
 
 const app: Application = express();
 
+app.set('trust proxy', 1);
+
 const envCorsOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
   .map((o) => o.trim().replace(/\/$/, ''))
