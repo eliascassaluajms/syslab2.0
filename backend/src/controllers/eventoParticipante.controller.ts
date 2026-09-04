@@ -16,7 +16,7 @@ const TERMINOS_BANCARIOS = [
 export const EventoParticipanteController = {
   async crear(req: Request, res: Response): Promise<void> {
     try {
-      const { honeypot, formStartTime, nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, comprobanteUrl, observaciones } = req.body;
+      const { honeypot, formStartTime, nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, montoPagado, comprobanteUrl, observaciones } = req.body;
 
       // 1. Detección Honeypot: si el campo trampa tiene contenido, es un bot
       if (honeypot && typeof honeypot === 'string' && honeypot.trim() !== '') {
@@ -41,6 +41,20 @@ export const EventoParticipanteController = {
         return;
       }
 
+      const codigoLimpio = String(codigoTransaccion).trim();
+      const transaccionExistente = await prisma.eventoParticipante.findFirst({
+        where: {
+          codigoTransaccion: codigoLimpio,
+          estado: { in: ['PRE_INSCRITO', 'PAGO_VERIFICADO', 'ASISTENCIA_CONFIRMADA'] },
+        },
+      });
+      if (transaccionExistente) {
+        res.status(409).json({
+          message: `El N° de transacción ${codigoLimpio} ya fue registrado previamente en el sistema.`,
+        });
+        return;
+      }
+
       const tipoNormalizado = tipo === 'PROFESIONAL' ? 'PROFESIONAL' : 'ESTUDIANTE';
 
       let comprobanteUrlLimpia = comprobanteUrl;
@@ -59,7 +73,8 @@ export const EventoParticipanteController = {
           telefono,
           tipo: tipoNormalizado,
           activityId: String(activityId),
-          codigoTransaccion,
+          codigoTransaccion: codigoLimpio,
+          montoPagado: Number(montoPagado) || 0,
           ...(comprobanteUrlLimpia && { comprobanteUrl: comprobanteUrlLimpia }),
           ...(observaciones !== undefined && { observaciones }),
           estado: EstadoInscripcion.PRE_INSCRITO,

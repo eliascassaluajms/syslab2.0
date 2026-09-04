@@ -524,7 +524,9 @@ model EventoParticipante {
   activity          Activity?         @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   // Datos del pago
-  codigoTransaccion String?           @map("codigo_transaccion") @db.VarChar(100)
+  codigoTransaccion String?           @unique @map("codigo_transaccion") @db.VarChar(100)
+  montoPagado       Decimal           @default(0.00) @map("monto_pagado") @db.Decimal(10, 2)
+  montoBancoReal    Decimal?          @map("monto_banco_real") @db.Decimal(10, 2)
   comprobanteUrl    String?           @map("comprobante_url") @db.Text
   observaciones     String?           @db.Text
   

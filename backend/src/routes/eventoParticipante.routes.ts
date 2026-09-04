@@ -3,6 +3,8 @@ import { EventoParticipanteController } from '../controllers/eventoParticipante.
 import { verificarJWT } from '../middlewares/auth.middleware.js';
 import { requirePermission } from '../middlewares/authorize.middleware.js';
 import { uploadComprobante, uploadComprobanteMemory } from '../middlewares/upload.middleware.js';
+import { uploadExtracto } from '../middlewares/uploadExcel.middleware.js';
+import { conciliacionController } from '../controllers/conciliacion.controller.js';
 import { ocrRateLimiter, preinscripcionRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
@@ -38,6 +40,23 @@ router.post('/ocr',
   (req: Request, res: Response, next: NextFunction) => {
     EventoParticipanteController.procesarComprobanteOCR(req, res, next).catch(next);
   }
+);
+
+router.post('/conciliar-extracto',
+  verificarJWT,
+  requirePermission('actividades:pagos_validar'),
+  uploadExtracto.single('extracto'),
+  (req: Request, res: Response, next: NextFunction) => {
+    conciliacionController.procesarExtractoBancario(req, res, next).catch(next);
+  },
+);
+
+router.get('/reporte-financiero/:actividadId',
+  verificarJWT,
+  requirePermission('actividades:pagos_validar'),
+  (req: Request, res: Response, next: NextFunction) => {
+    conciliacionController.obtenerReporteFinanciero(req, res, next).catch(next);
+  },
 );
 
 // GET /api/evento-participantes
