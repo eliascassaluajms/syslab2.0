@@ -113,6 +113,9 @@ export const HorariosView: React.FC = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [archivoExcel, setArchivoExcel] = useState<File | null>(null);
+  const [modalImportacionAbierto, setModalImportacionAbierto] = useState(false);
+  const [importandoExcel, setImportandoExcel] = useState(false);
 
   // Carga de datos extendida
   const cargarDatos = async () => {
@@ -317,6 +320,30 @@ export const HorariosView: React.FC = () => {
     }
   };
 
+  const handleImportarExcel = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!archivoExcel) {
+      setError('Selecciona un archivo Excel .xlsx para importar.');
+      return;
+    }
+
+    setImportandoExcel(true);
+    setError(null);
+    setMensajeExito(null);
+    try {
+      const respuesta = await horariosService.importarExcel(archivoExcel);
+      const resultado = respuesta.data || {};
+      setMensajeExito(respuesta.message || `Importación completada: ${resultado.importados || 0} horarios procesados.`);
+      setArchivoExcel(null);
+      setModalImportacionAbierto(false);
+      await cargarDatos();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'No se pudo importar el archivo Excel.');
+    } finally {
+      setImportandoExcel(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto text-white">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -325,6 +352,15 @@ export const HorariosView: React.FC = () => {
           <h1 className="text-2xl font-bold">Horarios y Cronograma</h1>
         </div>
         <div className="flex items-center gap-3">
+          {tienePermiso('horarios:crear') && (
+            <button
+              type="button"
+              onClick={() => setModalImportacionAbierto(true)}
+              className="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2"
+            >
+              <span>📁</span> Importar Excel Semestral
+            </button>
+          )}
           {tienePermiso('solicitudes:crear') && (
             <button
               type="button"
@@ -354,6 +390,32 @@ export const HorariosView: React.FC = () => {
       {error && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
+        </div>
+      )}
+
+      {modalImportacionAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <form onSubmit={handleImportarExcel} className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-white">Importar Excel Semestral</h2>
+                <p className="mt-1 text-xs text-gray-400">Selecciona la planilla oficial con la hoja 29-07.</p>
+              </div>
+              <button type="button" onClick={() => setModalImportacionAbierto(false)} className="text-gray-400 hover:text-white" aria-label="Cerrar">✕</button>
+            </div>
+            <input
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={(event) => setArchivoExcel(event.target.files?.[0] || null)}
+              className="mt-5 w-full rounded-xl border border-gray-700 bg-gray-950 p-3 text-sm text-gray-300"
+            />
+            <div className="mt-5 flex justify-end gap-3 border-t border-gray-800 pt-4">
+              <button type="button" onClick={() => setModalImportacionAbierto(false)} className="rounded-xl bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">Cancelar</button>
+              <button type="submit" disabled={importandoExcel} className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50">
+                {importandoExcel ? 'Procesando...' : 'Confirmar importación'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

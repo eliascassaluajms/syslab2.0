@@ -1,6 +1,15 @@
 import { httpClient } from './httpClient';
 
 export const horariosService = {
+  importarExcel: async (archivo: File) => {
+    const formData = new FormData();
+    formData.append('archivoExcel', archivo);
+    const response = await httpClient.post('/horarios/importar-excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   listar: async (filters?: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();
 

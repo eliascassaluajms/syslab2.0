@@ -3,6 +3,23 @@ import { horarioService } from '../services/horario.service.js';
 import { AppError } from '../utils/appError.js';
 
 export class HorarioController {
+  async importarExcel(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) {
+        throw new AppError('Debe adjuntar un archivo Excel en el campo archivoExcel.', 400);
+      }
+
+      const resultado = await horarioService.importarExcel(req.file.buffer);
+      res.status(200).json({
+        status: 'success',
+        message: `Importación finalizada: ${resultado.importados} horarios importados y ${resultado.omitidos} omitidos.`,
+        data: resultado,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async crear(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { laboratorioId, materiaId, docenteId, diaSemana, horaInicio, horaFin, semestre, gestion, grupo, totalGrupos } = req.body;

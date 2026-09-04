@@ -1,5 +1,70 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
+import * as XLSX from 'xlsx';
+
+type ExcelCell = string | number | boolean | Date | null | undefined;
+type ExcelRow = ExcelCell[];
+
+interface ImportarHorarioResultado {
+  importados: number;
+  omitidos: number;
+  errores: string[];
+}
+
+const normalizarTextoExcel = (valor: ExcelCell): string => String(valor ?? '').trim();
+
+const normalizarClaveExcel = (valor: ExcelCell): string => normalizarTextoExcel(valor)
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim();
+
+const buscarIndiceColumna = (encabezados: string[], opciones: string[]): number => {
+  const indice = encabezados.findIndex((encabezado) => opciones.includes(encabezado));
+  return indice;
+};
+
+const normalizarDia = (valor: string): string | null => {
+  const dia = normalizarClaveExcel(valor);
+  const dias: Record<string, string> = {
+    domingo: 'Domingo', lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
+    jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado'
+  };
+  return dias[dia] || null;
+};
+
+const extraerSemestre = (valor: string): number | null => {
+  const coincidencia = valor.match(/(?:nivel|semestre)\s*([1-9][0-9]?)/i);
+  return coincidencia ? Number(coincidencia[1]) : null;
+};
+
+const normalizarHora = (valor: string): string | null => {
+  const coincidencia = valor.trim().match(/^(\d{1,2})(?::|\.)(\d{2})$/);
+  if (!coincidencia) return null;
+  const horas = Number(coincidencia[1]);
+  const minutos = Number(coincidencia[2]);
+  if (horas > 23 || minutos > 59) return null;
+  return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+};
+
+const extraerRangoHorario = (valor: string): { horaInicio: string; horaFin: string } | null => {
+  const coincidencia = valor.match(/(\d{1,2}(?:[:.]\d{2})?)\s*(?:-|–|—|a|hasta)\s*(\d{1,2}(?:[:.]\d{2})?)/i);
+  if (!coincidencia) return null;
+  const horaInicio = normalizarHora(coincidencia[1].replace('.', ':'));
+  const horaFin = normalizarHora(coincidencia[2].replace('.', ':'));
+  return horaInicio && horaFin ? { horaInicio, horaFin } : null;
+};
+
+const encontrarEncabezados = (filas: ExcelRow[]): { indice: number; encabezados: string[] } => {
+  const claves = ['codigo', 'sigla', 'materia', 'docente', 'profesor', 'laboratorio', 'aula', 'dia', 'hora inicio'];
+  for (let indice = 0; indice < Math.min(filas.length, 25); indice += 1) {
+    const encabezados = filas[indice].map(normalizarClaveExcel);
+    const coincidencias = encabezados.filter((encabezado) => claves.some((clave) => encabezado.includes(clave)));
+    if (coincidencias.length >= 2) return { indice, encabezados };
+  }
+  throw new AppError('No se encontró una fila de encabezados reconocible en la hoja 29-07.', 400);
+};
 
 export type HorarioConflictCandidate = {
   id?: number;
@@ -268,6 +333,127 @@ export class HorarioService {
         docente: { select: { id: true, nombre: true, apellido: true } },
       },
     });
+  }
+
+  async importarExcel(buffer: Buffer, gestion = new Date().getFullYear()): Promise<ImportarHorarioResultado> {
+    const libro = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+    const hoja = libro.Sheets['29-07'];
+
+    if (!hoja) {
+      throw new AppError('El archivo no contiene la hoja obligatoria 29-07.', 400);
+    }
+
+    const filas = XLSX.utils.sheet_to_json<ExcelRow>(hoja, { header: 1, defval: '' });
+    const { indice: indiceEncabezados, encabezados } = encontrarEncabezados(filas);
+    const indiceCodigo = buscarIndiceColumna(encabezados, ['codigo', 'sigla', 'codigo materia', 'sigla materia']);
+    const indiceMateria = encabezados.findIndex((encabezado) => encabezado.includes('materia') && !encabezado.includes('codigo'));
+    const indiceLaboratorio = encabezados.findIndex((encabezado) => encabezado.includes('laboratorio') || encabezado.includes('aula'));
+    const indiceDocente = encabezados.findIndex((encabezado) => encabezado.includes('docente') || encabezado.includes('profesor'));
+    const indiceDia = buscarIndiceColumna(encabezados, ['dia', 'dia semana', 'dias']);
+    const indiceHoraInicio = buscarIndiceColumna(encabezados, ['hora inicio', 'inicio']);
+    const indiceHoraFin = buscarIndiceColumna(encabezados, ['hora fin', 'fin']);
+    const indiceRango = encabezados.findIndex((encabezado) => encabezado.includes('horario') || encabezado.includes('rango horario'));
+
+    let semestreActual: number | null = null;
+    let laboratorioAnterior = '';
+    let docenteAnterior = '';
+    let importados = 0;
+    let omitidos = 0;
+    const errores: string[] = [];
+
+    const obtenerCodigoMateria = (valor: string): string => {
+      const codigo = valor.match(/[A-ZÁÉÍÓÚÑ]{2,}[A-ZÁÉÍÓÚÑ0-9-]*\d[A-ZÁÉÍÓÚÑ0-9-]*/i);
+      return codigo ? codigo[0].toUpperCase() : valor.trim();
+    };
+
+    for (let indiceFila = indiceEncabezados + 1; indiceFila < filas.length; indiceFila += 1) {
+      const fila = filas[indiceFila];
+      const valoresFila = fila.map(normalizarTextoExcel);
+      const semestreDetectado = valoresFila.map(extraerSemestre).find((valor): valor is number => valor !== null);
+      if (semestreDetectado !== undefined) semestreActual = semestreDetectado;
+
+      const laboratorioCelda = indiceLaboratorio >= 0 ? valoresFila[indiceLaboratorio] : '';
+      const docenteCelda = indiceDocente >= 0 ? valoresFila[indiceDocente] : '';
+      if (laboratorioCelda) laboratorioAnterior = laboratorioCelda;
+      if (docenteCelda) docenteAnterior = docenteCelda;
+
+      const materiaTexto = indiceCodigo >= 0
+        ? valoresFila[indiceCodigo]
+        : (indiceMateria >= 0 ? valoresFila[indiceMateria] : '');
+      const codigoMateria = obtenerCodigoMateria(materiaTexto);
+      if (!codigoMateria || !semestreActual || !laboratorioAnterior || !docenteAnterior) continue;
+
+      const bloques: Array<{ diaSemana: string; rango: { horaInicio: string; horaFin: string } }> = [];
+      const diaFila = indiceDia >= 0 ? normalizarDia(valoresFila[indiceDia]) : null;
+      const rangoFila = indiceRango >= 0 ? extraerRangoHorario(valoresFila[indiceRango]) : null;
+      const horasSeparadas = indiceHoraInicio >= 0 && indiceHoraFin >= 0
+        ? { horaInicio: normalizarHora(valoresFila[indiceHoraInicio]), horaFin: normalizarHora(valoresFila[indiceHoraFin]) }
+        : null;
+
+      if (diaFila && (rangoFila || (horasSeparadas?.horaInicio && horasSeparadas.horaFin))) {
+        bloques.push({
+          diaSemana: diaFila,
+          rango: rangoFila || { horaInicio: horasSeparadas?.horaInicio || '', horaFin: horasSeparadas?.horaFin || '' },
+        });
+      } else {
+        for (let indiceColumna = 0; indiceColumna < encabezados.length; indiceColumna += 1) {
+          const diaColumna = normalizarDia(encabezados[indiceColumna]);
+          const rango = diaColumna ? extraerRangoHorario(valoresFila[indiceColumna]) : null;
+          if (diaColumna && rango) bloques.push({ diaSemana: diaColumna, rango });
+        }
+      }
+
+      if (bloques.length === 0) continue;
+
+      const materia = await prisma.materia.findUnique({ where: { codigo: codigoMateria } });
+      const laboratorio = await prisma.laboratorio.findFirst({
+        where: {
+          activo: true,
+          OR: [
+            { codigo: { contains: laboratorioAnterior, mode: 'insensitive' } },
+            { nombre: { contains: laboratorioAnterior, mode: 'insensitive' } },
+          ],
+        },
+      });
+      const docente = await prisma.usuario.findFirst({
+        where: {
+          activo: true,
+          OR: [
+            { correo: { equals: docenteAnterior, mode: 'insensitive' } },
+            { nombre: { contains: docenteAnterior.split(/\s+/)[0], mode: 'insensitive' } },
+            { apellido: { contains: docenteAnterior.split(/\s+/).slice(-1)[0], mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      if (!materia || !laboratorio || !docente) {
+        omitidos += bloques.length;
+        errores.push(`Fila ${indiceFila + 1}: no se pudo resolver materia, laboratorio o docente.`);
+        continue;
+      }
+
+      for (const bloque of bloques) {
+        try {
+          await this.crear({
+            laboratorioId: laboratorio.id,
+            materiaId: materia.id,
+            docenteId: docente.id,
+            diaSemana: bloque.diaSemana,
+            horaInicio: bloque.rango.horaInicio,
+            horaFin: bloque.rango.horaFin,
+            semestre: semestreActual,
+            gestion: Number(gestion),
+          });
+          importados += 1;
+        } catch (error) {
+          omitidos += 1;
+          const mensaje = error instanceof AppError ? error.message : 'No se pudo crear el horario.';
+          errores.push(`Fila ${indiceFila + 1}: ${mensaje}`);
+        }
+      }
+    }
+
+    return { importados, omitidos, errores: errores.slice(0, 50) };
   }
 
   async listar(filters?: { docenteId?: number; laboratorioId?: number; diaSemana?: string; semestre?: number; gestion?: number }) {
