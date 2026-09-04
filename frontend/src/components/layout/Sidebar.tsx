@@ -19,6 +19,10 @@ interface MenuItem {
   subItems?: SubMenuItem[];
 }
 
+interface SidebarProps {
+  onCloseMobile?: () => void;
+}
+
 const menuConfig: MenuItem[] = [
   {
     id: 'organica',
@@ -152,7 +156,7 @@ const menuConfig: MenuItem[] = [
   },
 ];
 
-export const Sidebar: React.FC = () => {
+export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const { user, tienePermiso, logout } = useAuth();
   const location = useLocation();
 
@@ -247,6 +251,8 @@ export const Sidebar: React.FC = () => {
     }));
   };
 
+  const handleNavegar = () => onCloseMobile?.();
+
   let nombreRol = 'Personal';
   if (typeof user?.rol === 'string') {
     nombreRol = user.rol;
@@ -256,7 +262,7 @@ export const Sidebar: React.FC = () => {
 
   return (
     <>
-      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between h-screen sticky top-0 select-none text-slate-200">
+      <aside className="h-full w-full bg-[#0a1628] border-r border-sky-500/20 flex flex-col justify-between select-none text-slate-200 md:sticky md:top-0 md:h-screen">
         <div>
           <div className="p-6 border-b border-gray-800/80 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg shadow-lg shadow-blue-500/10">
@@ -307,6 +313,7 @@ export const Sidebar: React.FC = () => {
                               <li key={sub.ruta}>
                                 <NavLink
                                   to={sub.ruta}
+                                  onClick={handleNavegar}
                                   className={({ isActive }) =>
                                     `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                                       isActive
@@ -330,6 +337,7 @@ export const Sidebar: React.FC = () => {
                     <li key={item.ruta || item.id}>
                       <NavLink
                         to={item.ruta!}
+                        onClick={handleNavegar}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                             isActive
@@ -374,7 +382,7 @@ export const Sidebar: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <NavLink to="/admin/perfil" className="flex items-center gap-3 overflow-hidden group">
+            <NavLink to="/admin/perfil" onClick={handleNavegar} className="flex items-center gap-3 overflow-hidden group">
               <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex-shrink-0 flex items-center justify-center text-blue-400 text-xs font-bold group-hover:border-blue-400 transition-colors">
                 {user?.nombre?.substring(0, 2).toUpperCase() || 'US'}
               </div>

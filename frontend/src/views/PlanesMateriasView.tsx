@@ -68,20 +68,20 @@ export const PlanesMateriasView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto text-white">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto text-sky-100">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-sky-100">
           <span>📋</span> Gestión de Planes de Estudio y Mallas Curriculares
         </h1>
 
         {/* SELECTORES EN CASCADA (Facultad -> Carrera) */}
-        <div className="flex flex-wrap gap-3 items-center bg-gray-900 border border-gray-800 p-3 rounded-2xl shadow-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center bg-sky-950/25 border border-sky-500/25 p-3 rounded-2xl shadow-lg w-full md:w-auto">
           <div className="flex flex-col">
-            <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Facultad</label>
+            <label className="text-[10px] text-sky-300/70 uppercase font-semibold mb-1">Facultad</label>
             <select
               value={facultadIdSeleccionada ?? ''}
               onChange={(e) => seleccionarFacultad(e.target.value ? Number(e.target.value) : '')}
-              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+              className="bg-[#0a1628] border border-sky-500/25 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 cursor-pointer"
             >
               <option value="">-- Seleccionar Facultad --</option>
               {facultades.map((fac) => (
@@ -93,11 +93,11 @@ export const PlanesMateriasView: React.FC = () => {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-[10px] text-gray-400 uppercase font-semibold mb-1">Carrera</label>
+            <label className="text-[10px] text-sky-300/70 uppercase font-semibold mb-1">Carrera</label>
             <select
               value={carreraIdSeleccionada ?? ''}
               onChange={(e) => setCarreraIdSeleccionada(e.target.value ? Number(e.target.value) : '')}
-              className="bg-gray-950 border border-gray-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#0a1628] border border-sky-500/25 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!facultadIdSeleccionada || carrerasFiltradas.length === 0}
             >
               <option value="">
@@ -120,7 +120,7 @@ export const PlanesMateriasView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Columna de Planes */}
-        <div className="bg-gray-900 border border-gray-800 p-5 rounded-2xl shadow-xl space-y-4">
+        <div className="bg-sky-950/25 border border-sky-500/25 p-5 rounded-2xl shadow-xl space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-base font-semibold text-gray-200">Planes de Estudio</h2>
             {carreraIdSeleccionada && (
@@ -176,7 +176,7 @@ export const PlanesMateriasView: React.FC = () => {
         </div>
 
         {/* Columna de Materias */}
-        <div className="md:col-span-2 bg-gray-900 border border-gray-800 p-5 rounded-2xl shadow-xl space-y-4">
+        <div className="md:col-span-2 bg-sky-950/25 border border-sky-500/25 p-5 rounded-2xl shadow-xl space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-base font-semibold text-gray-200">
               Asignaturas {planSeleccionado ? `(Plan ${planSeleccionado.gestion})` : ''}
@@ -193,7 +193,7 @@ export const PlanesMateriasView: React.FC = () => {
 
           {planSeleccionado ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="min-w-[620px] w-full text-left border-collapse text-sm">
                 <thead>
                   <tr className="bg-gray-950 border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider">
                     <th className="p-3">Código</th>

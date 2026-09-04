@@ -1,36 +1,43 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Rutas Públicas
-import { LandingFIRNTView } from '../views/LandingFIRNTView';
-import { LoginView } from '../views/login/LoginView';
-import { ForgotPasswordView } from '../views/login/ForgotPasswordView';
-import { RegistroAsistenciaPublicaView } from '../views/asistencia/RegistroAsistenciaPublicaView';
+const LandingFIRNTView = lazy(() => import('../views/LandingFIRNTView').then((module) => ({ default: module.LandingFIRNTView })));
+const LoginView = lazy(() => import('../views/login/LoginView').then((module) => ({ default: module.LoginView })));
+const ForgotPasswordView = lazy(() => import('../views/login/ForgotPasswordView').then((module) => ({ default: module.ForgotPasswordView })));
+const RegistroAsistenciaPublicaView = lazy(() => import('../views/asistencia/RegistroAsistenciaPublicaView').then((module) => ({ default: module.RegistroAsistenciaPublicaView })));
 
 // Protección y Layout Base
 import { ProtectedRoute } from './ProtectedRoute';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 
 // Vistas del Sistema
-import { CatalogosView } from '../views/CatalogosView';
-import { UsuariosView } from '../views/UsuariosView';
-import { PerfilView } from '../views/PerfilView';
-import { GestionRolesView } from '../views/GestionRolesView';
-import { LaboratoriosView } from '../views/LaboratoriosView';
-import { PlanesMateriasView } from '../views/PlanesMateriasView';
-import { HorariosView } from '../views/HorariosView';
-import { CategoriasEventosView } from '../views/CategoriasEventosView';
-import ActivitiesView from '../views/ActivitiesView';
-import { ParticipantesView } from '../views/ParticipantesView';
-import { ValidacionPagosView } from '../views/ValidacionPagosView';
-import { HistorialBitacorasView } from '../views/bitacora/HistorialBitacorasView';
-import IncidenciasView from '../views/incidencias/IncidenciasView';
-import InventarioEquiposView from '../views/equipos/InventarioEquiposView';
-import { GestionDefensasView } from '../views/defensas/GestionDefensasView';
+const CatalogosView = lazy(() => import('../views/CatalogosView').then((module) => ({ default: module.CatalogosView })));
+const UsuariosView = lazy(() => import('../views/UsuariosView').then((module) => ({ default: module.UsuariosView })));
+const PerfilView = lazy(() => import('../views/PerfilView').then((module) => ({ default: module.PerfilView })));
+const GestionRolesView = lazy(() => import('../views/GestionRolesView').then((module) => ({ default: module.GestionRolesView })));
+const LaboratoriosView = lazy(() => import('../views/LaboratoriosView').then((module) => ({ default: module.LaboratoriosView })));
+const PlanesMateriasView = lazy(() => import('../views/PlanesMateriasView').then((module) => ({ default: module.PlanesMateriasView })));
+const HorariosView = lazy(() => import('../views/HorariosView').then((module) => ({ default: module.HorariosView })));
+const CategoriasEventosView = lazy(() => import('../views/CategoriasEventosView').then((module) => ({ default: module.CategoriasEventosView })));
+const ActivitiesView = lazy(() => import('../views/ActivitiesView'));
+const ParticipantesView = lazy(() => import('../views/ParticipantesView').then((module) => ({ default: module.ParticipantesView })));
+const ValidacionPagosView = lazy(() => import('../views/ValidacionPagosView').then((module) => ({ default: module.ValidacionPagosView })));
+const HistorialBitacorasView = lazy(() => import('../views/bitacora/HistorialBitacorasView').then((module) => ({ default: module.HistorialBitacorasView })));
+const IncidenciasView = lazy(() => import('../views/incidencias/IncidenciasView'));
+const InventarioEquiposView = lazy(() => import('../views/equipos/InventarioEquiposView'));
+const GestionDefensasView = lazy(() => import('../views/defensas/GestionDefensasView').then((module) => ({ default: module.GestionDefensasView })));
 
 export const AppRoutes: React.FC = () => {
   return (
-    <Routes>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#071522] text-sm text-sky-200">
+          Cargando módulo...
+        </div>
+      }
+    >
+      <Routes>
       {/* ========================================== */}
       {/* RUTAS PÚBLICAS                              */}
       {/* ========================================== */}
@@ -97,6 +104,7 @@ export const AppRoutes: React.FC = () => {
       {/* REDIRECCIÓN POR DEFECTO                    */}
       {/* ========================================== */}
       <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 };

@@ -221,14 +221,14 @@ export const ParticipantesView: React.FC = () => {
   };
 
   return (
-    <div className="p-8 space-y-6 text-slate-200">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 text-sky-100">
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-sky-100 tracking-tight">
             Inscritos y Participantes
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-sky-300/70 mt-1">
             Gestión de registros, matriculación manual y emisión de reportes oficiales.
           </p>
         </div>
@@ -242,7 +242,7 @@ export const ParticipantesView: React.FC = () => {
           <button
             onClick={handleGenerarReporteImpresion}
             disabled={cargandoReporte}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-blue-600/20 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold shadow-lg shadow-sky-600/20 transition-colors disabled:opacity-50"
           >
             🖨️ {cargandoReporte ? 'Generando...' : 'Reporte de Impresión'}
           </button>
@@ -256,11 +256,11 @@ export const ParticipantesView: React.FC = () => {
       )}
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-xl">
-        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto flex-1">
+      <div className="bg-sky-950/25 border border-sky-500/25 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:flex-1">
           {/* Búsqueda por Nombre o Correo */}
-          <div className="flex-1 min-w-[240px]">
-            <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+          <div className="w-full">
+            <label className="block text-[11px] font-semibold text-sky-300/70 uppercase tracking-wider mb-1.5">
               Buscar Participante
             </label>
             <input
@@ -268,19 +268,19 @@ export const ParticipantesView: React.FC = () => {
               value={busquedaNombre}
               onChange={(e) => setBusquedaNombre(e.target.value)}
               placeholder="Escribe un nombre, apellido o correo..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-[#0a1628] border border-sky-500/25 rounded-lg px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-colors"
             />
           </div>
 
           {/* Selector de Evento */}
-          <div className="flex-1 min-w-[240px]">
-            <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+          <div className="w-full">
+            <label className="block text-[11px] font-semibold text-sky-300/70 uppercase tracking-wider mb-1.5">
               Filtrar por Evento / Actividad
             </label>
             <select
               value={eventoSeleccionado}
               onChange={(e) => setEventoSeleccionado(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+              className="w-full bg-[#0a1628] border border-sky-500/25 rounded-lg px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-colors cursor-pointer"
             >
               <option value="">-- Todos los Eventos --</option>
               {listaEventos.map((evt, idx) => (
@@ -309,8 +309,8 @@ export const ParticipantesView: React.FC = () => {
       </div>
 
       {/* Tabla de Participantes */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-        <table className="w-full text-left border-collapse">
+      <div className="w-full overflow-x-auto rounded-2xl border border-sky-500/20 bg-[#0a1628]/60 shadow-xl">
+        <table className="min-w-[760px] w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-gray-800 text-[11px] font-semibold text-gray-400 uppercase bg-gray-950/40">
               <th className="p-4">Participante</th>
@@ -628,7 +628,7 @@ export const ParticipantesView: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-8 overflow-y-auto flex-1 text-slate-900 bg-white" id="printable-report">
+            <div className="p-8 overflow-auto flex-1 text-slate-900 bg-white" id="printable-report">
               {/* Encabezado Institucional UAJMS - FIRNT */}
               <div className="border-b-2 border-slate-900 pb-4 mb-6 text-center">
                 <h1 className="text-lg font-bold uppercase tracking-wider text-slate-900">
@@ -650,7 +650,7 @@ export const ParticipantesView: React.FC = () => {
                   No existen participantes con pago verificado registrados para esta actividad.
                 </div>
               ) : (
-                <table className="w-full text-left text-xs border-collapse border border-slate-300">
+                <table className="min-w-[760px] w-full text-left text-xs border-collapse border border-slate-300">
                   <thead>
                     <tr className="bg-slate-100 text-slate-800 border-b border-slate-300 uppercase">
                       <th className="p-2 border border-slate-300 text-center w-10">N°</th>
