@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import { activityService } from '../services/activity.service';
 import { httpClient } from '../services/httpClient';
+import { CertificadoPreview } from '../components/citren/CertificadoPreview';
+import { capitalizarNombrePropio } from '../utils/textHelper';
 interface IActividad {
   id: string | number;
   title: string;
@@ -29,6 +31,7 @@ interface IPreinscripcionPayload {
   tipo: string;
   activityId: string | number;
   codigoTransaccion: string;
+  montoPagado?: number;
   comprobanteUrl?: string;
 }
 
@@ -64,6 +67,11 @@ export const LandingFIRNTView: React.FC = () => {
     setPreviewUrl(null);
     setAdvertenciaOCR(null);
     delete (window as any).__comprobanteUrlSubido;
+  };
+
+  const autoFormatearNombres = () => {
+    setNombre((valor) => capitalizarNombrePropio(valor));
+    setApellido((valor) => capitalizarNombrePropio(valor));
   };
 
   const handleArchivoSeleccionado = async (file: File) => {
@@ -234,6 +242,7 @@ export const LandingFIRNTView: React.FC = () => {
         tipo: tipoParticipante,
         activityId: actividadSeleccionada.id,
         codigoTransaccion: codigoLimpio,
+        montoPagado: Number(monto) || 0,
         comprobanteUrl: (window as any).__comprobanteUrlSubido || undefined,
         honeypot,
         formStartTime,
@@ -405,6 +414,23 @@ export const LandingFIRNTView: React.FC = () => {
                     </select>
                   </div>
 
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold text-slate-300">
+                      Datos Personales para Certificación
+                    </span>
+                    {(nombre || apellido) && (
+                      <button
+                        type="button"
+                        onClick={autoFormatearNombres}
+                        title="Ajustar nombres a mayúsculas y minúsculas adecuadas"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 text-[11px] font-medium transition-colors cursor-pointer"
+                      >
+                        <span aria-hidden="true">✨</span>
+                        <span>Ajustar Mayúsculas</span>
+                      </button>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-slate-300 mb-1">Nombres *</label>
@@ -413,9 +439,13 @@ export const LandingFIRNTView: React.FC = () => {
                         required
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}
+                        onBlur={() => setNombre((valor) => capitalizarNombrePropio(valor))}
                         placeholder="Ej. Juan Carlos"
                         className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                       />
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                        Escribe tus nombres y apellidos tal como deben figurar en tu Certificado Oficial con valor curricular del CEUB, sin abreviaciones.
+                      </p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-300 mb-1">Apellidos *</label>
@@ -424,9 +454,13 @@ export const LandingFIRNTView: React.FC = () => {
                         required
                         value={apellido}
                         onChange={(e) => setApellido(e.target.value)}
+                        onBlur={() => setApellido((valor) => capitalizarNombrePropio(valor))}
                         placeholder="Ej. Pérez Baldiviezo"
                         className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                       />
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                        Revisa que la escritura coincida con tu documento oficial.
+                      </p>
                     </div>
                   </div>
 
@@ -441,6 +475,9 @@ export const LandingFIRNTView: React.FC = () => {
                         placeholder="usuario@uajms.edu.bo"
                         className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                       />
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                        Enviaremos a esta dirección tu credencial digital, enlaces a salas y material del congreso.
+                      </p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-300 mb-1">Teléfono / WhatsApp *</label>
@@ -452,8 +489,13 @@ export const LandingFIRNTView: React.FC = () => {
                         placeholder="70000000"
                         className="w-full bg-slate-950/90 border border-slate-700 rounded px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
                       />
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                        Asegúrate de que sea tu número activo de WhatsApp. Un operador humano se comunicará contigo para confirmar tu acreditación.
+                      </p>
                     </div>
                   </div>
+
+                  <CertificadoPreview nombre={nombre} apellido={apellido} />
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">Tipo de Participante</label>
@@ -504,18 +546,18 @@ export const LandingFIRNTView: React.FC = () => {
               </div>
             </div>
 
-            {configPago && (
-              <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
-                <div className="flex justify-between"><span className="text-slate-400">Banco:</span><span className="font-medium text-slate-200">{configPago.banco}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">N° Cuenta:</span><span className="font-medium text-slate-200">{configPago.numeroCuenta}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Titular:</span><span className="font-medium text-slate-200">{configPago.nombreReceptor}</span></div>
-                {configPago.qrImagenUrl && (
-                  <div className="flex justify-center pt-2">
-                    <img src={configPago.qrImagenUrl} alt="QR de Pago" className="w-28 h-28 object-contain rounded border border-slate-700" />
-                  </div>
-                )}
+            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+              <div className="flex justify-between"><span className="text-slate-400">Banco:</span><span className="font-medium text-slate-200">{configPago?.banco || 'Banco Económico'}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">N° Cuenta:</span><span className="font-medium text-slate-200">{configPago?.numeroCuenta || '6051037002'}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Titular:</span><span className="font-medium text-slate-200">{configPago?.nombreReceptor || 'SANCHEZ SANCHEZ YOVANA LUISA'}</span></div>
+              <div className="flex justify-center pt-2">
+                <img
+                  src="/img/qr-citren2026.jpg"
+                  alt="QR oficial Banco Económico - CITREN 2026"
+                  className="w-48 h-auto max-h-56 object-contain rounded border border-slate-700 bg-white"
+                />
               </div>
-            )}
+            </div>
 
             <form onSubmit={handleFinalizarPreinscripcion} className="space-y-3">
               {/* Campo trampa Honeypot (invisible para personas reales) */}
@@ -545,6 +587,9 @@ export const LandingFIRNTView: React.FC = () => {
                   </label>
                   <span className="text-[10px] text-slate-500">Opcional / Escaneo OCR</span>
                 </div>
+                <p className="text-[11px] leading-relaxed text-slate-400">
+                  Sube la captura del extracto de movimientos o débito de tu banca móvil donde figure el N° de operación y la glosa <strong className="text-amber-300">CONGRESO CITREN 2026</strong>. No se aceptarán recibos genéricos o capturas incompletas.
+                </p>
 
                 {!previewUrl ? (
                   <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-emerald-500/70 rounded-xl cursor-pointer bg-slate-900/40 transition-colors">

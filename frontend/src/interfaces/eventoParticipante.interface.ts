@@ -11,6 +11,8 @@ export interface EventoParticipante {
   estado: EstadoInscripcion;
   activityId?: string | null;
   codigoTransaccion?: string | null;
+  montoPagado?: number | string;
+  montoBancoReal?: number | string | null;
   comprobanteUrl?: string | null;
   observaciones?: string | null;
   createdAt: string;
@@ -35,5 +37,6 @@ export interface RegistrarParticipanteDTO {
   tipo: TipoParticipante;
   activityId?: string;
   codigoTransaccion?: string;
+  montoPagado?: number;
   comprobanteUrl?: string;
 }

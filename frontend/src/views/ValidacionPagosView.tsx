@@ -14,6 +14,8 @@ type Participante = {
   estado: EstadoInscripcion;
   codigoTransaccion: string;
   comprobanteUrl?: string;
+  montoPagado?: number | string;
+  montoBancoReal?: number | string | null;
   activity?: { id: string; title: string };
   createdAt?: string;
   updatedAt?: string;
@@ -23,9 +25,12 @@ export const ValidacionPagosView: React.FC = () => {
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState<string>('');
   const [procesando, setProcesando] = useState<string | null>(null);
   const [confirmandoRechazo, setConfirmandoRechazo] = useState<string | null>(null);
+  const [conciliando, setConciliando] = useState(false);
+  const [discrepancias, setDiscrepancias] = useState<Array<Record<string, unknown>>>([]);
 
   const cargarDatos = async (): Promise<void> => {
     try {
@@ -74,6 +79,28 @@ export const ValidacionPagosView: React.FC = () => {
     }
   };
 
+  const procesarExtracto = async (file: File): Promise<void> => {
+    const formData = new FormData();
+    formData.append('extracto', file);
+    setConciliando(true);
+    setError(null);
+    setAviso(null);
+    try {
+      const response = await httpClient.post('/evento-participantes/conciliar-extracto', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const data = response.data?.data;
+      setDiscrepancias(data?.discrepanciasMonto || []);
+      setAviso(`Conciliación completada: ${data?.totalProcesados ?? 0} pagos verificados. ${data?.discrepanciasMonto?.length ?? 0} movimientos requieren revisión por diferencia de monto.`);
+      await cargarDatos();
+    } catch (err: any) {
+      setAviso(null);
+      setError(err?.response?.data?.message || 'No se pudo procesar el extracto bancario.');
+    } finally {
+      setConciliando(false);
+    }
+  };
+
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -87,6 +114,11 @@ export const ValidacionPagosView: React.FC = () => {
     return nombreCompleto.includes(query) || transaccion.includes(query) || correo.includes(query);
   });
 
+  const verificados = participantes.filter((p) => p.estado === 'PAGO_VERIFICADO' || p.estado === 'ASISTENCIA_CONFIRMADA');
+  const pendientes = participantes.filter((p) => p.estado === 'PRE_INSCRITO');
+  const totalVerificado = verificados.reduce((total, p) => total + Number(p.montoBancoReal || p.montoPagado || 0), 0);
+  const totalPendiente = pendientes.reduce((total, p) => total + Number(p.montoPagado || 0), 0);
+
   return (
     <div className="p-8 text-slate-200">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -94,7 +126,22 @@ export const ValidacionPagosView: React.FC = () => {
           <h1 className="text-2xl font-bold text-white tracking-tight">Validación de Pagos</h1>
           <p className="text-xs text-gray-400 mt-1">Revisión de comprobantes bancarios subidos por los participantes.</p>
         </div>
-        <div className="w-full md:w-72">
+        <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <label className={`cursor-pointer text-center bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors ${conciliando ? 'opacity-50 pointer-events-none' : ''}`}>
+            {conciliando ? 'Procesando extracto...' : 'Conciliar extracto bancario'}
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              disabled={conciliando}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void procesarExtracto(file);
+                event.target.value = '';
+              }}
+            />
+          </label>
+          <div className="w-full md:w-72">
           <input
             type="text"
             placeholder="Buscar por nombre o transacción..."
@@ -102,6 +149,7 @@ export const ValidacionPagosView: React.FC = () => {
             onChange={(e) => setBusqueda(e.target.value)}
             className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
+          </div>
         </div>
       </div>
 
@@ -110,6 +158,34 @@ export const ValidacionPagosView: React.FC = () => {
           {error}
         </div>
       )}
+      {aviso && (
+        <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs">
+          {aviso}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-slate-900 border border-emerald-500/30 p-4 rounded-2xl">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Recaudado en cuenta</span>
+          <p className="text-2xl font-black text-white mt-1">Bs. {totalVerificado.toFixed(2)}</p>
+          <p className="text-[11px] text-gray-400 mt-1">{verificados.length} pagos validados</p>
+        </div>
+        <div className="bg-slate-900 border border-amber-500/30 p-4 rounded-2xl">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">Por conciliar</span>
+          <p className="text-2xl font-black text-white mt-1">Bs. {totalPendiente.toFixed(2)}</p>
+          <p className="text-[11px] text-gray-400 mt-1">{pendientes.length} preinscripciones</p>
+        </div>
+        <div className="bg-slate-900 border border-red-500/30 p-4 rounded-2xl">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-red-400">Discrepancias de monto</span>
+          <p className="text-2xl font-black text-white mt-1">{discrepancias.length}</p>
+          <p className="text-[11px] text-gray-400 mt-1">Pendientes de revisión manual</p>
+        </div>
+        <div className="bg-slate-900 border border-blue-500/30 p-4 rounded-2xl">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">Total proyectado</span>
+          <p className="text-2xl font-black text-white mt-1">Bs. {(totalVerificado + totalPendiente).toFixed(2)}</p>
+          <p className="text-[11px] text-gray-400 mt-1">Pagos verificados y pendientes</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
