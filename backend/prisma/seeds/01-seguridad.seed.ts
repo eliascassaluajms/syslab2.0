@@ -13,6 +13,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
     { codigo: 'usuarios:crear', descripcion: 'Permite registrar nuevos usuarios' },
     { codigo: 'usuarios:listar', descripcion: 'Permite visualizar la lista de usuarios' },
     { codigo: 'usuarios:editar', descripcion: 'Permite modificar datos de usuarios' },
+    { codigo: 'usuarios:resetear_password', descripcion: 'Permite restablecer la contraseña de cualquier usuario' },
     { codigo: 'usuarios:eliminar', descripcion: 'Permite dar de baja o eliminar usuarios' },
     { codigo: 'roles:crear', descripcion: 'Permite crear nuevos roles de acceso' },
     { codigo: 'roles:listar', descripcion: 'Permite listar los roles existentes' },
@@ -73,7 +74,13 @@ export async function seedSeguridad(prisma: PrismaClient) {
     { codigo: 'solicitudes:aprobar', descripcion: 'Permite aprobar o rechazar solicitudes extraordinarias de uso de laboratorio' },
     { codigo: 'bitacora:iniciar', descripcion: 'Permite iniciar una sesión de uso de laboratorio y generar código QR' },
     { codigo: 'bitacora:finalizar', descripcion: 'Permite finalizar una sesión de bitácora de laboratorio' },
-    { codigo: 'bitacora:consultar', descripcion: 'Permite consultar sesiones de bitácora' }
+    { codigo: 'bitacora:consultar', descripcion: 'Permite consultar sesiones de bitácora' },
+    { codigo: 'defensas:crear', descripcion: 'Permite registrar trabajos de grado y defensas' },
+    { codigo: 'defensas:listar', descripcion: 'Permite listar trabajos de grado y defensas' },
+    { codigo: 'defensas:editar', descripcion: 'Permite editar los datos generales de un trabajo de grado' },
+    { codigo: 'defensas:designar', descripcion: 'Permite designar tribunales y memorándums de grado' },
+    { codigo: 'defensas:observar', descripcion: 'Permite registrar observaciones y cartas de conformidad' },
+    { codigo: 'defensas:acta', descripcion: 'Permite generar el acta oficial de defensa' }
   ];
 
   const permisosCreados = [];
@@ -191,34 +198,43 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolRector.id,
       codigos: [
+        'usuarios:listar',
         'facultades:listar', 'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
-        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
+        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {
       rolId: rolVicerrector.id,
       codigos: [
+        'usuarios:listar',
         'facultades:listar', 'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
-        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
+        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {
       rolId: rolDecano.id,
       codigos: [
+        'usuarios:listar',
         'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
-        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
+        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {
       rolId: rolVicedecano.id,
       codigos: [
+        'usuarios:listar',
         'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
-        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar'
+        'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
+        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {
       rolId: rolDirectorCarrera.id,
       codigos: [
+        'usuarios:listar',
         'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
         'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
         'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
@@ -230,12 +246,14 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:participantes_listar', 'actividades:participantes_registrar',
         'actividades:pagos_registrar', 'actividades:pagos_validar',
         'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
-        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar'
+        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
+        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {
       rolId: rolJefe.id,
       codigos: [
+        'usuarios:listar',
         'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:eliminar', 'laboratorios:ver_estado',
         'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
         'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
@@ -248,14 +266,16 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:participantes_listar', 'actividades:participantes_registrar',
         'actividades:pagos_registrar', 'actividades:pagos_validar',
         'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
-        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar'
+        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
+        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {
       rolId: rolTecnico.id,
       codigos: [
         'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'equipos:editar',
-        'fallas:crear', 'fallas:listar', 'fallas:editar', 'uso_laboratorios:listar', 'bitacora:consultar'
+        'fallas:crear', 'fallas:listar', 'fallas:editar', 'uso_laboratorios:listar', 'bitacora:consultar',
+        'defensas:listar', 'defensas:observar'
       ]
     },
     {
@@ -265,7 +285,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'fallas:crear', 'fallas:listar', 'uso_laboratorios:crear', 'uso_laboratorios:listar',
         'actividades:listar', 'actividades:participantes_registrar',
         'solicitudes:crear', 'solicitudes:listar',
-        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar'
+        'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
+        'defensas:listar', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
     {

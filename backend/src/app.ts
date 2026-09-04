@@ -22,6 +22,7 @@ import horarioRoutes from './routes/horarios.routes.js';
 import solicitudExtraordinariaRoutes from './routes/solicitudExtraordinaria.routes.js';
 import bitacoraRoutes from './routes/bitacora.routes.js';
 import asistenciaRoutes from './routes/asistencia.routes.js';
+import defensaRoutes from './routes/defensa.routes.js';
 
 const app: Application = express();
 
@@ -104,6 +105,7 @@ app.use('/api/evento-participantes', eventoParticipanteRoutes);
 app.use('/api/solicitudes-extraordinarias', solicitudExtraordinariaRoutes);
 app.use('/api/bitacora', bitacoraRoutes);
 app.use('/api/asistencia', asistenciaRoutes);
+app.use('/api/defensas', defensaRoutes);
 
 app.all('*', (req: Request, res: Response) => {
   throw new AppError(`No se pudo encontrar la ruta ${req.originalUrl} en este servidor.`, 404);

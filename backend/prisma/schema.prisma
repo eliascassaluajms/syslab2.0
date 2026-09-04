@@ -76,6 +76,8 @@ model Usuario {
   solicitudesDocente    SolicitudHorarioExtraordinario[] @relation("DocenteSolicitudes")
   bitacorasDocente      SesionBitacora[]                 @relation("DocenteBitacoras")
   asistenciasEstudiante AsistenciaEstudiante[]           @relation("AsistenciasEstudiante")
+  trabajosEstudiante    TrabajoGrado[]                   @relation("EstudianteTrabajo")
+  designacionesTribunal DesignacionTribunal[]
 
   @@map("usuarios")
 }
@@ -105,6 +107,7 @@ model Carrera {
   laboratorios  Laboratorio[]
   planesEstudio PlanEstudio[]
   categoriasEventos CategoriaEvento[]
+  trabajosGrado TrabajoGrado[]
   @@map("carreras")
 }
 
@@ -314,6 +317,139 @@ model CategoriaEvento {
   @@index([carreraId])
   @@map("categorias_eventos")
 }
+
+// =========================================================================
+// MÓDULO DE DEFENSAS Y TRABAJOS DE GRADO
+// =========================================================================
+
+enum EstadoTrabajoGrado {
+  REGISTRADO
+  TRIBUNAL_DESIGNADO
+  EN_REVISION
+  CON_OBSERVACIONES
+  APTO_PARA_DEFENSA
+  DEFENSA_PROGRAMADA
+  DEFENDIDO
+  CANCELADO
+}
+
+enum RolTribunal {
+  PRESIDENTE
+  SECRETARIO
+  VOCAL
+}
+
+enum EstadoRevision {
+  PENDIENTE
+  OBSERVADO
+  CONFORME
+}
+
+model TrabajoGrado {
+  id                   String             @id @default(uuid())
+  titulo               String             @db.VarChar(500)
+  modalidad            String             @db.VarChar(100)
+  gradoOptado          String             @db.VarChar(100)
+  carreraId            Int
+  carrera              Carrera            @relation(fields: [carreraId], references: [id], onDelete: Restrict)
+
+  estudianteNombre     String             @db.VarChar(150)
+  estudianteCi         String             @db.VarChar(30)
+  estudianteRu         String             @db.VarChar(30)
+  estudianteEmail      String             @db.VarChar(150)
+  estudianteTelefono   String?            @db.VarChar(30)
+  estudianteUsuarioId  Int?               @unique @map("estudiante_usuario_id")
+  estudianteUsuario    Usuario?           @relation("EstudianteTrabajo", fields: [estudianteUsuarioId], references: [id])
+
+  estado               EstadoTrabajoGrado @default(REGISTRADO)
+
+  tribunales           DesignacionTribunal[]
+  versionesDocumento   VersionDocumento[]
+  observaciones        ObservacionTribunal[]
+  actaDefensa          ActaDefensa?
+
+  creadoEn             DateTime           @default(now())
+  actualizadoEn        DateTime           @updatedAt
+
+  @@map("trabajos_grado")
+}
+
+model DesignacionTribunal {
+  id                    String              @id @default(uuid())
+  trabajoGradoId        String
+  trabajoGrado          TrabajoGrado        @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+
+  docenteId             Int
+  docente               Usuario             @relation(fields: [docenteId], references: [id])
+
+  rol                   RolTribunal
+  esExterno             Boolean             @default(false)
+  institucionProcedencia String?            @db.VarChar(150)
+
+  numeroMemorandum      String?             @db.VarChar(50)
+  fechaEmisionMemo      DateTime?
+
+  estadoRevision        EstadoRevision      @default(PENDIENTE)
+  fechaConformidad      DateTime?
+  cartaConformidadUrl   String?
+
+  observacionesEmitidas ObservacionTribunal[]
+
+  creadoEn              DateTime            @default(now())
+
+  @@unique([trabajoGradoId, docenteId])
+  @@unique([trabajoGradoId, rol])
+  @@map("designaciones_tribunal")
+}
+
+model VersionDocumento {
+  id                    String           @id @default(uuid())
+  trabajoGradoId        String
+  trabajoGrado          TrabajoGrado     @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+  numeroVersion         Int              @default(1)
+  archivoUrl            String           @db.VarChar(500)
+  descripcionCambios    String?          @db.Text
+  fechaSubida           DateTime         @default(now())
+
+  @@map("versiones_documento_grado")
+}
+
+model ObservacionTribunal {
+  id                    String              @id @default(uuid())
+  trabajoGradoId        String
+  trabajoGrado          TrabajoGrado        @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+
+  designacionId         String
+  designacion           DesignacionTribunal @relation(fields: [designacionId], references: [id], onDelete: Cascade)
+
+  numeroRevision        Int                 @default(1)
+  detalleObservacion     String              @db.Text
+  archivoCorreccionesUrl String?            @db.VarChar(500)
+  subsanada             Boolean             @default(false)
+  fechaSubsanacion      DateTime?
+
+  creadoEn              DateTime            @default(now())
+
+  @@map("observaciones_tribunal")
+}
+
+model ActaDefensa {
+  id                    String            @id @default(uuid())
+  trabajoGradoId        String            @unique
+  trabajoGrado          TrabajoGrado      @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+
+  codigoActa            String            @unique @db.VarChar(50)
+  fechaGeneracion       DateTime          @default(now())
+
+  calificacionEscrita   Float?
+  calificacionOral      Float?
+  calificacionFinal     Float?
+  calificacionLiteral   String?           @db.VarChar(100)
+  resultadoFinal        String?           @db.VarChar(50)
+
+  @@map("actas_defensa")
+}
+
 model Activity {
   id                  String               @id @default(uuid())
   title               String

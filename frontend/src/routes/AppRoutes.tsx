@@ -26,6 +26,7 @@ import { ValidacionPagosView } from '../views/ValidacionPagosView';
 import { HistorialBitacorasView } from '../views/bitacora/HistorialBitacorasView';
 import IncidenciasView from '../views/incidencias/IncidenciasView';
 import InventarioEquiposView from '../views/equipos/InventarioEquiposView';
+import { GestionDefensasView } from '../views/defensas/GestionDefensasView';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -63,6 +64,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="fallas" element={<IncidenciasView />} />
             <Route path="inventario" element={<InventarioEquiposView />} />
             <Route path="equipos" element={<InventarioEquiposView />} />
+            <Route path="defensas" element={<GestionDefensasView />} />
             
             {/* Actividades y Eventos */}
             <Route path="actividades">
@@ -85,6 +87,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/incidencias" element={<IncidenciasView />} />
           <Route path="/admin/incidencias" element={<IncidenciasView />} />
           <Route path="/admin/fallas" element={<IncidenciasView />} />
+          <Route path="/admin/defensas" element={<GestionDefensasView />} />
           <Route path="/admin/planes-materias" element={<PlanesMateriasView />} />
           <Route path="/admin/actividades" element={<Navigate to="/admin/actividades/categorias" replace />} />
         </Route>

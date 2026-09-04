@@ -83,6 +83,19 @@ const menuConfig: MenuItem[] = [
     ],
   },
   {
+    id: 'defensas',
+    titulo: 'Titulación y Defensas',
+    icono: '🎓',
+    subItems: [
+      {
+        titulo: 'Defensas de Grado',
+        ruta: '/admin/defensas',
+        icono: '🧾',
+        permiso: ['defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'],
+      },
+    ],
+  },
+  {
     id: 'actividades',
     titulo: 'Eventos y Actividades',
     icono: '🎓',
