@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verificarJWT } from '../middlewares/auth.middleware.js';
-import { requirePermission } from '../middlewares/authorize.middleware.js';
+import { requireAdminRole, requirePermission } from '../middlewares/authorize.middleware.js';
 import { 
   obtenerUsuarios, 
   crearUsuarioBasico,
@@ -54,7 +54,8 @@ router.patch(
 // PATCH /api/usuarios/:id/password
 router.patch(
   '/:id/password',
-  requirePermission('usuarios:editar'),
+  requireAdminRole,
+  requirePermission('usuarios:resetear_password'),
   cambiarPasswordUsuario
 );
 

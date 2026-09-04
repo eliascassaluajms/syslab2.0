@@ -238,13 +238,15 @@ export const UsuariosView: React.FC = () => {
                             >
                               ✏️ Modificar
                             </button>
-                            <button
-                              onClick={() => setUsuarioCambiarPassword(u)}
-                              title="Cambiar Contraseña"
-                              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
-                            >
-                              🔑 Contraseña
-                            </button>
+                            <Can permiso="usuarios:resetear_password">
+                              <button
+                                onClick={() => setUsuarioCambiarPassword(u)}
+                                title="Cambiar Contraseña"
+                                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                              >
+                                🔑 Contraseña
+                              </button>
+                            </Can>
                             <button
                               onClick={() => setUsuarioEditarAmbito(u)}
                               title="Asignar Roles y Ámbito"

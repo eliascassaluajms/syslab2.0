@@ -37,6 +37,24 @@ export const requirePermission = (codigoPermiso: string) => {
   };
 };
 
+export const requireAdminRole = (req: Request, _res: Response, next: NextFunction) => {
+  try {
+    const user = (req as any).user;
+
+    if (!user) {
+      throw new AppError('No autenticado. Token de acceso no válido o ausente.', 401);
+    }
+
+    if (user.esGlobal || (Array.isArray(user.roles) && user.roles.includes('Administrador'))) {
+      return next();
+    }
+
+    throw new AppError('Acceso denegado. Solo el rol Administrador puede restablecer contraseñas.', 403);
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * Middleware Polimórfico de Control Perimetral (KAN-16 & KAN-16.2)
  * Inspecciona req.params, req.body o req.query buscando el ID de ámbito
