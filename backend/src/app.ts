@@ -26,16 +26,25 @@ import defensaRoutes from './routes/defensa.routes.js';
 
 const app: Application = express();
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5000',
-  'http://127.0.0.1:5173',
-  'http://200.87.27.36:5173',
-  'http://200.87.27.36',
-  'http://registrocitren.duckdns.org',
-  'https://registrocitren.duckdns.org',
-  process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : undefined,
-].filter(Boolean) as string[];
+const envCorsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(
+  new Set([
+    'http://localhost:5173',
+    'http://localhost:5000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5000',
+    'http://200.87.27.36:5173',
+    'http://200.87.27.36',
+    'http://registrocitren.duckdns.org',
+    'https://registrocitren.duckdns.org',
+    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, '')] : []),
+    ...envCorsOrigins,
+  ])
+);
 
 app.use(
   cors({

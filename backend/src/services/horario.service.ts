@@ -337,10 +337,22 @@ export class HorarioService {
 
   async importarExcel(buffer: Buffer, gestion = new Date().getFullYear()): Promise<ImportarHorarioResultado> {
     const libro = XLSX.read(buffer, { type: 'buffer', cellDates: true });
-    const hoja = libro.Sheets['29-07'];
+    
+    // Buscar la hoja '29-07' con tolerancia a espacios o casing, o usar la primera si solo hay una
+    let nombreHoja = libro.SheetNames.find(
+      (nombre) => nombre.trim().toLowerCase() === '29-07'
+    );
+    if (!nombreHoja) {
+      nombreHoja = libro.SheetNames.find((nombre) => nombre.toLowerCase().includes('29-07'));
+    }
+    if (!nombreHoja && libro.SheetNames.length > 0) {
+      nombreHoja = libro.SheetNames[0];
+    }
+
+    const hoja = nombreHoja ? libro.Sheets[nombreHoja] : undefined;
 
     if (!hoja) {
-      throw new AppError('El archivo no contiene la hoja obligatoria 29-07.', 400);
+      throw new AppError('El archivo Excel no contiene hojas procesables o la hoja 29-07.', 400);
     }
 
     const filas = XLSX.utils.sheet_to_json<ExcelRow>(hoja, { header: 1, defval: '' });

@@ -15,8 +15,6 @@ export default defineConfig({
         target: 'http://lab_backend_api:5000',
         changeOrigin: true,
         secure: false,
-        // 🟢 Remueve '/api' de la URL antes de enviarla a Express
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
