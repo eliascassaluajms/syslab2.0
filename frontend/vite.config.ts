@@ -11,9 +11,11 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     allowedHosts: [
+      'syslab2026.duckdns.org',
+      'registrocitren.duckdns.org',
+      '.duckdns.org',          // Permite cualquier subdominio de DuckDNS
       '200.87.27.35',
       '200.87.27.36',
-      'registrocitren.duckdns.org',
       'localhost',
       '127.0.0.1',
     ],
