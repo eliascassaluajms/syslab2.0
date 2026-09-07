@@ -46,5 +46,12 @@ export const EventoParticipanteService = {
   async listarVerificadosPorActividad(activityId: string) {
     const { data } = await httpClient.get(`/evento-participantes/verificados/${activityId}`);
     return data;
+  },
+
+  async descargarVoucher(id: string): Promise<Blob> {
+    const { data } = await httpClient.get(`/evento-participantes/${id}/voucher`, {
+      responseType: 'blob',
+    });
+    return data;
   }
 };

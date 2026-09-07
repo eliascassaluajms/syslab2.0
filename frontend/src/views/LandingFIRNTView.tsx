@@ -33,6 +33,8 @@ interface IPreinscripcionPayload {
   codigoTransaccion: string;
   montoPagado?: number;
   comprobanteUrl?: string;
+  honeypot?: string;
+  formStartTime?: number;
 }
 
 export const LandingFIRNTView: React.FC = () => {
@@ -60,6 +62,8 @@ export const LandingFIRNTView: React.FC = () => {
 
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(false);
+  const [participanteCreadoId, setParticipanteCreadoId] = useState<string | null>(null);
+  const [descargandoVoucher, setDescargandoVoucher] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const limpiarComprobante = () => {
@@ -187,6 +191,24 @@ export const LandingFIRNTView: React.FC = () => {
     return response.data;
   };
 
+  const descargarVoucher = async () => {
+    if (!participanteCreadoId) return;
+    setDescargandoVoucher(true);
+    try {
+      const blob = await EventoParticipanteService.descargarVoucher(participanteCreadoId);
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = `comprobante_${apellido || 'preinscripcion'}.pdf`;
+      enlace.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setErrorMsg(err?.response?.data?.message || 'No se pudo descargar el comprobante.');
+    } finally {
+      setDescargandoVoucher(false);
+    }
+  };
+
   const handleContinuarPago = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre || !apellido || !correo || !telefono || !actividadSeleccionada) {
@@ -234,7 +256,7 @@ export const LandingFIRNTView: React.FC = () => {
     setErrorMsg('');
 
     try {
-      await registrarPreinscripcion({
+      const registro = await registrarPreinscripcion({
         nombre,
         apellido,
         correo,
@@ -246,7 +268,8 @@ export const LandingFIRNTView: React.FC = () => {
         comprobanteUrl: (window as any).__comprobanteUrlSubido || undefined,
         honeypot,
         formStartTime,
-      } as any);
+      });
+      setParticipanteCreadoId(registro?.id || registro?.data?.id || null);
       setMensajeExito(true);
       setModalAbierto(false);
       setNumeroTransaccion('');
@@ -373,6 +396,16 @@ export const LandingFIRNTView: React.FC = () => {
                   <p className="text-xs text-slate-300">
                     Tu registro al congreso fue recibido correctamente. El equipo administrativo verificará tu transacción.
                   </p>
+                  {participanteCreadoId && (
+                    <button
+                      type="button"
+                      onClick={descargarVoucher}
+                      disabled={descargandoVoucher}
+                      className="mt-2 w-full rounded bg-emerald-600 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {descargandoVoucher ? 'Generando comprobante...' : 'Descargar comprobante PDF'}
+                    </button>
+                  )}
                   <button
                     onClick={() => setMensajeExito(false)}
                     className="mt-2 text-xs text-emerald-400 underline hover:text-emerald-300 cursor-pointer"
@@ -506,6 +539,7 @@ export const LandingFIRNTView: React.FC = () => {
                     >
                       <option value="ESTUDIANTE">Estudiante</option>
                       <option value="PROFESIONAL">Profesional</option>
+                      <option value="DOCENTE">Docente</option>
                     </select>
                   </div>
 

@@ -1,9 +1,9 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
-import * as XLSX from 'xlsx';
+import { leerFilasHoja, SpreadsheetCell, SpreadsheetRow } from './spreadsheet.service.js';
 
-type ExcelCell = string | number | boolean | Date | null | undefined;
-type ExcelRow = ExcelCell[];
+type ExcelCell = SpreadsheetCell;
+type ExcelRow = SpreadsheetRow;
 
 interface ImportarHorarioResultado {
   importados: number;
@@ -335,27 +335,8 @@ export class HorarioService {
     });
   }
 
-  async importarExcel(buffer: Buffer, gestion = new Date().getFullYear()): Promise<ImportarHorarioResultado> {
-    const libro = XLSX.read(buffer, { type: 'buffer', cellDates: true });
-    
-    // Buscar la hoja '29-07' con tolerancia a espacios o casing, o usar la primera si solo hay una
-    let nombreHoja = libro.SheetNames.find(
-      (nombre) => nombre.trim().toLowerCase() === '29-07'
-    );
-    if (!nombreHoja) {
-      nombreHoja = libro.SheetNames.find((nombre) => nombre.toLowerCase().includes('29-07'));
-    }
-    if (!nombreHoja && libro.SheetNames.length > 0) {
-      nombreHoja = libro.SheetNames[0];
-    }
-
-    const hoja = nombreHoja ? libro.Sheets[nombreHoja] : undefined;
-
-    if (!hoja) {
-      throw new AppError('El archivo Excel no contiene hojas procesables o la hoja 29-07.', 400);
-    }
-
-    const filas = XLSX.utils.sheet_to_json<ExcelRow>(hoja, { header: 1, defval: '' });
+  async importarExcel(buffer: Buffer, nombreArchivo = 'archivo.xlsx', gestion = new Date().getFullYear()): Promise<ImportarHorarioResultado> {
+    const filas = await leerFilasHoja(buffer, nombreArchivo, '29-07');
     const { indice: indiceEncabezados, encabezados } = encontrarEncabezados(filas);
     const indiceCodigo = buscarIndiceColumna(encabezados, ['codigo', 'sigla', 'codigo materia', 'sigla materia']);
     const indiceMateria = encabezados.findIndex((encabezado) => encabezado.includes('materia') && !encabezado.includes('codigo'));

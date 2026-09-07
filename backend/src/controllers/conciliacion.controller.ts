@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import * as xlsx from 'xlsx';
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
+import { leerFilasHoja } from '../services/spreadsheet.service.js';
 
 const normalizarClave = (valor: unknown): string => String(valor ?? '')
   .normalize('NFD')
@@ -33,16 +33,7 @@ export class ConciliacionController {
         throw new AppError('Debes adjuntar el archivo Excel o CSV del extracto bancario.', 400);
       }
 
-      const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-      const firstSheetName = workbook.SheetNames[0];
-      if (!firstSheetName) {
-        throw new AppError('El extracto no contiene ninguna hoja de datos.', 400);
-      }
-
-      const filas = xlsx.utils.sheet_to_json<unknown[][]>(
-        workbook.Sheets[firstSheetName],
-        { header: 1, defval: '' },
-      );
+      const filas = await leerFilasHoja(req.file.buffer, req.file.originalname);
       let headerRowIndex = -1;
       let colFecha = 0;
       let colDescripcion = 12;

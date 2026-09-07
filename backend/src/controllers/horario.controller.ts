@@ -9,7 +9,7 @@ export class HorarioController {
         throw new AppError('Debe adjuntar un archivo Excel en el campo archivoExcel.', 400);
       }
 
-      const resultado = await horarioService.importarExcel(req.file.buffer);
+      const resultado = await horarioService.importarExcel(req.file.buffer, req.file.originalname);
       res.status(200).json({
         status: 'success',
         message: `Importación finalizada: ${resultado.importados} horarios importados y ${resultado.omitidos} omitidos.`,

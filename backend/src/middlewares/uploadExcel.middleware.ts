@@ -11,11 +11,10 @@ const fileFilter = (
 ) => {
   const allowedMimeTypes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
     'text/csv',
     'application/csv',
   ];
-  const allowedExtensions = /\.(xlsx|xls|csv)$/i;
+  const allowedExtensions = /\.(xlsx|csv)$/i;
 
   if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.test(file.originalname)) {
     cb(null, true);
@@ -23,7 +22,7 @@ const fileFilter = (
   }
 
   cb(new AppError(
-    'Formato inválido. Solo se admiten archivos Excel (.xlsx, .xls) o CSV del extracto bancario.',
+    'Formato inválido. Solo se admiten archivos Excel (.xlsx) o CSV del extracto bancario.',
     400,
   ));
 };

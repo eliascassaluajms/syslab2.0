@@ -39,3 +39,16 @@ export const preinscripcionRateLimiter = rateLimit({
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
 });
+
+// Las descargas son publicas, pero no deben poder usarse para generar trafico masivo.
+export const voucherRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    status: 'fail',
+    message: 'Demasiadas descargas de comprobantes desde esta conexion. Intenta mas tarde.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});

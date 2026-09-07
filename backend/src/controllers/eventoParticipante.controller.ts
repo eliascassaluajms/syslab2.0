@@ -5,6 +5,7 @@ import fs from 'fs';
 import Tesseract from 'tesseract.js';
 import { prisma } from '../config/prisma.js';
 import { extraerDatosComprobante, OcrParserService, DatosTransaccionOCR, ocrService } from '../services/ocr.service.js';
+import { VoucherPdfService } from '../services/voucherPdf.service.js';
 
 // Diccionario de términos bancarios comunes en Bolivia
 const TERMINOS_BANCARIOS = [
@@ -14,6 +15,34 @@ const TERMINOS_BANCARIOS = [
 ];
 
 export const EventoParticipanteController = {
+  async descargarVoucher(req: Request, res: Response): Promise<void> {
+    const participante = await prisma.eventoParticipante.findUnique({
+      where: { id: req.params.id },
+      include: { activity: { select: { title: true } } },
+    });
+
+    if (!participante) {
+      res.status(404).json({ message: 'Participante no encontrado.' });
+      return;
+    }
+
+    const pdfBuffer = await VoucherPdfService.generarVoucher({
+      nombre: participante.nombre,
+      apellido: participante.apellido,
+      correo: participante.correo,
+      evento: participante.activity?.title || 'Evento Academico FIRNT',
+      codigoTransaccion: participante.codigoTransaccion || 'S/N',
+      monto: participante.montoPagado.toString(),
+      fecha: participante.createdAt.toLocaleDateString('es-BO'),
+    });
+
+    const apellidoSeguro = participante.apellido.replace(/[^a-z0-9_-]/gi, '_');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=comprobante_${apellidoSeguro}.pdf`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  },
+
   async crear(req: Request, res: Response): Promise<void> {
     try {
       const { honeypot, formStartTime, nombre, apellido, correo, telefono, tipo, activityId, codigoTransaccion, montoPagado, comprobanteUrl, observaciones } = req.body;

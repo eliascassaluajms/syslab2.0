@@ -5,7 +5,7 @@ import { requirePermission } from '../middlewares/authorize.middleware.js';
 import { uploadComprobante, uploadComprobanteMemory } from '../middlewares/upload.middleware.js';
 import { uploadExtracto } from '../middlewares/uploadExcel.middleware.js';
 import { conciliacionController } from '../controllers/conciliacion.controller.js';
-import { ocrRateLimiter, preinscripcionRateLimiter } from '../middlewares/rateLimiter.middleware.js';
+import { ocrRateLimiter, preinscripcionRateLimiter, voucherRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
 
@@ -41,6 +41,11 @@ router.post('/ocr',
     EventoParticipanteController.procesarComprobanteOCR(req, res, next).catch(next);
   }
 );
+
+// GET /api/evento-participantes/:id/voucher (descarga publica limitada)
+router.get('/:id/voucher', voucherRateLimiter, (req: Request, res: Response, next: NextFunction) => {
+  EventoParticipanteController.descargarVoucher(req, res).catch(next);
+});
 
 router.post('/conciliar-extracto',
   verificarJWT,

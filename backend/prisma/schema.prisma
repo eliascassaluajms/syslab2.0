@@ -501,6 +501,7 @@ model Activity {
 enum TipoParticipante {
   ESTUDIANTE
   PROFESIONAL
+  DOCENTE
 }
 
 enum EstadoInscripcion {
