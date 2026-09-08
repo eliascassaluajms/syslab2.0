@@ -95,7 +95,8 @@ export async function seedUsuarios(prisma: PrismaClient, params: SeedUsuariosPar
     { nombre: 'Silvia', apellido: 'Olivera', correo: 'silvia.olivera@uajms.edu.bo' },
     { nombre: 'Moises', apellido: 'Huanca', correo: 'moises.huanca@uajms.edu.bo' },
     { nombre: 'Nestor', apellido: 'Bernal', correo: 'nestor.bernal@uajms.edu.bo' },
-    { nombre: 'Arturo', apellido: 'Prudencio', correo: 'arturo.prudencio@uajms.edu.bo' }
+    { nombre: 'Arturo', apellido: 'Prudencio', correo: 'arturo.prudencio@uajms.edu.bo' },
+    { nombre: 'Edwin Alberto', apellido: 'Yevara Valdez', correo: 'edwin.yevara@uajms.edu.bo' }
   ];
 
   const usuariosDocentes = [];

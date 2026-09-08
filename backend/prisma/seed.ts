@@ -7,7 +7,8 @@ import { seedSeguridad } from './seeds/01-seguridad.seed.js';
 import { seedEstructura } from './seeds/02-estructura.seed.js';
 import { seedPlanes } from './seeds/03-planes.seed.js';
 import { seedUsuarios } from './seeds/04-usuarios.seed.js';
-import { seedEventos } from './seeds/05-eventos.seed.js'; // 👈 1. Importar seedEventos
+import { seedEventos } from './seeds/05-eventos.seed.js';
+import { seedDesignaciones } from './seeds/06-designaciones.seed.js';
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -46,7 +47,6 @@ async function main() {
       passwordHash: DUMMY_PASSWORD_HASH
     });
     
-    // Obtener el ID del usuario admin creado en el paso 4
     adminUserId = usuariosRes?.userAdmin?.id || 1;
   } else {
     console.warn('⚠️  Faltan carreraInfoId o facultadId para crear usuarios y equipos.');
@@ -54,9 +54,16 @@ async function main() {
 
   // Paso 5: Módulo de Categorías, Eventos y Actividades (CITREN)
   if (carreraInfoId && adminUserId) {
-    await seedEventos(prisma, carreraInfoId, adminUserId); // 👈 2. Invocar seedEventos
+    await seedEventos(prisma, carreraInfoId, adminUserId);
   } else {
     console.warn('⚠️  No se ejecutó seedEventos debido a falta de carreraInfoId o adminUserId.');
+  }
+
+  // Paso 6: Módulo de Designaciones Docentes Tariquía 2026
+  if (carreraInfoId) {
+    await seedDesignaciones(prisma, carreraInfoId);
+  } else {
+    console.warn('⚠️  No se ejecutó seedDesignaciones debido a falta de carreraInfoId.');
   }
 
   console.log('\n✨ ¡Proceso de Seeding completado con éxito!');
