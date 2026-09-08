@@ -32,6 +32,9 @@ export async function seedSeguridad(prisma: PrismaClient) {
     { codigo: 'materias:listar', descripcion: 'Permite listar las materias del plan de estudios' },
     { codigo: 'materias:editar', descripcion: 'Permite modificar datos de las materias' },
     { codigo: 'materias:eliminar', descripcion: 'Permite eliminar materias' },
+    { codigo: 'designaciones:crear', descripcion: 'Permite registrar y asignar carga académica a docentes' },
+    { codigo: 'designaciones:listar', descripcion: 'Permite listar las designaciones de materias' },
+    { codigo: 'designaciones:eliminar', descripcion: 'Permite remover designaciones de materias' },
     { codigo: 'horarios:crear', descripcion: 'Permite asignar franjas horarias a laboratorios' },
     { codigo: 'horarios:listar', descripcion: 'Permite ver el cronograma de horarios' },
     { codigo: 'horarios:editar', descripcion: 'Permite reestructurar asignaciones de tiempo' },
@@ -198,8 +201,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolRector.id,
       codigos: [
-        'usuarios:listar',
-        'facultades:listar', 'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
+        'laboratorios:listar', 'laboratorios:ver_estado',
         'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
@@ -207,8 +210,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolVicerrector.id,
       codigos: [
-        'usuarios:listar',
-        'facultades:listar', 'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
+        'laboratorios:listar', 'laboratorios:ver_estado',
         'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
@@ -216,8 +219,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolDecano.id,
       codigos: [
-        'usuarios:listar',
-        'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
+        'laboratorios:listar', 'laboratorios:ver_estado',
         'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
@@ -225,8 +228,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolVicedecano.id,
       codigos: [
-        'usuarios:listar',
-        'carreras:listar', 'laboratorios:listar', 'laboratorios:ver_estado',
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
+        'laboratorios:listar', 'laboratorios:ver_estado',
         'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
@@ -234,8 +237,9 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolDirectorCarrera.id,
       codigos: [
-        'usuarios:listar',
+        'usuarios:listar', 'facultades:listar', 'carreras:listar',
         'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
+        'designaciones:crear', 'designaciones:listar', 'designaciones:eliminar',
         'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
         'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
         'laboratorios:listar', 'laboratorios:ver_estado', 'laboratorios:editar',
@@ -253,10 +257,11 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolJefe.id,
       codigos: [
-        'usuarios:listar',
+        'usuarios:listar', 'facultades:listar', 'carreras:listar',
         'laboratorios:crear', 'laboratorios:listar', 'laboratorios:editar', 'laboratorios:eliminar', 'laboratorios:ver_estado',
         'equipos:crear', 'equipos:listar', 'equipos:editar', 'equipos:eliminar',
         'materias:crear', 'materias:listar', 'materias:editar', 'materias:eliminar',
+        'designaciones:crear', 'designaciones:listar', 'designaciones:eliminar',
         'horarios:crear', 'horarios:listar', 'horarios:editar', 'horarios:eliminar',
         'planes_estudio:crear', 'planes_estudio:listar', 'planes_estudio:editar', 'planes_estudio:eliminar',
         'fallas:crear', 'fallas:listar', 'fallas:editar', 'fallas:eliminar', 'fallas:ver_reportes',
@@ -273,6 +278,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolTecnico.id,
       codigos: [
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar',
         'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'equipos:editar',
         'fallas:crear', 'fallas:listar', 'fallas:editar', 'uso_laboratorios:listar', 'bitacora:consultar',
         'defensas:listar', 'defensas:observar'
@@ -281,7 +287,9 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolDocente.id,
       codigos: [
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
         'laboratorios:listar', 'laboratorios:ver_estado', 'equipos:listar', 'horarios:listar',
+        'designaciones:listar',
         'fallas:crear', 'fallas:listar', 'uso_laboratorios:crear', 'uso_laboratorios:listar',
         'actividades:listar', 'actividades:participantes_registrar',
         'solicitudes:crear', 'solicitudes:listar',
@@ -292,6 +300,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolOperadorEventos.id,
       codigos: [
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar',
         'actividades:categorias_listar', 'actividades:categorias_crear', 'actividades:categorias_editar', 'actividades:categorias_eliminar',
         'actividades:listar', 'actividades:crear', 'actividades:editar', 'actividades:eliminar',
         'actividades:participantes_listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar'
@@ -300,6 +309,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolUnadef.id,
       codigos: [
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar',
         'actividades:listar', 'actividades:participantes_listar',
         'actividades:pagos_registrar', 'actividades:pagos_validar'
       ]
@@ -307,6 +317,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolUnada.id,
       codigos: [
+        'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar',
         'actividades:listar', 'actividades:participantes_listar', 'actividades:participantes_registrar'
       ]
     },
@@ -319,6 +330,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
     {
       rolId: rolEstudiante.id,
       codigos: [
+        'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
         'laboratorios:listar', 'laboratorios:ver_estado', 'horarios:listar',
         'actividades:listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar',
         'bitacora:consultar'

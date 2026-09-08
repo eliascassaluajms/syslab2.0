@@ -64,12 +64,13 @@ model Usuario {
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
-
+  
   rolId         Int?     @map("rol_id")
   rol           Rol?     @relation(fields: [rolId], references: [id], onDelete: SetNull)
 
   asignacionesRoles AsignacionAmbito[]
 
+  designacionesMaterias DesignacionMateria[] @relation("DocenteDesignaciones")
   incidenciasReportadas Incidencia[] @relation("IncidenciasReportadas")
   incidenciasTecnico    Incidencia[] @relation("IncidenciasTecnico")
   horariosDocente       Horario[]    @relation("HorariosDocente")
@@ -159,7 +160,7 @@ model Materia {
   horarios    Horario[]
   bitacoras   SesionBitacora[]
   inscripcionesMateria InscripcionMateria[]
-
+  designaciones DesignacionMateria[]
   @@map("materias")
 }
 
@@ -650,4 +651,34 @@ model AsistenciaEstudiante {
   // Evita que un estudiante marque asistencia más de una vez en la misma sesión
   @@unique([sesionBitacoraId, estudianteId])
   @@index([sesionBitacoraId, estado])
+}
+// =========================================================================
+// MÓDULO DE DESIGNACIÓN Y CARGA ACADÉMICA DOCENTE
+// =========================================================================
+
+enum TipoPeriodoDesignacion {
+  ANUAL
+  SEMESTRE_1
+  SEMESTRE_2
+}
+
+model DesignacionMateria {
+  id          Int                    @id @default(autoincrement())
+  docenteId   Int                    @map("docente_id")
+  materiaId   Int                    @map("materia_id")
+  grupo       Int                    @default(1)
+  gestion     Int                    // Ej: 2026
+  periodo     TipoPeriodoDesignacion @default(SEMESTRE_1) // ANUAL, SEMESTRE_1, SEMESTRE_2
+  activo      Boolean                @default(true)
+  creadoEn    DateTime               @default(now()) @map("creado_en")
+  actualizadoEn DateTime             @updatedAt @map("actualizado_en")
+
+  docente     Usuario                @relation("DocenteDesignaciones", fields: [docenteId], references: [id], onDelete: Cascade)
+  materia     Materia                @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  // Evita duplicar la misma designación para el mismo docente, materia, grupo y gestión
+  @@unique([docenteId, materiaId, grupo, gestion, periodo])
+  @@index([docenteId, gestion])
+  @@index([materiaId, gestion])
+  @@map("designaciones_materias")
 }
