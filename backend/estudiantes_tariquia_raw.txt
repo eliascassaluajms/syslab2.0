@@ -1,0 +1,973 @@
+8/9/26, 8:11                                                                                            Tariquia
+
+
+ Reporte Estudiantes por Carrera
+
+                                                                                CARRERA                 GESTION TIPO ESTUDIANTE
+                                                                  INGENIERIA INFORMATICA (IIY)(YACUIBA) 2026    Todos
+
+                                                                                                                                              Fecha de
+                           Nº     R.A.      R.U. Plan     C.I.                    Nombres                                   Calificacion
+                                                                                                                                              Registro
+                              2018-
+                           1             105362 2007 8511995      ACARAPI SARABIA BENJAMIN              FISCAL / CONVENIO                  16-02-2018
+                              105812
+                           2 2016-93353 93443 2007 10629428       ACUÑA FLORES JOSE DAVID               FISCAL / CONVENIO                  03-02-2016
+                              2023-
+                           3             126136 2007 9942035      ACUÑA TARQUI SERGEI                   FISCAL / CONVENIO                  13-02-2023
+                              125059
+                              2026-
+                           4             136630 2024 12625830     AGUILAR JIMENEZ AYLEN YONEIDI         EXCELENCIA                         12-02-2026
+                              139714
+                           5 2015-91277 89938 2007 7196515        AGUILAR CHAMBI MARIA LAURA            FISCAL / CONVENIO                  10-02-2015
+                              2023-
+                           6             123375 2007 12625705     AGUILAR JIMENEZ ELY YHANEL            EXCELENCIA                         25-01-2023
+                              126929
+                              2022-
+                           7             122429 2024 10357163     AGUILAR PEÑAS ERIBALDO                FISCAL / CONVENIO                  22-02-2022
+                              122561
+                              2025-
+                           8             134596 2024 5810835      AGUIRRE GALLARDO FEDERICO             FISCAL / CONVENIO                  14-02-2025
+                              135163
+                              2024-
+                           9             129077 2024 12499743     AIZA LAURA JOSE GABRIEL               FISCAL / CONVENIO                  09-02-2024
+                              130284
+                              2025-
+                           10            134224 2024 14307002     ALARCON ORTIZ ROGER EIVER             FISCAL / CONVENIO                  13-02-2025
+                              136266
+                              2024-
+                           11            131116 2024 12562105     ALBINO BARRIGA VALENTINA NAZARET      FISCAL / CONVENIO                  06-03-2024
+                              132365
+                              2025-
+                           12            132252 2024 10681025     ALBORNOZ CASTRO ERICK ALEXANDER       EXCELENCIA                         04-02-2025
+                              136011
+                              2026-
+                           13            138396 2024 14082727     ALCATUMA ALMENDRAS JUNIOR EDMUNDO FISCAL / CONVENIO                      27-02-2026
+                              138935
+                              2019-
+                           14            107553 2007 7202329      ALCON ALMAZAN CESAR ALEJANDRO         FISCAL / CONVENIO                  06-02-2019
+                              107685
+                           15 2016-94572 93660 2007 5806629       ALDANA ALARCON ARMANDO GABRIEL        FISCAL / CONVENIO                  05-02-2016
+                              2025-
+                           16            134249 2024 10709918     ALDANA CRUZ JUNIOR FABRICIO           EXCELENCIA                         13-02-2025
+                              136080
+                              2023-
+                           17            125322 2007 10636477     ALEMAN ORTEGA JORGE LUIS              FISCAL / CONVENIO                  07-02-2023
+                              125421
+                              2025-
+                           18            134456 2024 7249317      ALGARAÑAZ ANGULO NAIN ROMAN           FISCAL / CONVENIO                  14-02-2025
+                              134377
+                              2022-
+                           19            122521 2007 10639719     ALMANZA ARAGON DAILER                 PARTICULAR                         23-02-2022
+                              120340
+                              2023-
+                           20            125639 2007 10711732     ALMAZAN PILINCO DANIEL MOISES         FISCAL / CONVENIO                  09-02-2023
+                              127165
+                              2024-
+                           21            128588 2024 10624846     ALVARADO CENTURIO NOEMI DAYANA        FISCAL / CONVENIO                  06-02-2024
+                              130503
+                              2021-
+                           22            115518 2007 7104374      ALVARADO YEN YAHIL                    FISCAL / CONVENIO                  04-02-2021
+                              117383
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                                    1/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2022-
+                           23            121065 2007 10681156     AMADOR ABRIGO ALBERTO                 FISCAL / CONVENIO                            17-02-2022
+                              122392
+                              2026-
+                           24            136137 2024 12882926     ANACHURI ORTEGA JOSE MANUEL           FISCAL / CONVENIO                            09-02-2026
+                              138518
+                              2024-
+                           25            128097 2024 13329809     ANTONIO CORONADO NATALY               FISCAL / CONVENIO                            05-02-2024
+                              129740
+                              2020-
+                           26            112745 2007 10629987     ANZE BENITEZ GABRIEL MILAN            FISCAL / CONVENIO                            14-02-2020
+                              111963
+                              2023-
+                           27            125945 2024 7129068      APARICIO LOPEZ NATANIEL CRISTOBAL     FISCAL / CONVENIO                            10-02-2023
+                              128088
+                              2026-
+                           28            137725 2024 12882899     APARICIO MANSILLA HELEN DANIELA       EXCELENCIA                                   20-02-2026
+                              139607
+                              2025-
+                           29            132628 2024 10687449     ARANCIBIA ROMERO RUTH NOELIA          FISCAL / CONVENIO                            05-02-2025
+                              132540
+                              2024-
+                           30            130533 2024 13666858     ARAUCO CAMPOS BERENICE VALERY         FISCAL / CONVENIO                            16-02-2024
+                              131658
+                              2022-
+                           31            119043 2007 10652195     ARAUZ FERNANDEZ JORDY                 RURAL                                        31-01-2022
+                              121133
+                              2022-
+                           32            132480 2024 10698480     ARGOTE APALA DIEGO                    EXCELENCIA                                   05-02-2025
+                              122788
+                              2026-                                                                     CONVENIO CONSEJO DE CAPITANES GUARANIES DE
+                           33            138446 2024 14575013     ARIAS CACERES CARLA DANIELA                                                        27-02-2026
+                              140255                                                                    TARIJA
+                           34 2011-69375 71584 2007 10639980      ARIAS LAIME ERIKA ALEJANDRA           FISCAL / CONVENIO                            10-02-2011
+                              2025-                                                                     CONVENIO CONSEJO DE CAPITANES GUARANIES DE
+                           35            133831 2024 10726483     ARISPE JEREZ BRISA ESMERALDA                                                       12-02-2025
+                              136328                                                                    TARIJA
+                              2021-
+                           36            115862 2007 12499335     ARMELLA ISAIAS EDMUNDO                FISCAL / CONVENIO                            08-02-2021
+                              115657
+                              2026-
+                           37            137304 2024 10633397     AYALA RODAS LUZ NAZARET               EXCELENCIA                                   19-02-2026
+                              139000
+                              2025-
+                           38            134630 2024 4616582      AYALA DURAN MARCELO                   PARTICULAR                                   14-02-2025
+                              136366
+                              2023-
+                           39            125112 2024 10630284     BALDERRAMA MEJIA JOSE DAVID           FISCAL / CONVENIO                            06-02-2023
+                              124979
+                              2023-
+                           40            123146 2007 10711735     BARON BARRERO LIZZY LEYLA             EXCELENCIA                                   24-01-2023
+                              126722
+                              2024-
+                           41            130407 2024 10666885     BARRIENTOS MENA SERGIO                FISCAL / CONVENIO                            16-02-2024
+                              129919
+                              2022-
+                           42            121332 2007 12499765     BARRIGA RODRIGUEZ DAVID               FISCAL / CONVENIO                            18-02-2022
+                              121370
+                              2019-
+                           43            127936 2007 7198964      BARRIOS GUTIERREZ LUIS FACUNDO        FISCAL / CONVENIO                            31-01-2024
+                              106980
+                              2025-
+                           44            134182 2024 10624950     BEJARANO MACHURUTY ALBERT             FISCAL / CONVENIO                            13-02-2025
+                              132542
+                           45 2014-84389 86055 2007 7236976       BEJARANO MACHURUTY ESTEBAN            FISCAL / CONVENIO                            17-02-2014
+                              2026-
+                           46            137207 2024 14309006     BENAVIDES ARIAS DAIRA YAEL            FISCAL / CONVENIO                            19-02-2026
+                              137927
+                              2024-
+                           47            130386 2024 14308275     BOZO LEANDRO ESTEBAN                  FISCAL / CONVENIO                            16-02-2024
+                              131130
+                              2019-
+                           48            109573 2024 10629038     BRACAMONTE OROSCO BRYAN JUAN          FISCAL / CONVENIO                            19-02-2019
+                              108782
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                                             2/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2026-
+                           49            138377 2024 5816817      BUENO GALLARDO JUAN EDUARDO           FISCAL / CONVENIO   27-02-2026
+                              138667
+                              2026-
+                           50            138587 2024 14309400     BUSTAMANTE CORIA CARLOS JACINTO       FISCAL / CONVENIO   27-02-2026
+                              140327
+                              2023-
+                           51            125849 2024 7886036      CABALLERO BLANCO ALEJANDRO            FISCAL / CONVENIO   10-02-2023
+                              126163
+                              2023-
+                           52            123894 2007 7173506      CABERO FLORES MARCELO ALEJANDRO       FISCAL / CONVENIO   31-01-2023
+                              125595
+                           53 2010-66475 138753 2024 5000084      CABRERA JULIO CESAR                   PARTICULAR          05-03-2026
+                              2024-
+                           54            128601 2024 10638476     CALIVAR PIZARRO ALEXANDER             FISCAL / CONVENIO   06-02-2024
+                              130309
+                              2022-
+                           55            121967 2007 10745483     CALLAMULLO HUALLPA ALEXANDER          FISCAL / CONVENIO   21-02-2022
+                              121547
+                              2026-
+                           56            138380 2024 7256117      CALLE MAMANI ALVARO                   FISCAL / CONVENIO   27-02-2026
+                              139942
+                              2020-
+                           57            110362 2007 10631199     CALLE QUISPE ELIAS                    EXCELENCIA          28-01-2020
+                              110863
+                              2019-
+                           58            107187 2007 10652267     CAMARGO TARIFA SANTOS BALDOMER        FISCAL / CONVENIO   05-02-2019
+                              107116
+                              2025-
+                           59            132632 2024 10638518     CAMPOS ORTEGA MIKAELA SOFIA           EXCELENCIA          05-02-2025
+                              133225
+                              2019-
+                           60            125871 2024 12934628     CAMPOS TAPIA ELIZABETH                FISCAL / CONVENIO   10-02-2023
+                              108689
+                              2024-
+                           61            128726 2024 12499711     CARABALLO MICHEL DAYLI                FISCAL / CONVENIO   07-02-2024
+                              129017
+                              2021-
+                           62            118446 2007 7164957      CARDOZO ALVARADO RODRIGO EFRAIN       PARTICULAR          22-02-2021
+                              119050
+                              2024-
+                           63            129310 2024 10624596     CARLO CALLAHUARA JUNIOR ARMIN         FISCAL / CONVENIO   14-02-2024
+                              131566
+                              2019-
+                           64            109562 2007 10636040     CARVAJAL ALARCON LUIS ALBERTO         FISCAL / CONVENIO   19-02-2019
+                              110230
+                              2020-
+                           65            110492 2007 10631492     CARVAJAL PACO JUAN ENRIQUE            EXCELENCIA          29-01-2020
+                              112458
+                              2023-
+                           66            125005 2007 14081264     CASTILLO DURAN LUZ CLARITA            EXCELENCIA          06-02-2023
+                              125411
+                              2026-
+                           67            138395 2024 14576813     CASTRO RAMOS NAHIM ANDRES             FISCAL / CONVENIO   27-02-2026
+                              138941
+                              2026-
+                           68            138615 2024 12499224     CAUCOTA IBARRA CARLOS DANIEL          FISCAL / CONVENIO   02-03-2026
+                              139298
+                              2026-
+                           69            136605 2024 10637575     CAYOJA CAUCOTA KEVIN IVAN             FISCAL / CONVENIO   12-02-2026
+                              136704
+                              2021-
+                           70            115156 2007 7246902      CEREZO RIOS JOSE ALFREDO              FISCAL / CONVENIO   02-02-2021
+                              116172
+                              2025-
+                           71            134739 2024 10715818     CHAVEZ RAMIREZ GENESIS MICHELL        FISCAL / CONVENIO   14-02-2025
+                              134864
+                              2024-
+                           72            130421 2024 10637815     CHAVEZ QUISPE YESENIA                 FISCAL / CONVENIO   16-02-2024
+                              131705
+                              2026-
+                           73            138390 2024 12701309     CHINCHE QUISPE ERIKA GABY             FISCAL / CONVENIO   27-02-2026
+                              138893
+                              2026-
+                           74            136351 2024 15088616     CHOQUE ORTEGA YHON BRAD MAURICIO      FISCAL / CONVENIO   10-02-2026
+                              138278
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    3/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2026-
+                           75           137711 2024 12500539      CHOQUE BULEGIO CARLOS DANIEL          FISCAL / CONVENIO   20-02-2026
+                              138710
+                              2024-
+                          76            130089 2024 10746199      CHOQUE SANDOVAL ELZABETH              FISCAL / CONVENIO   15-02-2024
+                              131665
+                              2019-
+                          77            108519 2007 14308605      CHOQUE SARABIA CRISTHIAN GERMAN       FISCAL / CONVENIO   12-02-2019
+                              107624
+                              2026-
+                          78            137277 2024 7202395       CHUMACERO RUEDA JOSEPH ANTONI         FISCAL / CONVENIO   19-02-2026
+                              138355
+                              2025-
+                          79            134457 2024 12563450      CHURATA OCAMPO LUIS FERNANDO          FISCAL / CONVENIO   14-02-2025
+                              135336
+                              2020-
+                          80            111491 2007 7202237       COCA DAZA JULIO                       FISCAL / CONVENIO   06-02-2020
+                              111892
+                              2026-
+                          81            135349 2024 10551623      COLQUE LAURA CARMEN FELICIDAD         EXCELENCIA          27-01-2026
+                              136912
+                              2026-
+                          82            135714 2024 12787920      COLQUE RUIZ ALEX SANDER               FISCAL / CONVENIO   03-02-2026
+                              137788
+                              2026-
+                          83            137640 2024 10736765      COLQUE MENDEZ MARIA ESTER             EXCELENCIA          20-02-2026
+                              139575
+                              2020-
+                          84            111517 2007 13330093      CONDORI ALVAREZ JAIME ALBERTO         FISCAL / CONVENIO   06-02-2020
+                              113139
+                              2026-
+                          85            138389 2024 14401876      CONDORI CUSI BRENTON                  FISCAL / CONVENIO   27-02-2026
+                              140126
+                              2026-
+                          86            138102 2024 12500304      CONDORI FLORES YENY ANAIS             FISCAL / CONVENIO   23-02-2026
+                              138353
+                              2026-
+                          87            138379 2024 13787972      CONDORI MAMANI MARI LUZ               FISCAL / CONVENIO   27-02-2026
+                              140127
+                              2025-
+                          88            133101 2024 10736150      COPA MARTINEZ ARIEL DAVID             FISCAL / CONVENIO   07-02-2025
+                              134946
+                              2024-
+                          89            128142 2024 10638510      CORONADO RAMOS JHON ALEXANDER         FISCAL / CONVENIO   05-02-2024
+                              130631
+                              2023-
+                          90            124784 2007 10631018      CORONADO SEGOVIA VICTOR HUGO          FISCAL / CONVENIO   03-02-2023
+                              124887
+                              2025-
+                          91            132014 2024 10720961      CORS RIOS MAREN CIELO                 EXCELENCIA          03-02-2025
+                              135922
+                              2024-
+                          92            128911 2024 12381018      CORZO BARRIGA GERSON RICHARD          EXCELENCIA          08-02-2024
+                              130623
+                              2024-
+                          93            130463 2024 12883143      CRUZ ARANCIBIA RUDDY JULIAN           FISCAL / CONVENIO   16-02-2024
+                              131931
+                              2020-
+                          94            136485 2024 10633670      CRUZ CABRERA ALVARO ARTEMIO           FISCAL / CONVENIO   11-02-2026
+                              111090
+                              2026-
+                          95            138591 2024 13330430      CRUZ MENDEZ OLGA LASTENIA             FISCAL / CONVENIO   27-02-2026
+                              140306
+                              2026-
+                          96            138463 2024 13330606      CRUZ PERALES FERNANDO GABRIEL         FISCAL / CONVENIO   27-02-2026
+                              140093
+                          97 2014-84538 84645 2007 10733886       CRUZ ZARATE FERNANDO DANIEL           FISCAL / CONVENIO   13-02-2014
+                              2025-
+                          98            134675 2024 13095437      CUASACE CHORE YULEMNY                 FISCAL / CONVENIO   14-02-2025
+                              135162
+                              2025-
+                          99            133654 2024 12785668      CUELLAR AMAYA ANGELY                  RURAL               11-02-2025
+                              136252
+                              2025-
+                          100           132633 2024 15004095      CUELLAR HUANCA ROLI VALENTIN          EXCELENCIA          05-02-2025
+                              135632
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    4/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2025-
+                          101            134548 2024 14158530     CUEVAS MAMANI LIZET MICHEL            RURAL               14-02-2025
+                              135961
+                              2021-
+                          102            115795 2007 7256683      DE LOS RIOS LEONARDO JEREMIAS         FISCAL / CONVENIO   05-02-2021
+                              117417
+                              2023-
+                          103            125600 2007 10638797     DONAIRE MAMPAZO VICTOR MANUEL         FISCAL / CONVENIO   09-02-2023
+                              126582
+                              2025-
+                          104            133635 2024 7246334      DORADO TORREZ MELISSA                 EXCELENCIA          11-02-2025
+                              134240
+                              2022-
+                          105            121476 2007 10722804     DURAN AVILA MATHIAS ALEXANDER         FISCAL / CONVENIO   18-02-2022
+                              121092
+                          106 2015-90296 90343 2007 5797016       ENCINAS CRESPO MARCO ANTONIO          FISCAL / CONVENIO   10-02-2015
+                              2026-
+                          107            138252 2024 10630352     ENCINAS RUIZ MANUEL IGNACIO           EXCELENCIA          25-02-2026
+                              138357
+                              2025-
+                          108            132897 2024 10631685     ENRIQUEZ ORTUSTE AXBEL DILMAR         FISCAL / CONVENIO   06-02-2025
+                              134138
+                              2019-
+                          109            106107 2024 10666076     ERQUICIA ALARCON CARLA PAOLA          EXCELENCIA          28-01-2019
+                              107734
+                              2023-
+                          110            124890 2007 10730062     ESCALANTE GUDIÑO NAYELI               FISCAL / CONVENIO   03-02-2023
+                              125622
+                              2026-
+                          111            136670 2024 10631117     ESCOBAR CHAMBI JOSE LUIS              EXCELENCIA          13-02-2026
+                              140102
+                              2023-
+                          112            125749 2024 7214128      ESPEJO LAMAS KADENS IRACEMA           EXCELENCIA          10-02-2023
+                              127817
+                              2023-
+                          113            124225 2007 10629557     ESTRADA GONZALES RODRIGO VICENTE      FISCAL / CONVENIO   01-02-2023
+                              126035
+                              2022-
+                          114            122124 2007 14854441     FARFAN REQUENA JOSE ALVARO            FISCAL / CONVENIO   21-02-2022
+                              123765
+                              2026-
+                          115            137279 2024 12439267     FARFAN SUBIA JUAN CARLOS              FISCAL / CONVENIO   19-02-2026
+                              138351
+                              2026-
+                          116            138435 2024 10722846     FERNANDEZ CANAZA JOSE JAVIER          FISCAL / CONVENIO   27-02-2026
+                              140139
+                              2026-
+                          117            137498 2024 10633976     FERNANDEZ MACHACA CIELO VIAMNEY       EXCELENCIA          20-02-2026
+                              139664
+                              2025-
+                          118            135973 2024 7202130      FERRUFINO VILLALVA JUAN DE LA CRUZ    FISCAL / CONVENIO   05-02-2026
+                              133430
+                              2026-
+                          119            135955 2024 7256867      FERRUFINO VIDES SALOME                EXCELENCIA          05-02-2026
+                              138991
+                              2021-
+                          120            115241 2007 10639439     FLORES AMACHUY PEDRO EDUARDO          FISCAL / CONVENIO   02-02-2021
+                              115922
+                              2026-
+                          121            138399 2024 12785554     FLORES AVILES FERNANDO ANDRES         FISCAL / CONVENIO   27-02-2026
+                              140112
+                              2026-
+                          122            137193 2024 12563587     FLORES CHOQUE RODRIGO                 EXCELENCIA          19-02-2026
+                              139250
+                              2026-
+                          123            138428 2024 14449425     FLORES MACHACA GROVER FREDDY          FISCAL / CONVENIO   27-02-2026
+                              140300
+                              2025-
+                          124            133560 2024 12381067     FUENTES FLORES CAMILA MARCELA         FISCAL / CONVENIO   11-02-2025
+                              135231
+                              2019-
+                          125            108675 2007 7245067      GALARZA ARIAS GUSTAVO RAFAEL          FISCAL / CONVENIO   13-02-2019
+                              109066
+                          126 2015-89026 89830 2007 12563672      GALINDO PINTO JOSE MANUEL             FISCAL / CONVENIO   09-02-2015
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    5/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2025-
+                          127            133844 2024 7236730      GALLARDO FERNANDEZ ALVARO             FISCAL / CONVENIO   12-02-2025
+                              132548
+                              2024-
+                          128            130190 2007 10695098     GALLARDO QUISBERTH ALEXIS GERARDO FISCAL / CONVENIO       16-02-2024
+                              129212
+                              2025-
+                          129            133468 2024 10709892     GARAY ROMERO KEVIN ORLANDO            FISCAL / CONVENIO   11-02-2025
+                              133192
+                              2025-
+                          130            132601 2024 12439718     GARCIA AGUIRRE WILLAMS SAMUEL         FISCAL / CONVENIO   05-02-2025
+                              133132
+                              2026-
+                          131            138536 2024 10708597     GARCIA CRUZ WILMA                     FISCAL / CONVENIO   27-02-2026
+                              139515
+                              2022-
+                          132            122723 2024 7140190      GARCIA AGUILERA GRACIELA YAKIMA       FISCAL / CONVENIO   23-02-2022
+                              123752
+                          133 2015-88591 88717 2007 5052092       GARCIA AILLON ROBERT WILLANS          FISCAL / CONVENIO   03-02-2015
+                              2024-
+                          134            128577 2007 10745005     GARCIA QUISPE ALVARO                  FISCAL / CONVENIO   06-02-2024
+                              130243
+                              2024-
+                          135            130431 2024 16924038     GARCIA SOLANO JAIME ALBERTO           FISCAL / CONVENIO   16-02-2024
+                              131848
+                              2021-
+                          136            116643 2007 10681808     GARECA TARRAGA MATIAS DUVAN           FISCAL / CONVENIO   10-02-2021
+                              117189
+                              2025-
+                          137            134964 2024 12381161     GIRA FLORES TITO GABRIEL              FISCAL / CONVENIO   18-02-2025
+                              133827
+                              2026-
+                          138            138048 2024 10712448     GOMEZ LOPEZ IYAMBAE                   EXCELENCIA          23-02-2026
+                              140106
+                          139 2017-98257 100588 2007 7246709      GONZALES CAUCOTA REMBERTO ROBIN       FISCAL / CONVENIO   09-02-2017
+                              2024-
+                          140            128651 2024 7246266      GONZALES OCAMPO CARLOS DANIEL         FISCAL / CONVENIO   07-02-2024
+                              129329
+                              2022-
+                          141            122096 2007 7246265      GONZALES OCAMPO DAVID ELIAS           FISCAL / CONVENIO   21-02-2022
+                              123627
+                              2018-
+                          142            104265 2007 7256647      GONZALES RIVERA CRISTIAN JHOEL        FISCAL / CONVENIO   14-02-2018
+                              104629
+                              2026-
+                          143            138231 2024 10631396     GORENA FLORES JUAN JOSE               FISCAL / CONVENIO   25-02-2026
+                              136707
+                              2026-
+                          144            137637 2024 10629733     GRANDE AGUILAR SILVIA VERONICA        EXCELENCIA          20-02-2026
+                              139576
+                              2020-
+                          145            122850 2007 5813065      GRIMALDO RODRIGUEZ NELSON DAVID       FISCAL / CONVENIO   25-02-2022
+                              115031
+                              2025-
+                          146            133875 2024 7129031      GUEVARA ANGEL DARIO                   FISCAL / CONVENIO   12-02-2025
+                              135437
+                              2025-
+                          147            133486 2024 7256551      GUZMAN GONZALES ANGEL GABRIEL         FISCAL / CONVENIO   11-02-2025
+                              135160
+                              2024-
+                          148            128393 2024 7202064      GUZMAN JOSE ARMANDO                   FISCAL / CONVENIO   06-02-2024
+                              129778
+                              2022-
+                          149            122836 2007 5805369      GUZMAN LOVERA ROYER ALEXANDER         FISCAL / CONVENIO   25-02-2022
+                              123355
+                              2022-
+                          150            121609 2024 10695526     GUZMAN ORDOÑEZ JOEL MATIAS            FISCAL / CONVENIO   18-02-2022
+                              122461
+                              2021-
+                          151            115020 2007 12499661     GUZMAN ROMERO GABRIEL                 EXCELENCIA          02-02-2021
+                              119038
+                              2024-
+                          152            127904 2024 7227449      HERRERA ARCE JESUS ANTONIO            EXCELENCIA          31-01-2024
+                              130189
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    6/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2023-
+                          153            125765 2024 7227274      HINOJOSA SOTO NEHEMIAS VALENTIN       FISCAL / CONVENIO        10-02-2023
+                              124683
+                          154 2012-77121 77134 2007 8347575       HUANCA CHAVEZ JUAN RODRIGO            FISCAL / CONVENIO        13-03-2012
+                              2021-
+                          155            116076 2024 7241347      JARAMILLO ABRAHAN CHRISTOFER          FISCAL / CONVENIO        09-02-2021
+                              116455
+                              2026-
+                          156            135497 2024 7256106      JEREZ PADILLA ALAN FABIAN             EXCELENCIA               30-01-2026
+                              137464
+                              2021-
+                          157            115468 2007 10629821     JEREZ RODRIGUEZ SERGIO RODRIGO        FISCAL / CONVENIO        04-02-2021
+                              116936
+                              2026-
+                          158            138229 2024 14697367     JIMENEZ PAREDEZ JHOVANA               FISCAL / CONVENIO        25-02-2026
+                              137761
+                              2022-
+                          159            119038 2007 10658965     JUCHATUMA JANKO SOLEDAD               RURAL                    31-01-2022
+                              121018
+                              2024-
+                          160            130782 2024 12785721     KRAMER GALLARDO MARIA JESUS           CONVENIO INSTITUCIONAL   21-02-2024
+                              132264
+                          161 2016-97148 103193 2007 10086602     LAIME CHOQUE ADRIAN                   FISCAL / CONVENIO        07-02-2018
+                          162 2016-97039 127010 2024 10720119     LARA URQUIZU MARCO ANTONIO            FISCAL / CONVENIO        17-02-2023
+                              2024-
+                          163            129096 2024 10722202     LAZO ALARCON CRISTIAN ARIEL           FISCAL / CONVENIO        09-02-2024
+                              130486
+                              2024-
+                          164            129093 2024 7144705      LIMÓN OROPEZA ANAHÍ GABRIELA          FISCAL / CONVENIO        09-02-2024
+                              130194
+                              2025-
+                          165            133814 2024 12499732     LOPEZ JURADO DANIEL BLEINER           FISCAL / CONVENIO        12-02-2025
+                              133875
+                              2026-
+                          166            138265 2024 14575250     MAGNE JIMENEZ ANGEL HENRRY            EXCELENCIA               25-02-2026
+                              140157
+                              2023-
+                          167            123874 2007 14574603     MAGNE JIMENEZ JHULENKA ABIGAIL        EXCELENCIA               31-01-2023
+                              126182
+                          168 2011-69360 70546 2007 4154017       MAMANI CACERES MARIA ISABEL           FISCAL / CONVENIO        07-02-2011
+                              2019-
+                          169            108442 2007 10636939     MAMANI MAMANI JUAN DANIEL             FISCAL / CONVENIO        12-02-2019
+                              108956
+                              2025-
+                          170            134608 2024 10746683     MAMANI MENDOZA NORMA SOLEDAD          FISCAL / CONVENIO        14-02-2025
+                              132588
+                              2026-
+                          171            138585 2024 14307131     MAMANI RUIZ OSCAR LUIS                FISCAL / CONVENIO        27-02-2026
+                              140265
+                              2024-
+                          172            128992 2024 9474562      MAMANI SANCHEZ KEVIN                  FISCAL / CONVENIO        09-02-2024
+                              129894
+                              2021-
+                          173            117918 2007 7256132      MARCA HERRERA MARIANA                 FISCAL / CONVENIO        18-02-2021
+                              119237
+                          174 2011-70875 72922 2007 7135349       MARCA TINTAYA OMAR                    FISCAL / CONVENIO        14-02-2011
+                              2024-
+                          175            127635 2024 12381773     MARQUEZ CLAURE AYRTON DARIO           EXCELENCIA               29-01-2024
+                              130184
+                              2021-
+                          176            115813 2007 12881942     MARTINEZ GUZMAN NAYELI                FISCAL / CONVENIO        05-02-2021
+                              117538
+                              2024-
+                          177            131115 2024 10745398     MARTINEZ GARNICA JULIO GABRIEL        FISCAL / CONVENIO        06-03-2024
+                              132383
+                              2022-
+                          178            120354 2007 12500872     MARTINEZ PATRICIO PAOLA YOSELIN       FISCAL / CONVENIO        16-02-2022
+                              120754
+                              2022-
+                          179            121180 2007 10630989     MARTINEZ REINA MIGUEL                 FISCAL / CONVENIO        18-02-2022
+                              122384
+                              2024-
+                          180            129281 2024 13330354     MARTINEZ SARCOS MARIA DEL CARMEN      EXCELENCIA               14-02-2024
+                              130416
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                         7/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2022-
+                          181            120362 2007 10629517     MARTINEZ SOLANO WILSON PITER          FISCAL / CONVENIO   16-02-2022
+                              121021
+                              2022-
+                          182            119167 2024 10711873     MARTINEZ TARRAGA ANALIA RUT           EXCELENCIA          01-02-2022
+                              121820
+                              2026-
+                          183            138401 2024 12786773     MENDIETA MASAY DANIEL FERNANDO        FISCAL / CONVENIO   27-02-2026
+                              140019
+                              2024-
+                          184            129439 2024 10632190     MENDOZA TORREZ JOEL ALEJANDRO         FISCAL / CONVENIO   14-02-2024
+                              129941
+                              2026-                               MENDOZA GUTIERREZ FERNANDO
+                          185            138391 2024 10745995                                           FISCAL / CONVENIO   27-02-2026
+                              140131                              SEBASTIAN
+                              2026-
+                          186            136432 2024 10630059     MENDOZA RICO FRANZ FERNANDO           PARTICULAR          11-02-2026
+                              137784
+                          187 2013-82071 89537 2007 7251017       MEZA VASQUEZ YONATHAN                 FISCAL / CONVENIO   09-02-2015
+                              2021-
+                          188            116659 2007 10639765     MIRANDA PEREZ JORGE FERNANDO          FISCAL / CONVENIO   10-02-2021
+                              117544
+                              2026-
+                          189            136457 2024 12882004     MIRANDA RIVERA JORGE KEVIN            FISCAL / CONVENIO   11-02-2026
+                              138349
+                              2021-
+                          190            117876 2007 10630739     MORALES LOPEZ NESTOR JAIRO            FISCAL / CONVENIO   18-02-2021
+                              117391
+                              2026-
+                          191            135490 2024 14577604     MURILLO ESPINOZA NESTOR JUNIOR        EXCELENCIA          29-01-2026
+                              139395
+                              2026-
+                          192            137219 2024 10722651     NINACHI FLORES CARLOS ARMANDO         FISCAL / CONVENIO   19-02-2026
+                              138630
+                              2026-
+                          193            137601 2024 7210815      NOCO CACERES SAMUEL LIMBER            FISCAL / CONVENIO   20-02-2026
+                              138441
+                              2026-
+                          194            136659 2024 10720589     NUÑEZ CASTILLO DIEGO MATIAS           EXCELENCIA          13-02-2026
+                              139459
+                              2025-
+                          195            133510 2024 12883885     OCHOA MAMANI NELSI ROCIO              FISCAL / CONVENIO   11-02-2025
+                              135291
+                              2023-
+                          196            123530 2007 10733068     OJEDA SERRANO RODRIGO                 EXCELENCIA          26-01-2023
+                              126467
+                              2024-
+                          197            127900 2024 12786681     OJEDA SUAREZ DARIEN ARIEL             EXCELENCIA          31-01-2024
+                              130366
+                          198 2015-88331 88716 2007 10634866      ORELLANA SUBIA KEVIN EZEQUIEL         FISCAL / CONVENIO   03-02-2015
+                              2026-
+                          199            138387 2024 10633269     ORTEGA GALLARDO VICTOR EMANUEL        PARTICULAR          27-02-2026
+                              138803
+                              2026-
+                          200            136260 2024 10745387     ORTIZ ALBORNOZ PABLO ABDIEL           FISCAL / CONVENIO   10-02-2026
+                              137755
+                              2017-
+                          201            100194 2007 10733798     ORTIZ BECERRA LESLY GABRIELA          FISCAL / CONVENIO   08-02-2017
+                              101852
+                              2024-
+                          202            130002 2024 10633799     ORTUSTE YUCRA DAVIS                   FISCAL / CONVENIO   15-02-2024
+                              130524
+                              2026-
+                          203            138457 2024 10725190     PACCHE PINTO FIDELIA                  FISCAL / CONVENIO   27-02-2026
+                              139958
+                              2026-
+                          204            136104 2024 8942506      PACHECO FIGUEROA SANTIAGO OMAR        FISCAL / CONVENIO   09-02-2026
+                              136643
+                              2025-
+                          205            134254 2024 10637166     PADILLA CASTILLO RONAR                FISCAL / CONVENIO   13-02-2025
+                              133248
+                              2026-
+                          206            138382 2024 12500715     PADILLA MARTINEZ LUIS DANIEL          FISCAL / CONVENIO   27-02-2026
+                              138789
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    8/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2024-
+                          207            130098 2024 10624834     PADILLA TORRICO CECILIA               FISCAL / CONVENIO   15-02-2024
+                              130315
+                              2026-
+                          208            137107 2024 7256183      PAIREMA FIGUEROA MADAI                FISCAL / CONVENIO   19-02-2026
+                              138362
+                              2023-
+                          209            125420 2007 10720796     PANIAGUA ROMERO RENZO FABIO           FISCAL / CONVENIO   08-02-2023
+                              126167
+                              2026-
+                          210            135380 2024 12881865     PANOZO UGARTE JOSE FERNANDO           EXCELENCIA          28-01-2026
+                              138102
+                              2023-
+                          211            125105 2007 14574351     PARABA MEDRANO RUBIELA ALISON         FISCAL / CONVENIO   06-02-2023
+                              124827
+                          212 2016-94895 93730 2007 10637419      PAREDES LEON BISMAR FRAN              FISCAL / CONVENIO   10-02-2016
+                              2024-
+                          213            137820 2024 10720725     PEDRIEL PEREIRA LEANDRO MOISES        FISCAL / CONVENIO   20-02-2026
+                              132351
+                              2026-
+                          214            135696 2024 14307220     PEÑA COLQUE DALILA ISABEL             FISCAL / CONVENIO   03-02-2026
+                              137506
+                              2020-
+                          215            112647 2007 17471746     PERES CRISTIAN JUAN GABRIEL           FISCAL / CONVENIO   13-02-2020
+                              112903
+                              2026-
+                          216            137161 2024 10722007     PEREZ BEJARANO JHONNY ALBERT          FISCAL / CONVENIO   19-02-2026
+                              137823
+                              2025-
+                          217            133463 2024 10681819     PEREZ LEON JOSE LUIS                  FISCAL / CONVENIO   11-02-2025
+                              136216
+                          218 2015-89460 90921 2007 7245375       PEREZ SANCHEZ ADEMAR                  FISCAL / CONVENIO   11-02-2015
+                              2025-
+                          219            133017 2024 10746774     PIZARRO PIUCA NIEVES ROCIO            FISCAL / CONVENIO   07-02-2025
+                              134447
+                              2024-
+                          220            131207 2024 10733203     PORCEL SALAZAR MARIA CLARA            FISCAL / CONVENIO   13-03-2024
+                              132426
+                              2022-
+                          221            121438 2007 12625053     PORTAL LINO DENIS                     FISCAL / CONVENIO   18-02-2022
+                              121825
+                          222 2015-90324 136816 2024 10720243     PRIETO RUIZ BRIAN RODRIGO             FISCAL / CONVENIO   18-02-2026
+                              2026-
+                          223            137276 2024 15641523     PUCUBE ZURUGUAY DAVID                 EXCELENCIA          19-02-2026
+                              138343
+                              2021-
+                          224            115840 2007 12381838     QUILLA GALARZA DANNA PAOLA            FISCAL / CONVENIO   05-02-2021
+                              117720
+                              2024-
+                          225            130648 2024 10711119     QUIÑONES GABRIEL                      FISCAL / CONVENIO   19-02-2024
+                              131744
+                              2024-
+                          226            129883 2024 17149541     QUIROGA ANDREA                        FISCAL / CONVENIO   15-02-2024
+                              131643
+                              2026-
+                          227            138388 2024 10634558     QUISPE CANAZA JOSE RODRIGO            FISCAL / CONVENIO   27-02-2026
+                              140108
+                              2026-
+                          228            135691 2024 10715892     QUISPE OROPEZA JHON SEBASTIAN         FISCAL / CONVENIO   03-02-2026
+                              138527
+                              2023-
+                          229            123639 2007 10695792     QUISPE ROGELLANO ABIGAIL              EXCELENCIA          30-01-2023
+                              126460
+                          230 2014-85142 84920 2007 10636287      QUISPE RUIZ EDER FERNANDO             FISCAL / CONVENIO   14-02-2014
+                              2026-
+                          231            136936 2024 12785078     QUISPE SANTOS JOSUE NEHEMIAS          FISCAL / CONVENIO   18-02-2026
+                              138733
+                              2021-
+                          232            118468 2024 12499064     RAMIREZ ARENAS BRANDON JOSUE          FISCAL / CONVENIO   22-02-2021
+                              119577
+                              2026-
+                          233            138398 2024 12500898     RAMIREZ FLORES ANIXALDI               FISCAL / CONVENIO   27-02-2026
+                              140148
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    9/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2021-
+                          234            114865 2024 10681395     REJAS SANTOS MATHIAS RODRIGO          FISCAL / CONVENIO   01-02-2021
+                              115365
+                              2018-
+                          235            103138 2007 10633182     RENGIFO ALEJANDRO ALEXANDER           FISCAL / CONVENIO   07-02-2018
+                              102572
+                              2026-
+                          236            135750 2024 10709899     RENJIFO PADILLA ANAEL                 FISCAL / CONVENIO   03-02-2026
+                              138600
+                              2022-
+                          237            120789 2007 14082561     REQUE QUISPE OSCAR                    FISCAL / CONVENIO   17-02-2022
+                              122028
+                              2023-
+                          238            127077 2024 10624911     RIVERA ORTIZ DIEGO ALFREDO            FISCAL / CONVENIO   23-02-2023
+                              127230
+                              2023-
+                          239            125879 2024 12786968     RIVERA RODRIGUEZ JOSE EMANUEL         FISCAL / CONVENIO   10-02-2023
+                              126076
+                              2026-
+                          240            136618 2024 10695273     ROCA MOLLO OMAR                       FISCAL / CONVENIO   12-02-2026
+                              137764
+                              2026-
+                          241            138394 2024 10658845     RODRIGUEZ AVENDAÑO GROBER             FISCAL / CONVENIO   27-02-2026
+                              139860
+                              2023-
+                          242            125475 2007 10733035     RODRIGUEZ SONY ANDERSON               FISCAL / CONVENIO   08-02-2023
+                              125432
+                              2024-
+                          243            131190 2024 7249022      RODRIGUEZ TAPIA SAITH BRYAN           FISCAL / CONVENIO   11-03-2024
+                              132375
+                              2023-
+                          244            138575 2024 10624292     ROJAS MERCADO ISAAC NATHANIEL         FISCAL / CONVENIO   27-02-2026
+                              125953
+                              2025-
+                          245            133660 2024 12881627     ROJAS RIOS JOSE ENRIQUE               FISCAL / CONVENIO   11-02-2025
+                              134918
+                              2024-
+                          246            130443 2024 5782367      ROLDAN FERRARI ROBERTO DANIEL         PARTICULAR          16-02-2024
+                              130946
+                              2026-
+                          247            136026 2024 14083542     ROMERO BASUALDO ISAIAS JHOEL          FISCAL / CONVENIO   06-02-2026
+                              136695
+                              2025-
+                          248            134179 2024 13331122     ROMERO AVILA ALAN YEISON              FISCAL / CONVENIO   13-02-2025
+                              133643
+                              2022-
+                          249            119050 2007 10658332     ROMERO IBAÑEZ BRAYAN OLIVER           RURAL               31-01-2022
+                              121204
+                              2022-                  7236237-
+                          250            122332 2007              ROMERO MONTERO EDIL EDWIN             FISCAL / CONVENIO   22-02-2022
+                              123214                 27
+                              2025-
+                          251            133464 2024 7236969      ROMERO MORA JHUDITH BEATRIZ           FISCAL / CONVENIO   11-02-2025
+                              136052
+                              2026-
+                          252            138460 2024 10725225     ROMERO PINTO ISAIAS                   FISCAL / CONVENIO   27-02-2026
+                              139364
+                              2024-
+                          253            129251 2024 7140480      ROMERO SANDY ALAN GABRIEL             FISCAL / CONVENIO   14-02-2024
+                              130324
+                              2022-
+                          254            121512 2007 10671053     ROMERO TAPIA VIRGINIO                 FISCAL / CONVENIO   18-02-2022
+                              122689
+                          255 2015-90314 91427 2024 7251206       ROQUE ZEPITA JOAQUIN RODRIGO          FISCAL / CONVENIO   13-02-2015
+                              2024-
+                          256            138386 2024 12787405     ROSALES FLORES RUBI FABIANA           FISCAL / CONVENIO   27-02-2026
+                              130428
+                              2026-
+                          257            135699 2024 14083419     ROSAS CUELLAR GUILLERMO JAVIER        FISCAL / CONVENIO   03-02-2026
+                              138475
+                              2026-
+                          258            135392 2024 12561450     RUEDA PALACIOS LEYDI MARIEL           EXCELENCIA          28-01-2026
+                              137827
+                              2026-
+                          259            137823 2024 10630023     RUIZ ALVAREZ ELIAS ALEJANDRO          EXCELENCIA          20-02-2026
+                              137821
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    10/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2019-
+                          260            107080 2007 9018541      RUIZ GUERRERO HENRY ALEXANDER         FISCAL / CONVENIO   05-02-2019
+                              108829
+                          261 2016-96991 133573 2024 10634792     RUIZ MOLINA JUAN PABLO                FISCAL / CONVENIO   11-02-2025
+                              2026-
+                          262            135843 2024 12561983     SALAZAR LOAYZA SARA DANIELA           EXCELENCIA          04-02-2026
+                              139185
+                              2024-
+                          263            129999 2024 10695699     SALDAÑA TARIFA MOISÉS DAVID           FISCAL / CONVENIO   15-02-2024
+                              130574
+                              2021-
+                          264            116095 2007 7173473      SALDIAS CAMACHO JULIO PEDRO           FISCAL / CONVENIO   09-02-2021
+                              116100
+                              2024-
+                          265            129009 2024 10720177     SALINAS MAMANI ANA VALERIA            FISCAL / CONVENIO   09-02-2024
+                              130684
+                              2026-
+                          266            136833 2024 12500497     SALVADOR MENDEZ IVER                  FISCAL / CONVENIO   18-02-2026
+                              137095
+                              2026-
+                          267            136793 2024 10736122     SANCHEZ CALLAHURA MATIAS              FISCAL / CONVENIO   18-02-2026
+                              138561
+                              2025-
+                          268            133639 2024 7202355      SANGUINO RUEDA JAVIER SATURNINO       FISCAL / CONVENIO   11-02-2025
+                              136118
+                              2025-
+                          269            134716 2024 13329069     SANTILLAN CONCHA GERSON MAURICIO      FISCAL / CONVENIO   14-02-2025
+                              133692
+                              2024-
+                          270            128153 2024 10745709     SANTOS VASQUEZ ROY                    RURAL               05-02-2024
+                              130620
+                              2025-
+                          271            134680 2024 14081841     SARMIENTO CALLE JOSUE CALEB           PARTICULAR          14-02-2025
+                              136147
+                              2022-
+                          272            122428 2024 7173050      SERRUDO PARADA JUAN BENITO            PARTICULAR          22-02-2022
+                              123610
+                              2026-
+                          273            135889 2024 12500031     SILISQUE MARTINEZ JUNIOR ZACARIAS     FISCAL / CONVENIO   04-02-2026
+                              136951
+                              2026-
+                          274            135853 2024 12883800     SORUCO LOPEZ HECTOR MANUEL            FISCAL / CONVENIO   04-02-2026
+                              137452
+                              2024-
+                          275            128397 2024 12562389     SORUCO COROMECHI ROSARIO BELEN        FISCAL / CONVENIO   06-02-2024
+                              130773
+                              2020-
+                          276            112221 2007 10636854     SOTO GALARZA ALDO DAVID               FISCAL / CONVENIO   11-02-2020
+                              111126
+                              2022-
+                          277            121432 2024 7245478      SOTO HUANACO ALEXANDER                FISCAL / CONVENIO   18-02-2022
+                              122596
+                              2023-
+                          278            123181 2007 10633918     SOTO RENJIFO HELEN ABIGAIL            EXCELENCIA          24-01-2023
+                              127053
+                              2017-
+                          279            112778 2007 10658553     SUAREZ ALFARO PEDRO LUIS              FISCAL / CONVENIO   14-02-2020
+                              101710
+                          280 2005-13329 58336 2007 5790199       SULLCATA MAMANI LUIS ALBERTO          FISCAL / CONVENIO   25-04-2007
+                              2025-
+                          281            132894 2024 10409776     SULLKA CAYO ALBERTO                   FISCAL / CONVENIO   06-02-2025
+                              134925
+                              2026-
+                          282            136441 2024 10639912     TARIFA BEJARANO CRHISTOFERT ALEXIS    FISCAL / CONVENIO   11-02-2026
+                              137124
+                              2021-
+                          283            115721 2007 12439223     TEJADA GARCIA AGREDA EDUARDO          FISCAL / CONVENIO   05-02-2021
+                              115770
+                              2019-
+                          284            108765 2007 10630612     TEJERINA ALDAIR BRAYAN                FISCAL / CONVENIO   13-02-2019
+                              106864
+                              2024-
+                          285            131208 2024 12786677     TITIZANO CHACANAMI KAREN NOELIA       FISCAL / CONVENIO   13-03-2024
+                              132423
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    11/13
+8/9/26, 8:11                                                                                            Tariquia
+                              2026-
+                          286            136937 2024 12500237     TOLABA PERES SOFIA HELEN              EXCELENCIA          18-02-2026
+                              140025
+                              2026-
+                          287            137157 2024 10635207     TOLEDO LOPEZ LUIS ALEJANDRO           FISCAL / CONVENIO   19-02-2026
+                              136595
+                              2026-
+                          288            135741 2024 10316842     TORRES CHOQUE ROSALIA                 FISCAL / CONVENIO   03-02-2026
+                              137786
+                              2019-
+                          289            106106 2024 10635639     TORREZ CAYO VICTOR MIGUEL             EXCELENCIA          28-01-2019
+                              107722
+                              2019-
+                          290            108415 2007 10630762     TORREZ MERCADO CLISMAR ELVIO          FISCAL / CONVENIO   12-02-2019
+                              108008
+                              2022-
+                          291            120969 2007 7202802      TORREZ TOLAVI JUAN PABLO              FISCAL / CONVENIO   17-02-2022
+                              121749
+                              2023-
+                          292            123368 2007 10681337     TORRICO VILLANUEVA ROGER JUNIOR       EXCELENCIA          25-01-2023
+                              125245
+                              2025-
+                          293            132900 2024 12439921     TORRREZ SILES ANDERSON                FISCAL / CONVENIO   06-02-2025
+                              134132
+                              2022-
+                          294            122100 2007 10652717     VACA ALVARADO LEANDRO                 FISCAL / CONVENIO   21-02-2022
+                              123063
+                              2022-
+                          295            122435 2024 10681591     VALERIANO GUTIERREZ KAREN             FISCAL / CONVENIO   22-02-2022
+                              123642
+                              2026-
+                          296            135851 2024 12786668     VARGAS PEREZ JOSE RICARDO             EXCELENCIA          04-02-2026
+                              137012
+                              2025-
+                          297            133132 2024 13059237     VARGAS VALENCIA MELDIANA              FISCAL / CONVENIO   07-02-2025
+                              134919
+                              2019-
+                          298            108439 2007 5816978      VARGAS ALCON ERICK GUSTAVO            FISCAL / CONVENIO   12-02-2019
+                              108544
+                              2021-
+                          299            115731 2007 10631189     VARGAS PAVIA VERONICA                 EXCELENCIA          05-02-2021
+                              118106
+                              2025-
+                          300            135099 2024 10716534     VARGAS RIOS JOSE ARMANDO              FISCAL / CONVENIO   25-02-2025
+                              132894
+                              2023-
+                          301            123568 2007 7166987      VASQUEZ CONDORI MOISES BENJAMIN       RURAL               27-01-2023
+                              127137
+                              2024-
+                          302            129274 2024 12722291     VASQUEZ MONTERO MILTON JESUS          FISCAL / CONVENIO   14-02-2024
+                              129605
+                              2025-
+                          303            134580 2024 10746324     VEDIA TABOADA ANTONIO IMANOL          FISCAL / CONVENIO   14-02-2025
+                              135154
+                              2026-
+                          304            138397 2024 10697951     VEGA CHAVARRIA YOHANA LISBET          FISCAL / CONVENIO   27-02-2026
+                              140036
+                              2026-                               VELASQUEZ VILLENA YUVINKA ABIGAIL
+                          305            137799 2024 10635311                                           FISCAL / CONVENIO   20-02-2026
+                              137240                              KAMILA
+                              2025-
+                          306            133950 2024 10399925     VELASQUEZ RIVERA MARY LUS             FISCAL / CONVENIO   12-02-2025
+                              132879
+                              2018-
+                          307            102783 2007 10624503     VERA UYARDO JOSE FERNANDO             FISCAL / CONVENIO   07-02-2018
+                              102579
+                              2025-
+                          308            134502 2024 10746238     VIDAURRE SALAZAR BRISA MARIBEL        EXCELENCIA          14-02-2025
+                              135144
+                              2025-
+                          309            134508 2024 10746237     VIDAURRE SALAZAR JAQUELIN CIELO       EXCELENCIA          14-02-2025
+                              135143
+                          310 2014-83413 85583 2007 10660641      VIDEZ LOPEZ JOSE RODRIGO              FISCAL / CONVENIO   14-02-2014
+                              2022-
+                          311            120494 2024 14656664     VILLALBA PADILLA NATALY               FISCAL / CONVENIO   16-02-2022
+                              121878
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                    12/13
+8/9/26, 8:11                                                                                            Tariquia
+                               2023-
+                           312            125116 2024 10694915 VILLARROEL YUJRA OSCAR MARIO             FISCAL / CONVENIO                      06-02-2023
+                               124882
+                               2023-
+                           313            125080 2024 10624138 VILLCA OÑA JUAN DANIEL                   FISCAL / CONVENIO                      06-02-2023
+                               125506
+                               2024-
+                           314            128749 2024 10624491 VILLEGAS BALDIVIEZO FARID AARON          FISCAL / CONVENIO                      07-02-2024
+                               129911
+                               2026-
+                           315            138458 2024 12439947 VISCARRA BANEGAS BENJAMIN                FISCAL / CONVENIO                      27-02-2026
+                               139813
+                               2025-
+                           316            134590 2024 7166519     YAKSIC ROCA PABLO PAOLO               FISCAL / CONVENIO                      14-02-2025
+                               133961
+                               2022-
+                           317            122288 2024 12752941 ZABALA RIMBA DINALVA NILSETT             FISCAL / CONVENIO                      22-02-2022
+                               123681
+                               2020-
+                           318            110530 2007 7210222     ZAMBRANA GALLARDO LUIS DAVID          EXCELENCIA                             29-01-2020
+                               111350
+                               2026-
+                           319            136894 2024 12563947 ZEBALLOS ZAMBRANA MATIAS ALEJANDRO EXCELENCIA                                   18-02-2026
+                               140068
+                               2021-
+                           320            118529 2024 10695697 ZEGARRA LEON ANA GABRIELA                FISCAL / CONVENIO                      23-02-2021
+                               117551
+                               2025-
+                           321            132630 2024 12881707 ZELAYA CONDORI SILENIA                   FISCAL / CONVENIO                      05-02-2025
+                               133799
+
+
+
+
+ Fecha: 08-09-2026 08:11                                                                                                    /tariquia
+ Usuario: FIDEL LENIN IBARRA GUERRERO                                                                                       Rol : VICEDECANO
+
+
+
+
+https://tariquia.uajms.edu.bo/tariquia/login.do;jsessionid=26838C9564B55A5340B1C080CF9958B9.tomcat112                                                       13/13
+
