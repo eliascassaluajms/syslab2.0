@@ -42,6 +42,12 @@ const menuConfig: MenuItem[] = [
         permiso: ['planes_estudio:listar', 'materias:listar'],
       },
       {
+        titulo: 'Designación Docente',
+        ruta: '/admin/designaciones',
+        icono: '👨‍🏫',
+        permiso: ['designaciones:listar'],
+      },
+      {
         titulo: 'Horarios y Cronograma',
         ruta: '/admin/horarios',
         icono: '📅',
