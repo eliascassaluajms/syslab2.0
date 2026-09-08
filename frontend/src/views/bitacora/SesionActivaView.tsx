@@ -19,7 +19,7 @@ export const SesionActivaView: React.FC<Props> = ({ sesion, onSesionFinalizada }
   const [equipos, setEquipos] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const urlAsistenciaPublica = `${window.location.origin}/asistencia/${sesion.tokenQR}`;
+const urlAsistenciaPublica = `http://200.87.27.36:5173/asistencia/${sesion.tokenQR}`;
 
   useEffect(() => {
     let activo = true;
