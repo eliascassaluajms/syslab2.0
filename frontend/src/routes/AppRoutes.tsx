@@ -27,6 +27,7 @@ const HistorialBitacorasView = lazy(() => import('../views/bitacora/HistorialBit
 const IncidenciasView = lazy(() => import('../views/incidencias/IncidenciasView'));
 const InventarioEquiposView = lazy(() => import('../views/equipos/InventarioEquiposView'));
 const GestionDefensasView = lazy(() => import('../views/defensas/GestionDefensasView').then((module) => ({ default: module.GestionDefensasView })));
+const DesignacionesView = lazy(() => import('../views/DesignacionesView').then((module) => ({ default: module.DesignacionesView })));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -72,7 +73,8 @@ export const AppRoutes: React.FC = () => {
             <Route path="inventario" element={<InventarioEquiposView />} />
             <Route path="equipos" element={<InventarioEquiposView />} />
             <Route path="defensas" element={<GestionDefensasView />} />
-            
+            <Route path="designaciones" element={<DesignacionesView />} />
+
             {/* Actividades y Eventos */}
             <Route path="actividades">
               <Route index element={<Navigate to="/admin/actividades/categorias" replace />} />
@@ -103,7 +105,7 @@ export const AppRoutes: React.FC = () => {
       {/* ========================================== */}
       {/* REDIRECCIÓN POR DEFECTO                    */}
       {/* ========================================== */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
