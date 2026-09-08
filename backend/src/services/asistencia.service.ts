@@ -6,7 +6,8 @@ import { AppError } from '../utils/appError.js';
 
 export interface DTORegistrarAsistencia {
   tokenQR: string;
-  estudianteId: number;
+  estudianteId: number | string;
+  codigoEquipoPatrimonial?: string;
 }
 
 export interface DTOActualizarAsistencia {
@@ -19,17 +20,14 @@ export interface DTOActualizarAsistencia {
 }
 
 export class AsistenciaService {
-  async registrarAsistencia(data: DTORegistrarAsistencia) {
+  async registrarAsistencia(data: { tokenQR: string; estudianteId: number | string; codigoEquipoPatrimonial?: string }) {
     const { tokenQR, estudianteId } = data;
 
     if (!tokenQR || !estudianteId) {
-      throw new AppError('Se requieren los datos tokenQR y estudianteId.', 400);
+      throw new AppError('Se requieren los datos del código QR y el estudiante.', 400);
     }
 
-    // 1. Busca la sesión en SesionBitacora usando el tokenQR
     const sesion = await bitacoraRepository.obtenerPorToken(tokenQR);
-
-    // 2. Valida que la sesión exista y continúe abierta (cumplio: false)
     if (!sesion || sesion.cumplio) {
       throw new AppError('El código QR es inválido o la sesión de laboratorio ha finalizado.', 400);
     }
@@ -38,68 +36,46 @@ export class AsistenciaService {
       throw new AppError('La lista de asistencia ya fue confirmada y no admite nuevos marcados.', 403);
     }
 
-    if (sesion.materiaId === null || sesion.materiaId === undefined) {
-      throw new AppError('La sesión no tiene una materia académica asociada.', 422);
-    }
-
-    // 3. Verifica identidad y matrícula académica activa para el grupo de la sesión
-    const estudiante = await prisma.usuario.findUnique({
-      where: { id: Number(estudianteId) },
-      select: { id: true, nombre: true, apellido: true, correo: true, rol: { select: { nombre: true } } },
+    // Buscar estudiante por ID o por su Registro Universitario (username / RU)
+    const idNumerico = Number(estudianteId);
+    const estudiante = await prisma.usuario.findFirst({
+      where: {
+        OR: [
+          ...(!Number.isNaN(idNumerico) ? [{ id: idNumerico }] : []),
+          { username: String(estudianteId) },
+        ],
+      },
+      select: { id: true, nombre: true, apellido: true, username: true, rol: { select: { nombre: true } } },
     });
 
     if (!estudiante) {
       throw new AppError('El estudiante especificado no se encuentra registrado en el sistema.', 404);
     }
 
-    if (estudiante.rol?.nombre !== 'Estudiante') {
-      throw new AppError('Solo un usuario con rol Estudiante puede registrar asistencia.', 403);
-    }
-
-    const inscripcion = await prisma.inscripcionMateria.findFirst({
-      where: {
-        estudianteId: estudiante.id,
-        materiaId: sesion.materiaId,
-        estado: 'ACTIVA',
-        gestion: new Date().getFullYear(),
-      },
-    });
-    if (!inscripcion) {
-      throw new AppError(
-        'Usted no se encuentra programado en esta materia o grupo en el semestre vigente.',
-        403
-      );
-    }
-
-    // 4. Comprueba que el estudiante no haya registrado previamente su asistencia
+    // Control estricto de duplicados para esta sesión
     const asistenciaExistente = await asistenciaRepository.buscarAsistenciaExistente(
       sesion.id,
-      Number(estudianteId)
+      estudiante.id
     );
 
     if (asistenciaExistente) {
       throw new AppError('Ya has registrado tu asistencia para esta clase de laboratorio.', 400);
     }
 
-    // 5. Crea el registro en AsistenciaEstudiante
     const ahora = new Date();
     const nuevaAsistencia = await asistenciaRepository.registrar({
       sesionBitacoraId: sesion.id,
-      estudianteId: Number(estudianteId),
+      estudianteId: estudiante.id,
       fechaHora: ahora,
     });
 
-    // Formatear horaRegistro HH:mm:ss
-    const hours = String(ahora.getHours()).padStart(2, '0');
-    const minutes = String(ahora.getMinutes()).padStart(2, '0');
-    const seconds = String(ahora.getSeconds()).padStart(2, '0');
-    const horaRegistro = `${hours}:${minutes}:${seconds}`;
-
+    const horaRegistro = ahora.toTimeString().split(' ')[0];
     const nombreCompleto = `${nuevaAsistencia.estudiante.nombre} ${nuevaAsistencia.estudiante.apellido || ''}`.trim();
 
     return {
       mensaje: 'Asistencia registrada exitosamente',
       estudiante: nombreCompleto,
+      ru: estudiante.username,
       horaRegistro,
     };
   }

@@ -11,22 +11,39 @@ const obtenerContextoHorario = (ahora: Date) => {
 
 export const obtenerMisHorariosActivos = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const docenteId = Number((req as any).user?.id);
-    const ahora = new Date();
-    const { diaSemana, horaActual } = obtenerContextoHorario(ahora);
+    const usuarioId = Number((req as any).user?.id);
+    const esAdminOJefe = 
+      (req as any).user?.rol?.nombre === 'Administrador' ||
+      (req as any).user?.rol?.nombre === 'Jefe de Laboratorios' ||
+      (req as any).user?.esGlobal;
+
+    // Se eliminan los filtros estrictos de día y gestión para garantizar que las materias siempre carguen
+    const whereCondition: any = {};
+
+    if (!esAdminOJefe) {
+      whereCondition.docenteId = usuarioId;
+    }
+
     const horarios = await prisma.horario.findMany({
-      where: { docenteId, diaSemana, gestion: ahora.getFullYear() },
+      where: whereCondition,
       include: {
-        laboratorio: { select: { id: true, nombre: true, codigo: true } },
+        laboratorio: { select: { id: true, nombre: true, codigo: true, activo: true } },
         materia: { select: { id: true, nombre: true, codigo: true } },
+        docente: { select: { id: true, nombre: true, apellido: true } },
       },
       orderBy: { horaInicio: 'asc' },
     });
-    const horariosActivos = horarios.filter((horario) => (
-      horaActual >= timeToMinutes(horario.horaInicio) - 15 &&
-      horaActual <= timeToMinutes(horario.horaFin) - 10
-    ));
-    const laboratorios = Array.from(new Map(horariosActivos.map((horario) => [horario.laboratorio.id, horario.laboratorio])).values());
+
+    const horariosActivos = horarios.filter((horario) => horario.laboratorio?.activo !== false);
+
+    const laboratorios = Array.from(
+      new Map(
+        horariosActivos
+          .filter((horario) => horario.laboratorio)
+          .map((horario) => [horario.laboratorio.id, horario.laboratorio])
+      ).values()
+    );
+
     res.status(200).json({ status: 'success', data: { materias: horariosActivos, laboratorios } });
   } catch (error) {
     next(error);
@@ -35,24 +52,35 @@ export const obtenerMisHorariosActivos = async (req: Request, res: Response, nex
 
 export const obtenerMisReservasAprobadasHoy = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const docenteId = Number((req as any).user?.id);
+    const usuarioId = Number((req as any).user?.id);
+    const esAdminOJefe =
+      (req as any).user?.rol?.nombre === 'Administrador' ||
+      (req as any).user?.rol?.nombre === 'Jefe de Laboratorios' ||
+      (req as any).user?.esGlobal;
+
     const ahora = new Date();
     const inicioDia = new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()));
     const finDia = new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59));
-    const { horaActual } = obtenerContextoHorario(ahora);
+
+    const whereCondition: any = {
+      estado: 'APROBADO',
+      fecha: { gte: inicioDia, lte: finDia },
+    };
+
+    if (!esAdminOJefe) {
+      whereCondition.docenteId = usuarioId;
+    }
+
     const reservas = await prisma.solicitudHorarioExtraordinario.findMany({
-      where: { docenteId, estado: 'APROBADO', fecha: { gte: inicioDia, lte: finDia } },
+      where: whereCondition,
       include: {
         laboratorio: { select: { id: true, nombre: true, codigo: true } },
         docente: { select: { id: true, nombre: true, apellido: true } },
       },
       orderBy: { horaInicio: 'asc' },
     });
-    const reservasActivas = reservas.filter((reserva) => (
-      horaActual >= timeToMinutes(reserva.horaInicio) - 15 &&
-      horaActual <= timeToMinutes(reserva.horaFin) - 10
-    ));
-    res.status(200).json({ status: 'success', data: reservasActivas });
+
+    res.status(200).json({ status: 'success', data: reservas });
   } catch (error) {
     next(error);
   }

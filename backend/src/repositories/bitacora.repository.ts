@@ -34,6 +34,10 @@ export class BitacoraRepository {
         },
         cumplio: false,
       },
+      include: {
+        materia: { select: { id: true, nombre: true, codigo: true, semestre: true } },
+        docente: { select: { id: true, username: true, nombre: true, apellido: true } },
+      },
     });
   }
 
@@ -61,14 +65,14 @@ export class BitacoraRepository {
           select: { id: true, nombre: true, codigo: true, ubicacion: true },
         },
         materia: {
-          select: { id: true, nombre: true, codigo: true },
+          select: { id: true, nombre: true, codigo: true, semestre: true },
         },
         docente: {
-          select: { id: true, nombre: true, apellido: true, correo: true },
+          select: { id: true, username: true, nombre: true, apellido: true, correo: true },
         },
         asistencias: {
           include: {
-            estudiante: { select: { id: true, nombre: true, apellido: true, correo: true } },
+            estudiante: { select: { id: true, username: true, nombre: true, apellido: true, correo: true } },
             equipo: { select: { id: true, nombre: true, codigoPatrimonial: true } },
           },
           orderBy: { estudiante: { apellido: 'asc' } },
@@ -85,10 +89,10 @@ export class BitacoraRepository {
           select: { id: true, nombre: true, codigo: true, ubicacion: true },
         },
         materia: {
-          select: { id: true, nombre: true, codigo: true },
+          select: { id: true, nombre: true, codigo: true, semestre: true },
         },
         docente: {
-          select: { id: true, nombre: true, apellido: true, correo: true },
+          select: { id: true, username: true, nombre: true, apellido: true, correo: true },
         },
       },
     });
@@ -102,10 +106,10 @@ export class BitacoraRepository {
           select: { id: true, nombre: true, codigo: true, ubicacion: true },
         },
         materia: {
-          select: { id: true, nombre: true, codigo: true },
+          select: { id: true, nombre: true, codigo: true, semestre: true },
         },
         docente: {
-          select: { id: true, nombre: true, apellido: true, correo: true },
+          select: { id: true, username: true, nombre: true, apellido: true, correo: true },
         },
       },
     });
@@ -124,10 +128,10 @@ export class BitacoraRepository {
           select: { id: true, nombre: true, codigo: true, ubicacion: true },
         },
         materia: {
-          select: { id: true, nombre: true, codigo: true },
+          select: { id: true, nombre: true, codigo: true, semestre: true },
         },
         docente: {
-          select: { id: true, nombre: true, apellido: true, correo: true },
+          select: { id: true, username: true, nombre: true, apellido: true, correo: true },
         },
       },
     });
@@ -164,7 +168,7 @@ export class BitacoraRepository {
       include: {
         laboratorio: { select: { id: true, nombre: true, codigo: true } },
         materia: { select: { id: true, nombre: true, codigo: true } },
-        docente: { select: { id: true, nombre: true, apellido: true } },
+        docente: { select: { id: true, username: true, nombre: true, apellido: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

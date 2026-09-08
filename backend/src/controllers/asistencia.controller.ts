@@ -6,26 +6,32 @@ import { AppError } from '../utils/appError.js';
 export class AsistenciaController {
   async registrar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { tokenQR, estudianteId } = req.body;
+      const { tokenQR, token, estudianteId, ru, registroUniversitario, codigoEquipoPatrimonial, codigoEquipo, equipoId } = req.body;
+      const tokenFinal = tokenQR || token;
 
-      if (!tokenQR || !estudianteId) {
-        throw new AppError('Debe enviar los parámetros tokenQR y estudianteId.', 400);
+      if (!tokenFinal) {
+        throw new AppError('Debe enviar el parámetro tokenQR de la sesión.', 400);
       }
 
-      const estudianteAutenticado = req.user?.id ? Number(req.user.id) : undefined;
-      if (!estudianteAutenticado) {
-        throw new AppError('Debe iniciar sesión como estudiante para registrar asistencia.', 401);
+      const idEstudianteRaw = estudianteId ?? ru ?? registroUniversitario;
+
+      if (!idEstudianteRaw) {
+        throw new AppError('Debe seleccionar su nombre o ingresar su registro universitario.', 400);
       }
-      if (Number(estudianteId) !== estudianteAutenticado) {
-        throw new AppError('No puede registrar asistencia en nombre de otro estudiante.', 403);
-      }
+
+      const idEstudianteFinal = !Number.isNaN(Number(idEstudianteRaw)) ? Number(idEstudianteRaw) : String(idEstudianteRaw);
 
       const resultado = await asistenciaService.registrarAsistencia({
-        tokenQR: String(tokenQR),
-        estudianteId: estudianteAutenticado,
+        tokenQR: String(tokenFinal),
+        estudianteId: idEstudianteFinal,
+        codigoEquipoPatrimonial: codigoEquipoPatrimonial || codigoEquipo ? String(codigoEquipoPatrimonial || codigoEquipo) : undefined,
       });
 
-      res.status(200).json(resultado);
+      res.status(200).json({
+        status: 'success',
+        message: 'Asistencia registrada correctamente.',
+        data: resultado,
+      });
     } catch (error) {
       next(error);
     }
@@ -57,7 +63,10 @@ export class AsistenciaController {
   async obtenerListaConsolidada(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const sesionId = Number(req.params.sesionId);
-      if (!sesionId || Number.isNaN(sesionId)) throw new AppError('El parámetro sesionId es obligatorio y debe ser numérico.', 400);
+      if (!sesionId || Number.isNaN(sesionId)) {
+        throw new AppError('El parámetro sesionId es obligatorio y debe ser numérico.', 400);
+      }
+
       const lista = await asistenciaService.obtenerListaConsolidada(sesionId);
       res.status(200).json({ status: 'success', data: lista });
     } catch (error) {
@@ -70,6 +79,7 @@ export class AsistenciaController {
       const docenteId = req.user?.id ? Number(req.user.id) : 0;
       const sesionId = Number(req.params.sesionId);
       const estudianteId = Number(req.params.estudianteId);
+
       const resultado = await asistenciaService.actualizarAsistencia({
         sesionId,
         estudianteId,
@@ -78,6 +88,7 @@ export class AsistenciaController {
         justificativo: req.body.justificativo ? String(req.body.justificativo) : undefined,
         equipoId: req.body.equipoId !== undefined ? Number(req.body.equipoId) : undefined,
       });
+
       res.status(200).json({ status: 'success', data: { asistencia: resultado } });
     } catch (error) {
       next(error);
@@ -88,6 +99,7 @@ export class AsistenciaController {
     try {
       const sesionId = Number(req.params.sesionId);
       const docenteId = req.user?.id ? Number(req.user.id) : 0;
+
       const resultado = await asistenciaService.confirmarAsistencia(sesionId, docenteId);
       res.status(200).json({ status: 'success', data: resultado });
     } catch (error) {

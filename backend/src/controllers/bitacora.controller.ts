@@ -21,9 +21,18 @@ export class BitacoraController {
         throw new AppError('El parámetro laboratorioId es requerido.', 400);
       }
 
-      const idDocenteFinal = req.user?.id ? Number(req.user.id) : undefined;
+      const esAdminOJefe =
+        req.user?.rol === 'Administrador' ||
+        req.user?.rol === 'Jefe de Laboratorios' ||
+        req.user?.esGlobal;
 
-      if (docenteId && Number(docenteId) !== idDocenteFinal) {
+      // Si es admin o jefe, puede iniciar con el docente enviado o detectado; si no es admin, se usa su propio ID.
+      const idDocenteFinal =
+        esAdminOJefe && docenteId 
+          ? Number(docenteId) 
+          : (esAdminOJefe && !docenteId ? undefined : (req.user?.id ? Number(req.user.id) : undefined));
+
+      if (!esAdminOJefe && docenteId && Number(docenteId) !== idDocenteFinal) {
         throw new AppError('El docente de la sesión debe coincidir con el usuario autenticado.', 403);
       }
 
@@ -36,6 +45,7 @@ export class BitacoraController {
         tipoUso: tipoUso as TipoUsoLaboratorio | undefined,
         solicitudExtraordinariaId: solicitudExtraordinariaId ? Number(solicitudExtraordinariaId) : undefined,
         practicaRealizada: practicaRealizada ? String(practicaRealizada) : undefined,
+        esAdminOJefe, // <--- Propiedad enviada para relajar restricciones de rol y tiempo
       });
 
       res.status(201).json({
@@ -77,6 +87,59 @@ export class BitacoraController {
     }
   }
 
+  async marcarAsistencia(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const estudianteId = req.user?.id;
+      if (!estudianteId) {
+        throw new AppError('Debe iniciar sesión como estudiante para registrar su asistencia.', 401);
+      }
+
+      const { tokenQR, token, codigoEquipoPatrimonial, codigoEquipo } = req.body;
+      const tokenFinal = tokenQR || token;
+
+      if (!tokenFinal) {
+        throw new AppError('El token QR de la sesión es requerido.', 400);
+      }
+
+      const resultado = await bitacoraService.registrarAsistenciaEstudiante({
+        tokenQR: String(tokenFinal),
+        estudianteId: Number(estudianteId),
+        codigoEquipoPatrimonial:
+          codigoEquipoPatrimonial || codigoEquipo
+            ? String(codigoEquipoPatrimonial || codigoEquipo)
+            : undefined,
+      });
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Asistencia registrada exitosamente.',
+        data: resultado,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async obtenerNomina(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const sesionId = req.params.sesionId || req.params.id;
+
+      if (!sesionId) {
+        throw new AppError('El parámetro sesionId es requerido.', 400);
+      }
+
+      const nomina = await bitacoraService.obtenerNominaSesion(Number(sesionId));
+
+      res.status(200).json({
+        status: 'success',
+        results: nomina.length,
+        data: { nomina },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const filtros = {
@@ -99,7 +162,7 @@ export class BitacoraController {
 
   async descargarPDF(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id || req.params.sesionId;
 
       if (!id) {
         throw new AppError('El id de la sesión de bitácora es requerido.', 400);
