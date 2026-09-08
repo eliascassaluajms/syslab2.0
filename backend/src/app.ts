@@ -23,7 +23,7 @@ import solicitudExtraordinariaRoutes from './routes/solicitudExtraordinaria.rout
 import bitacoraRoutes from './routes/bitacora.routes.js';
 import asistenciaRoutes from './routes/asistencia.routes.js';
 import defensaRoutes from './routes/defensa.routes.js';
-
+import designacionRoutes from './routes/designacion.routes.js';
 const app: Application = express();
 
 app.set('trust proxy', 1);
@@ -104,6 +104,7 @@ app.use('/api/equipos', equiposRoutes);
 app.use('/api/incidencias', incidenciasRoutes);
 app.use('/api/planes-estudio', planEstudioRouter);
 app.use('/api/materias', materiaRouter);
+app.use('/api/designaciones', designacionRoutes); 
 app.use('/api/horarios', horarioRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/evento', eventoRoutes);
