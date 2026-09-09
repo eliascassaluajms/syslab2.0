@@ -2,11 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/appError.js';
 
 /**
- * Middleware para requerir un permiso específico (KAN-16)
+ * Middleware para requerir un permiso específico o cualquiera de una lista (KAN-16)
  * Valida stateless contra los permisos extraídos del Token JWT.
  * Incluye Bypass automático para SuperAdmin (esGlobal) o Rol 'Administrador'.
  */
-export const requirePermission = (codigoPermiso: string) => {
+export const requirePermission = (codigoPermiso: string | string[]) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
@@ -20,12 +20,13 @@ export const requirePermission = (codigoPermiso: string) => {
         return next();
       }
 
-      // Verificar si el arreglo de permisos en el token contiene el permiso requerido
-      const tienePermiso = Array.isArray(user.permisos) && user.permisos.includes(codigoPermiso);
+      // Verificar si el arreglo de permisos en el token contiene el o los permisos requeridos
+      const permisosReq = Array.isArray(codigoPermiso) ? codigoPermiso : [codigoPermiso];
+      const tienePermiso = Array.isArray(user.permisos) && permisosReq.some((cp) => user.permisos.includes(cp));
 
       if (!tienePermiso) {
         throw new AppError(
-          `Acceso denegado. No posee el permiso '${codigoPermiso}' para realizar esta acción.`,
+          `Acceso denegado. No posee los permisos requeridos (${permisosReq.join(' o ')}) para realizar esta acción.`,
           403
         );
       }
@@ -104,6 +105,46 @@ export const verificarAmbitoCarrera = (paramKey: string = 'carreraId') => {
           'Acceso denegado (403): Su perímetro asignado no le permite operar sobre esta unidad o carrera.',
           403
         );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * Middleware para restringir el acceso a roles específicos
+ */
+export const restrictTo = (...rolesPermitidos: string[]) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      const user = (req as any).user;
+
+      if (!user) {
+        throw new AppError('No autenticado. Token de acceso no válido o ausente.', 401);
+      }
+
+      // Bypass para superusuarios / globales / administradores
+      if (
+        user.esGlobal ||
+        (Array.isArray(user.roles) && user.roles.includes('Administrador')) ||
+        user.rol === 'Administrador' ||
+        user.rol === 'SuperAdmin'
+      ) {
+        return next();
+      }
+
+      const rol = user.rol || '';
+      const roles: string[] = Array.isArray(user.roles) ? user.roles : (rol ? [rol] : []);
+
+      const tieneRol = rolesPermitidos.some(
+        (r) => roles.includes(r) || rol === r
+      );
+
+      if (!tieneRol) {
+        throw new AppError('No cuenta con los permisos necesarios para realizar esta acción.', 403);
       }
 
       next();

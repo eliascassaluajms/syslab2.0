@@ -75,6 +75,9 @@ export async function seedSeguridad(prisma: PrismaClient) {
     { codigo: 'solicitudes:crear', descripcion: 'Permite solicitar horarios extraordinarios' },
     { codigo: 'solicitudes:listar', descripcion: 'Permite ver las solicitudes de horarios extraordinarios' },
     { codigo: 'solicitudes:aprobar', descripcion: 'Permite aprobar o rechazar solicitudes extraordinarias de uso de laboratorio' },
+    { codigo: 'solicitudes_extraordinarias:ver', descripcion: 'Ver listado de solicitudes extraordinarias' },
+    { codigo: 'solicitudes_extraordinarias:crear', descripcion: 'Crear nueva solicitud extraordinaria' },
+    { codigo: 'solicitudes_extraordinarias:aprobar', descripcion: 'Aprobar o rechazar solicitudes extraordinarias' },
     { codigo: 'bitacora:iniciar', descripcion: 'Permite iniciar una sesión de uso de laboratorio y generar código QR' },
     { codigo: 'bitacora:finalizar', descripcion: 'Permite finalizar una sesión de bitácora de laboratorio' },
     { codigo: 'bitacora:consultar', descripcion: 'Permite consultar sesiones de bitácora' },
@@ -222,6 +225,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
         'laboratorios:listar', 'laboratorios:ver_estado',
         'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
+        'solicitudes:listar', 'solicitudes:aprobar', 'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:aprobar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
@@ -231,6 +235,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'usuarios:listar', 'facultades:listar', 'carreras:listar', 'materias:listar', 'planes_estudio:listar',
         'laboratorios:listar', 'laboratorios:ver_estado',
         'fallas:ver_reportes', 'actividades:listar', 'actividades:participantes_listar',
+        'solicitudes:listar', 'solicitudes:aprobar', 'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:aprobar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
     },
@@ -250,6 +255,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:participantes_listar', 'actividades:participantes_registrar',
         'actividades:pagos_registrar', 'actividades:pagos_validar',
         'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
+        'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:crear', 'solicitudes_extraordinarias:aprobar',
         'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
@@ -271,6 +277,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:participantes_listar', 'actividades:participantes_registrar',
         'actividades:pagos_registrar', 'actividades:pagos_validar',
         'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
+        'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:crear', 'solicitudes_extraordinarias:aprobar',
         'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
         'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]
@@ -293,6 +300,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'fallas:crear', 'fallas:listar', 'uso_laboratorios:crear', 'uso_laboratorios:listar',
         'actividades:listar', 'actividades:participantes_registrar',
         'solicitudes:crear', 'solicitudes:listar',
+        'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:crear',
         'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
         'defensas:listar', 'defensas:designar', 'defensas:observar', 'defensas:acta'
       ]

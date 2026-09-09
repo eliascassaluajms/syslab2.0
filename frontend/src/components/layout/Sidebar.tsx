@@ -79,10 +79,17 @@ const menuConfig: MenuItem[] = [
         permiso: ['uso_laboratorios:listar', 'bitacora:consultar'],
       },
       {
-        titulo: 'Horarios Extraordinarios',
+        titulo: 'Solicitudes Extraordinarias',
         ruta: '/admin/solicitudes-extraordinarias',
         icono: '⏱️',
-        permiso: ['solicitudes:listar', 'solicitudes:crear'],
+        permiso: [
+          'solicitudes:listar',
+          'solicitudes:crear',
+          'solicitudes:aprobar',
+          'solicitudes_extraordinarias:ver',
+          'solicitudes_extraordinarias:crear',
+          'solicitudes_extraordinarias:aprobar',
+        ],
       },
       {
         titulo: 'Incidencias y Fallas',
@@ -203,9 +210,42 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     window.location.reload();
   };
 
+  const rolesSet = React.useMemo(() => {
+    const set = new Set<string>();
+    if (typeof user?.rol === 'string') set.add(user.rol);
+    else if (user?.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
+      set.add((user.rol as any).nombre);
+    }
+    if (Array.isArray(user?.roles)) {
+      user.roles.forEach((r: string) => set.add(r));
+    }
+    if (rolActivoNombre) set.add(rolActivoNombre);
+    return set;
+  }, [user, rolActivoNombre]);
+
   const evaluarPermiso = (permisoReq?: string | string[]): boolean => {
     if (!permisoReq) return true;
     if (esAdmin) return true;
+
+    // Fallback garantizado por roles autorizados para el módulo de solicitudes extraordinarias
+    const esModuloSolicitudes = Array.isArray(permisoReq)
+      ? permisoReq.some((p) => p.includes('solicitud'))
+      : permisoReq.includes('solicitud');
+
+    if (esModuloSolicitudes) {
+      const rolesConAcceso = [
+        'Administrador',
+        'SuperAdmin',
+        'Jefe de Laboratorios',
+        'Director de Carrera',
+        'Decano',
+        'Vicedecano',
+        'Docente',
+      ];
+      if (rolesConAcceso.some((r) => rolesSet.has(r))) {
+        return true;
+      }
+    }
 
     if (Array.isArray(permisoReq)) {
       return permisoReq.some((p) => {

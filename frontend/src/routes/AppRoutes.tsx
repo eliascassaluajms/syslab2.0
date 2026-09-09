@@ -28,6 +28,7 @@ const IncidenciasView = lazy(() => import('../views/incidencias/IncidenciasView'
 const InventarioEquiposView = lazy(() => import('../views/equipos/InventarioEquiposView'));
 const GestionDefensasView = lazy(() => import('../views/defensas/GestionDefensasView').then((module) => ({ default: module.GestionDefensasView })));
 const DesignacionesView = lazy(() => import('../views/DesignacionesView').then((module) => ({ default: module.DesignacionesView })));
+const SolicitudesExtraordinariasView = lazy(() => import('../views/SolicitudesExtraordinariasView').then((module) => ({ default: module.SolicitudesExtraordinariasView })));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -65,7 +66,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="roles" element={<GestionRolesView />} />
             <Route path="laboratorios" element={<LaboratoriosView />} />
             <Route path="horarios" element={<HorariosView />} />
-            <Route path="solicitudes-extraordinarias" element={<HorariosView />} />
+            <Route path="solicitudes-extraordinarias" element={<SolicitudesExtraordinariasView />} />
             <Route path="bitacoras" element={<HistorialBitacorasView />} />
             <Route path="uso-laboratorios" element={<HistorialBitacorasView />} />
             <Route path="incidencias" element={<IncidenciasView />} />
@@ -91,6 +92,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/roles" element={<GestionRolesView />} />
           <Route path="/laboratorios" element={<LaboratoriosView />} />
           <Route path="/horarios" element={<HorariosView />} />
+          <Route path="/solicitudes-extraordinarias" element={<SolicitudesExtraordinariasView />} />
           <Route path="/bitacoras" element={<HistorialBitacorasView />} />
           <Route path="/activities" element={<ActivitiesView />} />
           <Route path="/incidencias" element={<IncidenciasView />} />

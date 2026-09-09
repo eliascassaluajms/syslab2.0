@@ -50,9 +50,9 @@ export const solicitudesExtraordinariasService = {
     return [];
   },
 
-  // Aprobar o rechazar solicitud (Directores / Jefes)
-  cambiarEstado: async (id: number, estado: EstadoSolicitud): Promise<SolicitudExtraordinaria> => {
-    const response = await httpClient.patch(`/solicitudes-extraordinarias/${id}/estado`, { estado });
+  // Aprobar o rechazar solicitud (Directores / Jefes / Decanos / Admins)
+  cambiarEstado: async (id: number, estado: EstadoSolicitud, observaciones?: string): Promise<SolicitudExtraordinaria> => {
+    const response = await httpClient.patch(`/solicitudes-extraordinarias/${id}/estado`, { estado, observaciones });
     const resData = response.data;
     return resData?.data?.solicitud || resData?.data || resData;
   },
