@@ -25,7 +25,7 @@ export interface FinalizarBitacoraDTO {
 }
 
 export class BitacoraService {
-async iniciarSesion(data: IniciarBitacoraDTO) {
+  async iniciarSesion(data: IniciarBitacoraDTO) {
     const {
       laboratorioId,
       materiaId,

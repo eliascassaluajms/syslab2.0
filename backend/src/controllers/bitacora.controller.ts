@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { TipoUsoLaboratorio } from '@prisma/client';
+import { prisma } from '../config/prisma.js';
 import { bitacoraService } from '../services/bitacora.service.js';
 import { AppError } from '../utils/appError.js';
 
@@ -142,18 +143,87 @@ export class BitacoraController {
 
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const filtros = {
-        laboratorioId: req.query.laboratorioId ? Number(req.query.laboratorioId) : undefined,
-        fecha: req.query.fecha ? String(req.query.fecha) : undefined,
-        cumplio: req.query.cumplio !== undefined ? req.query.cumplio === 'true' : undefined,
-      };
+      const user = req.user; // Contiene id, rol, facultadId, etc.
+      let filtroWhere: any = {};
 
-      const sesiones = await bitacoraService.listarSesiones(filtros);
+      // Filtros opcionales por query params (laboratorio, fecha, cumplio)
+      if (req.query.laboratorioId) {
+        filtroWhere.laboratorioId = Number(req.query.laboratorioId);
+      }
+
+      if (req.query.cumplio !== undefined) {
+        filtroWhere.cumplio = req.query.cumplio === 'true';
+      }
+
+      if (req.query.fecha) {
+        const parts = String(req.query.fecha).split('-');
+        if (parts.length === 3) {
+          const year = Number(parts[0]);
+          const month = Number(parts[1]);
+          const day = Number(parts[2]);
+          filtroWhere.fecha = {
+            gte: new Date(Date.UTC(year, month - 1, day, 0, 0, 0)),
+            lte: new Date(Date.UTC(year, month - 1, day, 23, 59, 59)),
+          };
+        }
+      }
+
+      // Los docentes solo ven las sesiones que ellos mismos abrieron
+      if (user?.rol === 'Docente' || user?.rol === 'DOCENTE') {
+        filtroWhere.docenteId = Number(user.id);
+      } 
+      // Los directores de carrera ven solo el ámbito de su carrera
+      else if (user?.rol === 'Director de Carrera' || user?.rol === 'DIRECTOR_CARRERA') {
+        const carreraId = user.carreraId 
+          ? Number(user.carreraId) 
+          : (Array.isArray(user.carreras) && user.carreras.length > 0 ? Number(user.carreras[0]) : undefined);
+
+        if (carreraId) {
+          filtroWhere.OR = [
+            { materia: { planEstudio: { carreraId } } },
+            { laboratorio: { carreraId } },
+          ];
+        }
+      }
+      // Jefe de Laboratorio, Decano y Vicedecano omiten filtros restrictivos 
+      // y visualizan todas las bitácoras de su facultad.
+      else if (
+        (user?.rol === 'Jefe de Laboratorio' ||
+          user?.rol === 'Jefe de Laboratorios' ||
+          user?.rol === 'JEFE_LABORATORIOS' ||
+          user?.rol === 'Decano' ||
+          user?.rol === 'DECANO' ||
+          user?.rol === 'Vicedecano' ||
+          user?.rol === 'VICEDECANO') &&
+        user?.facultadId
+      ) {
+        filtroWhere.laboratorio = { facultadId: Number(user.facultadId) };
+      }
+
+      const bitacoras = await prisma.sesionBitacora.findMany({
+        where: filtroWhere,
+        include: {
+          laboratorio: true,
+          materia: true,
+          docente: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Sanitizar credenciales si vinieran en el objeto docente
+      bitacoras.forEach((b: any) => {
+        if (b.docente && 'password' in b.docente) {
+          delete b.docente.password;
+        }
+      });
 
       res.status(200).json({
         status: 'success',
-        results: sesiones.length,
-        data: { sesiones },
+        results: bitacoras.length,
+        data: {
+          sesiones: bitacoras,
+          bitacoras,
+        },
       });
     } catch (error) {
       next(error);

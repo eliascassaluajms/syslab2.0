@@ -62,7 +62,7 @@ export class AsistenciaController {
 
   async obtenerListaConsolidada(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const sesionId = Number(req.params.sesionId);
+      const sesionId = Number(req.params.sesionId || req.params.id);
       if (!sesionId || Number.isNaN(sesionId)) {
         throw new AppError('El parámetro sesionId es obligatorio y debe ser numérico.', 400);
       }

@@ -44,6 +44,11 @@ router.get(
   requirePermission('bitacora:consultar'),
   asistenciaController.obtenerListaConsolidada
 );
+router.get(
+  '/:sesionId/lista',
+  requirePermission('bitacora:consultar'),
+  asistenciaController.obtenerListaConsolidada
+);
 router.put(
   '/:sesionId/asistencia/:estudianteId',
   requirePermission('bitacora:finalizar'),

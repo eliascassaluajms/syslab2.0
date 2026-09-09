@@ -88,52 +88,159 @@ export class AsistenciaService {
   }
 
   async obtenerListaConsolidada(sesionId: number) {
-    const sesion = await prisma.sesionBitacora.findUnique({ where: { id: sesionId } });
+    const sesion = await prisma.sesionBitacora.findUnique({
+      where: { id: sesionId },
+      include: {
+        laboratorio: { select: { id: true, nombre: true, codigo: true } },
+        materia: { select: { id: true, nombre: true, codigo: true } },
+        docente: { select: { id: true, nombre: true, apellido: true } },
+      },
+    });
+
     if (!sesion) {
       throw new AppError('La sesión de bitácora no existe.', 404);
     }
-    if (sesion.materiaId === null) {
-      throw new AppError('La sesión no tiene una materia académica asociada.', 422);
+
+    // 1. Obtener estudiantes matriculados en la materia (búsqueda con cascada progresiva)
+    let inscripciones: Array<{
+      id?: number;
+      estudianteId: number;
+      materiaId?: number;
+      grupo?: number;
+      semestre?: number;
+      gestion?: number;
+      estudiante: {
+        id: number;
+        nombre: string;
+        apellido: string | null;
+        correo: string;
+        username?: string;
+      };
+    }> = [];
+
+    if (sesion.materiaId) {
+      // Prioridad 1: Inscritos en la materia y grupo de la sesión con estado ACTIVA
+      if (sesion.grupo) {
+        inscripciones = await prisma.inscripcionMateria.findMany({
+          where: {
+            materiaId: sesion.materiaId,
+            grupo: sesion.grupo,
+            estado: 'ACTIVA',
+          },
+          include: {
+            estudiante: {
+              select: { id: true, nombre: true, apellido: true, correo: true, username: true },
+            },
+          },
+          orderBy: { estudiante: { apellido: 'asc' } },
+        });
+      }
+
+      // Prioridad 2: Si el grupo no arrojó resultados, buscar todos los matriculados activos en la materia
+      if (inscripciones.length === 0) {
+        inscripciones = await prisma.inscripcionMateria.findMany({
+          where: {
+            materiaId: sesion.materiaId,
+            estado: 'ACTIVA',
+          },
+          include: {
+            estudiante: {
+              select: { id: true, nombre: true, apellido: true, correo: true, username: true },
+            },
+          },
+          orderBy: { estudiante: { apellido: 'asc' } },
+        });
+      }
+
+      // Prioridad 3: Todos los inscritos en la materia independientemente del estado
+      if (inscripciones.length === 0) {
+        inscripciones = await prisma.inscripcionMateria.findMany({
+          where: {
+            materiaId: sesion.materiaId,
+          },
+          include: {
+            estudiante: {
+              select: { id: true, nombre: true, apellido: true, correo: true, username: true },
+            },
+          },
+          orderBy: { estudiante: { apellido: 'asc' } },
+        });
+      }
     }
 
-    const [inscripciones, asistencias] = await Promise.all([
-      prisma.inscripcionMateria.findMany({
-        where: {
-          materiaId: sesion.materiaId,
-          grupo: sesion.grupo,
-          semestre: sesion.semestre,
-          gestion: sesion.gestion,
-          estado: 'ACTIVA',
+    // 2. Obtener los registros de asistencia registrados para la sesión
+    const asistencias = await prisma.asistenciaEstudiante.findMany({
+      where: { sesionBitacoraId: sesionId },
+      include: {
+        estudiante: {
+          select: { id: true, nombre: true, apellido: true, correo: true, username: true },
         },
-        include: { estudiante: { select: { id: true, nombre: true, apellido: true, correo: true } } },
-        orderBy: { estudiante: { apellido: 'asc' } },
-      }),
-      prisma.asistenciaEstudiante.findMany({
-        where: { sesionBitacoraId: sesionId },
-        include: { equipo: { select: { id: true, nombre: true, codigoPatrimonial: true } } },
-      }),
-    ]);
+        equipo: {
+          select: { id: true, nombre: true, codigoPatrimonial: true },
+        },
+      },
+      orderBy: { fechaHora: 'asc' },
+    });
 
     const asistenciasPorEstudiante = new Map(asistencias.map((asistencia) => [asistencia.estudianteId, asistencia]));
-    const estudiantes = inscripciones.map((inscripcion) => {
-      const asistencia = asistenciasPorEstudiante.get(inscripcion.estudianteId);
-      return {
-        estudiante: inscripcion.estudiante,
+    const estudiantesMap = new Map<number, any>();
+
+    // 3. Cruzar los inscritos con sus asistencias registradas
+    for (const inscripcion of inscripciones) {
+      const est = inscripcion.estudiante;
+      if (!est) continue;
+
+      const asistencia = asistenciasPorEstudiante.get(est.id);
+      estudiantesMap.set(est.id, {
+        estudiante: est,
+        nombreCompleto: `${est.nombre} ${est.apellido || ''}`.trim(),
         estado: asistencia?.estado ?? EstadoAsistencia.FALTA,
         origen: asistencia?.origen ?? OrigenMarcado.SISTEMA_FALTA_AUTOMATICA,
         justificativo: asistencia?.justificativo ?? null,
         equipo: asistencia?.equipo ?? null,
         fechaHora: asistencia?.fechaHora ?? null,
         asistenciaId: asistencia?.id ?? null,
-      };
+      });
+    }
+
+    // 4. Cruzar también estudiantes que hayan marcado asistencia pero no figuren en la nómina de inscritos
+    for (const asistencia of asistencias) {
+      if (!estudiantesMap.has(asistencia.estudianteId)) {
+        const est = asistencia.estudiante || {
+          id: asistencia.estudianteId,
+          nombre: 'Estudiante',
+          apellido: `#${asistencia.estudianteId}`,
+          correo: '',
+          username: '',
+        };
+        estudiantesMap.set(asistencia.estudianteId, {
+          estudiante: est,
+          nombreCompleto: `${est.nombre} ${est.apellido || ''}`.trim(),
+          estado: asistencia.estado,
+          origen: asistencia.origen,
+          justificativo: asistencia.justificativo ?? null,
+          equipo: asistencia.equipo ?? null,
+          fechaHora: asistencia.fechaHora ?? null,
+          asistenciaId: asistencia.id,
+        });
+      }
+    }
+
+    const estudiantes = Array.from(estudiantesMap.values()).sort((a, b) => {
+      const apA = (a.estudiante?.apellido || a.estudiante?.nombre || '').toLowerCase();
+      const apB = (b.estudiante?.apellido || b.estudiante?.nombre || '').toLowerCase();
+      return apA.localeCompare(apB);
     });
 
     const resumen = estudiantes.reduce(
-      (conteo, estudiante) => {
-        conteo[estudiante.estado] += 1;
+      (conteo, est) => {
+        if (est.estado === EstadoAsistencia.PRESENTE) conteo.PRESENTE++;
+        else if (est.estado === EstadoAsistencia.ATRASO) conteo.ATRASO++;
+        else if (est.estado === EstadoAsistencia.LICENCIA) conteo.LICENCIA++;
+        else if (est.estado === EstadoAsistencia.FALTA) conteo.FALTA++;
         return conteo;
       },
-      { PRESENTE: 0, ATRASO: 0, LICENCIA: 0, FALTA: 0 } as Record<EstadoAsistencia, number>
+      { PRESENTE: 0, ATRASO: 0, LICENCIA: 0, FALTA: 0 }
     );
 
     return {
@@ -158,19 +265,29 @@ export class AsistenciaService {
     if (!sesion) throw new AppError('La sesión de bitácora no existe.', 404);
     if (sesion.docenteId !== data.docenteId) throw new AppError('Solo el docente de la sesión puede ajustar la asistencia.', 403);
     if (sesion.listaConfirmada) throw new AppError('La lista de asistencia ya fue confirmada y es inmutable.', 403);
-    if (sesion.materiaId === null) throw new AppError('La sesión no tiene una materia académica asociada.', 422);
 
-    const inscripcion = await prisma.inscripcionMateria.findFirst({
+    // Verificar si el estudiante está matriculado en la materia o ya tiene asistencia en la sesión
+    let inscripcionValida = false;
+    if (sesion.materiaId) {
+      const inscripcion = await prisma.inscripcionMateria.findFirst({
+        where: {
+          estudianteId: data.estudianteId,
+          materiaId: sesion.materiaId,
+        },
+      });
+      inscripcionValida = !!inscripcion;
+    }
+
+    const asistenciaExistente = await prisma.asistenciaEstudiante.findFirst({
       where: {
+        sesionBitacoraId: data.sesionId,
         estudianteId: data.estudianteId,
-        materiaId: sesion.materiaId,
-        grupo: sesion.grupo,
-        semestre: sesion.semestre,
-        gestion: sesion.gestion,
-        estado: 'ACTIVA',
       },
     });
-    if (!inscripcion) throw new AppError('El estudiante no pertenece al grupo de esta sesión.', 403);
+
+    if (!inscripcionValida && !asistenciaExistente) {
+      throw new AppError('El estudiante no pertenece a la materia de esta sesión.', 403);
+    }
 
     if (data.equipoId !== undefined) {
       const equipo = await prisma.equipo.findFirst({ where: { id: data.equipoId, laboratorioId: sesion.laboratorioId } });
@@ -209,22 +326,21 @@ export class AsistenciaService {
     if (!sesion) throw new AppError('La sesión de bitácora no existe.', 404);
     if (sesion.docenteId !== docenteId) throw new AppError('Solo el docente de la sesión puede confirmar la asistencia.', 403);
     if (sesion.listaConfirmada) throw new AppError('La lista de asistencia ya fue confirmada.', 400);
-    if (sesion.materiaId === null) throw new AppError('La sesión no tiene una materia académica asociada.', 422);
 
-    const inscripciones = await prisma.inscripcionMateria.findMany({
-      where: { materiaId: sesion.materiaId, grupo: sesion.grupo, semestre: sesion.semestre, gestion: sesion.gestion, estado: 'ACTIVA' },
-      select: { estudianteId: true },
-    });
+    const listaConsolidada = await this.obtenerListaConsolidada(sesionId);
 
     await prisma.$transaction(async (tx) => {
-      for (const inscripcion of inscripciones) {
+      for (const item of listaConsolidada.estudiantes) {
         await tx.asistenciaEstudiante.upsert({
-          where: { sesionBitacoraId_estudianteId: { sesionBitacoraId: sesionId, estudianteId: inscripcion.estudianteId } },
+          where: { sesionBitacoraId_estudianteId: { sesionBitacoraId: sesionId, estudianteId: item.estudiante.id } },
           create: {
             sesionBitacoraId: sesionId,
-            estudianteId: inscripcion.estudianteId,
-            estado: EstadoAsistencia.FALTA,
-            origen: OrigenMarcado.SISTEMA_FALTA_AUTOMATICA,
+            estudianteId: item.estudiante.id,
+            estado: item.estado,
+            origen: item.origen || OrigenMarcado.SISTEMA_FALTA_AUTOMATICA,
+            justificativo: item.justificativo,
+            equipoId: item.equipo?.id ?? null,
+            fechaHora: item.fechaHora ? new Date(item.fechaHora) : null,
           },
           update: {},
         });

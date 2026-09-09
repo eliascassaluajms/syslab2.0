@@ -56,6 +56,11 @@ export class AuthService {
 
     const carrerasPlanas = await ScopeService.obtenerCarrerasAccesiblesPorUsuario(user.id);
 
+    const asignacionConCarrera = user.asignacionesRoles.find((a) => a.carreraId);
+    const asignacionConFacultad = user.asignacionesRoles.find((a) => a.facultadId);
+    const jerarquia = ['Administrador', 'Decano', 'Vicedecano', 'Jefe de Laboratorios', 'Director de Carrera', 'Docente'];
+    const rolPrincipal = jerarquia.find((r) => rolesSet.has(r)) || Array.from(rolesSet)[0] || '';
+
     const tokenPayload = {
       id: user.id,
       nombre: user.nombre,
@@ -63,9 +68,12 @@ export class AuthService {
       username: user.username,
       correo: user.correo,
       esGlobal: user.esGlobal,
+      rol: rolPrincipal,
       roles: Array.from(rolesSet),
       permisos: Array.from(permisosSet),
       carreras: carrerasPlanas,
+      carreraId: asignacionConCarrera?.carreraId || (carrerasPlanas.length > 0 ? carrerasPlanas[0] : null),
+      facultadId: asignacionConFacultad?.facultadId || null,
     };
 
     const token = jwt.sign(
@@ -83,8 +91,11 @@ export class AuthService {
         username: tokenPayload.username,
         correo: tokenPayload.correo,
         esGlobal: tokenPayload.esGlobal,
+        rol: tokenPayload.rol,
         roles: tokenPayload.roles,
         permisos: tokenPayload.permisos,
+        carreraId: tokenPayload.carreraId,
+        facultadId: tokenPayload.facultadId,
       },
     };
   }
