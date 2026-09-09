@@ -10,24 +10,18 @@ interface DatosSesionPublica {
   fecha: string;
 }
 
-interface EstudianteOption {
-  id: number;
-  nombreCompleto: string;
-  registroUniversitario: string;
-}
-
 export const RegistroAsistenciaPublicaView: React.FC = () => {
   const { token } = useParams<{ token: string }>();
 
   const [sesion, setSesion] = useState<DatosSesionPublica | null>(null);
-  const [estudiantes, setEstudiantes] = useState<EstudianteOption[]>([]);
-  const [estudianteId, setEstudianteId] = useState<number | ''>('');
+  const [registroUniversitario, setRegistroUniversitario] = useState<string>('');
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registradoExitoso, setRegistradoExitoso] = useState(false);
   const [horaRegistro, setHoraRegistro] = useState<string>('');
+  const [estudianteInfo, setEstudianteInfo] = useState<{ nombreCompleto: string } | null>(null);
 
   useEffect(() => {
     const inicializarVista = async () => {
@@ -39,7 +33,7 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
 
       try {
         setLoading(true);
-        // 1. Validar token y obtener info de la sesión de laboratorio
+        // Validar token y obtener info de la sesión de laboratorio
         const resSesion = await httpClient.get(`/bitacora/sesion/${token}`);
         const dataSesion = resSesion.data?.data || resSesion.data;
         setSesion({
@@ -51,11 +45,6 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
             : dataSesion.nombreAyudante || dataSesion.docente || 'Docente / Encargado',
           fecha: dataSesion.fecha || new Date().toLocaleDateString(),
         });
-
-        // 2. Obtener lista de estudiantes activos para el selector
-        const resEstudiantes = await httpClient.get('/usuarios/estudiantes');
-        const dataEst = resEstudiantes.data?.data || resEstudiantes.data;
-        setEstudiantes(Array.isArray(dataEst) ? dataEst : []);
       } catch (err: unknown) {
         const responseError = err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -71,8 +60,8 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!estudianteId) {
-      setError('Por favor, seleccione su nombre o registro universitario.');
+    if (!registroUniversitario.trim()) {
+      setError('Por favor, introduzca su Registro Universitario (RU).');
       return;
     }
 
@@ -82,17 +71,20 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
     try {
       const response = await httpClient.post('/asistencia/registrar', {
         tokenQR: token,
-        estudianteId: Number(estudianteId),
+        registroUniversitario: registroUniversitario.trim(),
       });
 
       setRegistradoExitoso(true);
       const resData = response.data?.data || response.data;
       setHoraRegistro(resData.horaRegistro || new Date().toLocaleTimeString());
+      if (resData.estudiante) {
+        setEstudianteInfo(resData.estudiante);
+      }
     } catch (err: unknown) {
       const responseError = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
         : null;
-      setError(responseError || 'No se pudo registrar la asistencia. Verifique si ya marcó previamente.');
+      setError(responseError || 'No se pudo registrar la asistencia. Verifique si su RU está inscrito en la materia o si ya marcó.');
     } finally {
       setSubmitting(false);
     }
@@ -131,6 +123,11 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
             ✓
           </div>
           <h2 className="text-xl font-bold text-white">¡Asistencia Registrada!</h2>
+          {estudianteInfo && (
+            <p className="text-sm font-medium text-emerald-300">
+              {estudianteInfo.nombreCompleto}
+            </p>
+          )}
           <p className="text-sm text-slate-300">
             Se ha confirmado su presencia en la sesión de <span className="text-emerald-400 font-semibold">{sesion?.materia}</span>.
           </p>
@@ -145,7 +142,6 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-6">
-        {/* Banner Informativo de la Sesión */}
         <div className="border-b border-slate-800 pb-4">
           <span className="text-xs uppercase tracking-wider font-semibold text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 px-2.5 py-1 rounded-full">
             Registro de Asistencia
@@ -155,24 +151,21 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
           <p className="text-xs text-slate-400 mt-1">Docente / Encargado: {sesion?.docente}</p>
         </div>
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Seleccione su Nombre / Registro Universitario *
+              Ingrese su Registro Universitario (RU) *
             </label>
-            <select
-              value={estudianteId}
-              onChange={(e) => setEstudianteId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-            >
-              <option value="">-- Buscar mi usuario --</option>
-              {estudiantes.map((est) => (
-                <option key={est.id} value={est.id}>
-                  {est.nombreCompleto} ({est.registroUniversitario})
-                </option>
-              ))}
-            </select>
+            <input
+              type="text"
+              value={registroUniversitario}
+              onChange={(e) => setRegistroUniversitario(e.target.value)}
+              placeholder="Ej. 135497 o similar..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors uppercase font-mono"
+            />
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Debe estar programado en la materia para el periodo actual.
+            </p>
           </div>
 
           {error && (
@@ -183,10 +176,10 @@ export const RegistroAsistenciaPublicaView: React.FC = () => {
 
           <button
             type="submit"
-            disabled={submitting || !estudianteId}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-sm"
+            disabled={submitting || !registroUniversitario.trim()}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg transition-all disabled:opacity-50 text-sm cursor-pointer"
           >
-            {submitting ? 'Confirmando...' : 'Confirmar Asistencia'}
+            {submitting ? 'Verificando e inscribiendo...' : 'Confirmar Asistencia'}
           </button>
         </form>
       </div>
