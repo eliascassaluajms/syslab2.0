@@ -56,14 +56,12 @@ export interface ListaConsolidadaResponse {
 }
 
 export const bitacoraService = {
-  // Iniciar clase y obtener el token QR generado
   iniciarSesion: async (datos: IniciarSesionDTO): Promise<SesionActivaResponse> => {
     const response = await httpClient.post('/bitacora/iniciar', datos);
     const resData = response.data;
     return resData?.data?.sesion || resData?.data || resData;
   },
 
-  // Finalizar clase y registrar la práctica realizada
   finalizarSesion: async (id: number, practicaRealizada: string, cumplio: boolean = true) => {
     const response = await httpClient.patch(`/bitacora/${id}/finalizar`, {
       practicaRealizada,
@@ -72,7 +70,6 @@ export const bitacoraService = {
     return response.data;
   },
 
-  // Consultar conteo y lista de estudiantes registrados en tiempo real (Polling)
   obtenerAsistentesSesion: async (sesionId: number): Promise<AsistentesSesionResponse> => {
     const response = await httpClient.get(`/bitacora/${sesionId}/asistentes`);
     const resData = response.data;
@@ -113,7 +110,6 @@ export const bitacoraService = {
     return response.data?.data || response.data;
   },
 
-  // Consultar si hay una sesión activa para un laboratorio
   obtenerSesionActiva: async (laboratorioId: number): Promise<SesionActivaResponse | null> => {
     try {
       const response = await httpClient.get('/bitacora/activa', {
@@ -126,7 +122,6 @@ export const bitacoraService = {
     }
   },
 
-  // Descargar Planilla de Control y Asistencia en PDF
   descargarPdf: async (sesionId: number, nombreArchivo: string = 'Planilla_Bitacora.pdf'): Promise<void> => {
     const response = await httpClient.get(`/bitacora/${sesionId}/asistencia-pdf`, {
       responseType: 'blob',
