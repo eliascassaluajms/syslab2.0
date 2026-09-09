@@ -40,7 +40,10 @@ const allowedOrigins = Array.from(
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5000',
     'http://200.87.27.36:5173',
+    'http://200.87.27.36:5000',
     'http://200.87.27.36',
+    'http://sysfacultad.duckdns.org',
+    'https://sysfacultad.duckdns.org',
     'http://registrocitren.duckdns.org',
     'https://registrocitren.duckdns.org',
     ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, '')] : []),
@@ -51,7 +54,6 @@ const allowedOrigins = Array.from(
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Permite peticiones locales, server-to-server, curl o de la lista blanca
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
@@ -72,18 +74,15 @@ app.use(
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-// Directorio físico de comprobantes subidos
 const uploadDir = path.join(process.cwd(), 'uploads', 'comprobantes');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Servir la carpeta estática para peticiones /comprobantes, /api/comprobantes y /api/api/comprobantes
 app.use('/comprobantes', express.static(uploadDir));
 app.use('/api/comprobantes', express.static(uploadDir));
-app.use('/api/api/comprobantes', express.static(uploadDir)); // Respaldo para peticiones con prefijo duplicado
+app.use('/api/api/comprobantes', express.static(uploadDir));
 
-// Exposición pública de medios estáticos del frontend
 app.use('/frontend/media', express.static(path.resolve(process.cwd(), '../frontend/media')));
 
 app.get('/api/health', (req: Request, res: Response) => {
@@ -94,7 +93,6 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Rutas API
 app.use('/api/auth', authRouter);
 app.use('/api/usuarios', userRoutes);
 app.use('/api/roles', roleRoutes);
