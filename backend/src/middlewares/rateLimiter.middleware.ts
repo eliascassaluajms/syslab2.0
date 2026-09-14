@@ -18,6 +18,7 @@ export const publicRateLimiter = (maxRequests = 30, windowMs = 60 * 1000) =>
 export const ocrRateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 6,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     status: 'fail',
     message: 'Has superado el límite de intentos de escaneo de comprobante. Por favor, espera unos minutos o introduce el número manualmente.',
@@ -31,6 +32,7 @@ export const ocrRateLimiter = rateLimit({
 export const preinscripcionRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 15,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     status: 'fail',
     message: 'Demasiadas solicitudes de inscripción desde esta conexión. Intenta más tarde.',
@@ -39,6 +41,7 @@ export const preinscripcionRateLimiter = rateLimit({
   legacyHeaders: false,
   validate: { xForwardedForHeader: false },
 });
+
 
 // Las descargas son publicas, pero no deben poder usarse para generar trafico masivo.
 export const voucherRateLimiter = rateLimit({
