@@ -5,6 +5,7 @@ import { activityService } from '../services/activity.service';
 import { httpClient } from '../services/httpClient';
 import { CertificadoPreview } from '../components/citren/CertificadoPreview';
 import { capitalizarNombrePropio } from '../utils/textHelper';
+
 interface IActividad {
   id: string | number;
   title: string;
@@ -66,7 +67,25 @@ export const LandingFIRNTView: React.FC = () => {
   const [descargandoVoucher, setDescargandoVoucher] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const limpiarComprobante = () => {
+  const limpiarComprobante = async (opciones: { eliminarDelServidor?: boolean } = { eliminarDelServidor: true }) => {
+    // 1. Si se solicita y existía una URL temporal subida en el servidor, invocar borrado físico
+    if (opciones.eliminarDelServidor) {
+      const urlSubida = (window as any).__comprobanteUrlSubido;
+      if (urlSubida) {
+        try {
+          await EventoParticipanteService.eliminarComprobanteTemporal(urlSubida);
+        } catch (e) {
+          console.warn('No se pudo eliminar el comprobante temporal del servidor:', e);
+        }
+      }
+    }
+
+    // 2. Liberar memoria local de la URL del objeto en el navegador
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    // 3. Resetear estados locales
     setComprobanteFile(null);
     setPreviewUrl(null);
     setAdvertenciaOCR(null);
@@ -84,9 +103,21 @@ export const LandingFIRNTView: React.FC = () => {
       return;
     }
 
-    // Previsualización local inmediata
+    // 1. Si ya existía un comprobante temporal previo subido, eliminarlo del servidor para evitar huérfanos
+    const urlPrevia = (window as any).__comprobanteUrlSubido;
+    if (urlPrevia) {
+      EventoParticipanteService.eliminarComprobanteTemporal(urlPrevia).catch(() => {});
+      delete (window as any).__comprobanteUrlSubido;
+    }
+
+    // 2. Limpiar imagen anterior local para liberar memoria y evitar persistencias
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    const nuevoPreview = URL.createObjectURL(file);
     setComprobanteFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrl(nuevoPreview);
     setAdvertenciaOCR(null);
     setErrorMsg('');
     setCargando(true);
@@ -130,7 +161,6 @@ export const LandingFIRNTView: React.FC = () => {
         const listaActividades = await activityService.listar();
         const items: IActividad[] = Array.isArray(listaActividades) ? listaActividades : [];
         
-        // Filtrar estrictamente las que tengan activo !== false y vigencia de fecha
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
@@ -147,9 +177,15 @@ export const LandingFIRNTView: React.FC = () => {
       }
     };
     cargarCatalogosPublicos();
+    
+    // Cleanup al desmontar componente
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
   }, []);
 
-  // Filtrado de eventos vigentes por fecha
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
@@ -233,7 +269,6 @@ export const LandingFIRNTView: React.FC = () => {
   const handleFinalizarPreinscripcion = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Verificación rápida en frontend contra envíos instantáneos / bots
     if ((Date.now() - formStartTime) < 2500 || honeypot !== '') {
       setErrorMsg('Por favor completa el formulario de manera habitual.');
       return;
@@ -273,7 +308,7 @@ export const LandingFIRNTView: React.FC = () => {
       setMensajeExito(true);
       setModalAbierto(false);
       setNumeroTransaccion('');
-      delete (window as any).__comprobanteUrlSubido;
+      limpiarComprobante({ eliminarDelServidor: false });
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.message || err?.message || 'Error al procesar la preinscripción. Intenta nuevamente.');
     } finally {
@@ -283,7 +318,6 @@ export const LandingFIRNTView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between relative overflow-hidden">
-      {/* Fondo institucional CITREN 2026 con marca de agua */}
       <div className="absolute inset-0 pointer-events-none opacity-5 flex items-center justify-center overflow-hidden z-0">
         <img
           src="/media/imagenes/fondo-citren.jpeg"
@@ -320,10 +354,8 @@ export const LandingFIRNTView: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Carrusel de Eventos / CITREN 2026 con Fondo Promocional */}
             {actividadSeleccionada && (
               <section className="bg-slate-800/70 backdrop-blur-md border border-slate-700/80 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
-                {/* Fondo sutil del logotipo CITREN dentro de la tarjeta */}
                 <div className="absolute right-0 bottom-0 w-96 h-96 opacity-10 pointer-events-none transform translate-x-1/4 translate-y-1/4">
                   <img src="/media/imagenes/CITREN-logo.jpeg" alt="Watermark" className="w-full h-full object-contain" />
                 </div>
@@ -366,7 +398,6 @@ export const LandingFIRNTView: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Banner / Afiche con la imagen publicitaria del congreso */}
                   <div className="w-full md:w-80 h-52 rounded-xl overflow-hidden shadow-xl relative border border-slate-700/90 group bg-slate-950 shrink-0">
                     <img
                       src={actividadSeleccionada.bannerUrl || '/media/imagenes/fondo-citren.jpeg'}
@@ -381,7 +412,6 @@ export const LandingFIRNTView: React.FC = () => {
               </section>
             )}
 
-            {/* Formulario de Preinscripción */}
             <section className="bg-slate-800/60 backdrop-blur-md border border-slate-700/80 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto w-full shadow-2xl relative">
               <div className="text-center mb-6">
                 <h3 className="text-xl font-bold text-white">Preinscripción — CITREN 2026</h3>
@@ -556,7 +586,6 @@ export const LandingFIRNTView: React.FC = () => {
         )}
       </main>
 
-      {/* Modal de Confirmación de Pago */}
       {modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-md sm:p-4">
           <div className="my-auto flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl">
@@ -569,144 +598,188 @@ export const LandingFIRNTView: React.FC = () => {
 
             <form onSubmit={handleFinalizarPreinscripcion} className="flex min-h-0 flex-1 flex-col">
               <div className="flex-1 overflow-y-auto space-y-4 p-4 sm:p-6">
-              <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-              <img
-                src={actividadSeleccionada?.bannerUrl || '/media/imagenes/default-banner.jpeg'}
-                alt="Miniatura"
-                className="w-16 h-16 object-cover rounded-lg border border-slate-700 shrink-0"
-              />
-              <div className="overflow-hidden">
-                <p className="text-xs font-bold text-white truncate">{actividadSeleccionada?.title}</p>
-                <p className="text-[11px] text-slate-400 truncate">{nombre} {apellido}</p>
-                <p className="text-[10px] text-emerald-400 font-mono truncate">{correo}</p>
-              </div>
-            </div>
-
-            <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
-              <div className="flex justify-between"><span className="text-slate-400">Banco:</span><span className="font-medium text-slate-200">{configPago?.banco || 'Banco Económico'}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">N° Cuenta:</span><span className="font-medium text-slate-200">{configPago?.numeroCuenta || '6051037002'}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Titular:</span><span className="font-medium text-slate-200">{configPago?.nombreReceptor || 'SANCHEZ SANCHEZ YOVANA LUISA'}</span></div>
-              <div className="flex justify-center pt-2">
-                <img
-                  src="/img/qr-citren2026.jpg"
-                  alt="QR oficial Banco Económico - CITREN 2026"
-                  className="w-48 h-auto max-h-56 object-contain rounded border border-slate-700 bg-white"
-                />
-              </div>
-            </div>
-
-              {/* Campo trampa Honeypot (invisible para personas reales) */}
-              <div className="opacity-0 absolute -left-[9999px] top-0 h-0 w-0 z-[-1] pointer-events-none" aria-hidden="true">
-                <label htmlFor="user_fax_website">No completar este campo</label>
-                <input
-                  id="user_fax_website"
-                  type="text"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  value={honeypot}
-                  onChange={(e) => setHoneypot(e.target.value)}
-                />
-              </div>
-
-              {errorMsg && (
-                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2 rounded text-xs text-center">
-                  {errorMsg}
+                <div className="flex items-center gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <img
+                    src={actividadSeleccionada?.bannerUrl || '/media/imagenes/default-banner.jpeg'}
+                    alt="Miniatura"
+                    className="w-16 h-16 object-cover rounded-lg border border-slate-700 shrink-0"
+                  />
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-white truncate">{actividadSeleccionada?.title}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{nombre} {apellido}</p>
+                    <p className="text-[10px] text-emerald-400 font-mono truncate">{correo}</p>
+                  </div>
                 </div>
-              )}
 
-              {/* Sección de Comprobante con Soporte de Reintento y Fallback Manual */}
-              <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-semibold text-slate-300">
-                    Comprobante de Pago (Voucher / QR)
-                  </label>
-                  <span className="text-[10px] text-slate-500">Opcional / Escaneo OCR</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-slate-400">
-                  Sube la captura del extracto de movimientos o débito de tu banca móvil donde figure el N° de operación y la glosa <strong className="text-amber-300">CONGRESO CITREN 2026</strong>. No se aceptarán recibos genéricos o capturas incompletas.
-                </p>
-
-                {!previewUrl ? (
-                  <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-emerald-500/70 rounded-xl cursor-pointer bg-slate-900/40 transition-colors">
-                    <span className="text-xl mb-1">📸</span>
-                    <span className="text-xs font-medium text-slate-300">Subir foto o captura del comprobante</span>
-                    <span className="text-[10px] text-slate-500 mt-1">El sistema leerá el código y monto automáticamente</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleArchivoSeleccionado(f);
-                      }}
-                    />
-                  </label>
-                ) : (
-                  <div className="flex items-center gap-3 bg-slate-900 p-2.5 rounded-lg border border-slate-700/80">
+                <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
+                  <div className="flex justify-between"><span className="text-slate-400">Banco:</span><span className="font-medium text-slate-200">{configPago?.banco || 'Banco Económico'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">N° Cuenta:</span><span className="font-medium text-slate-200">{configPago?.numeroCuenta || '6051037002'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Titular:</span><span className="font-medium text-slate-200">{configPago?.nombreReceptor || 'SANCHEZ SANCHEZ YOVANA LUISA'}</span></div>
+                  <div className="flex justify-center pt-2">
                     <img
-                      src={previewUrl}
-                      alt="Voucher Preview"
-                      className="w-14 h-14 object-cover rounded-md border border-slate-700 shrink-0"
+                      src="/img/qr-citren2026.jpg"
+                      alt="QR oficial Banco Económico - CITREN 2026"
+                      className="w-48 h-auto max-h-56 object-contain rounded border border-slate-700 bg-white"
                     />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-200 font-medium truncate">{comprobanteFile?.name}</p>
-                      <p className="text-[10px] text-emerald-400 font-mono">
-                        {cargando ? 'Escaneando datos...' : 'Comprobante adjuntado'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={limpiarComprobante}
-                      className="px-2.5 py-1 text-[11px] text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-md transition-colors cursor-pointer"
-                    >
-                      Cambiar foto
-                    </button>
+                  </div>
+                </div>
+
+                <div className="opacity-0 absolute -left-[9999px] top-0 h-0 w-0 z-[-1] pointer-events-none" aria-hidden="true">
+                  <label htmlFor="user_fax_website">No completar este campo</label>
+                  <input
+                    id="user_fax_website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
+                </div>
+
+                {errorMsg && (
+                  <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-2 rounded text-xs text-center">
+                    {errorMsg}
                   </div>
                 )}
 
-                {/* Aviso si la imagen fue descartada o no legible */}
-                {advertenciaOCR && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] p-2 rounded-lg flex items-start gap-2">
-                    <span>⚠️</span>
-                    <div>
-                      <span>{advertenciaOCR}</span>
-                      <p className="font-semibold mt-0.5 text-amber-200">
-                        Puedes ingresar el número de transacción y monto manualmente abajo.
-                      </p>
+                {/* Guía Visual y Requisitos Estrictos: Descripción del Movimiento */}
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-2.5 text-xs">
+                  <div className="flex items-center gap-2 text-amber-300 font-semibold">
+                    <span className="text-base" aria-hidden="true">📋</span>
+                    <span>Requisito Obligatorio: Captura de "Descripción del Movimiento"</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-slate-300">
+                    Para que el operador verifique tu pago en el extracto bancario, es indispensable subir la captura de la pantalla <strong className="text-white">Descripción del Movimiento / Transferencia</strong> de tu banca móvil (ej. estilo UNImóvil Plus u otra aplicación bancaria). No se aceptan recibos genéricos o capturas incompletas.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px]">
+                    <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-500/20">
+                      <span className="text-amber-400 font-sans font-bold block text-[10px] uppercase">1. Glosa Obligatoria:</span>
+                      <span className="text-white font-semibold">CONGRESO CITREN 2026</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-500/20">
+                      <span className="text-amber-400 font-sans font-bold block text-[10px] uppercase">2. Destinatario:</span>
+                      <span className="text-white font-semibold">{configPago?.nombreReceptor || 'SANCHEZ SANCHEZ YOVANA LUISA'}</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-500/20">
+                      <span className="text-amber-400 font-sans font-bold block text-[10px] uppercase">3. Cta. Destino:</span>
+                      <span className="text-white font-semibold">{configPago?.numeroCuenta || '6051037002'}</span>
+                    </div>
+                    <div className="bg-slate-950/80 p-2.5 rounded-lg border border-amber-500/20">
+                      <span className="text-amber-400 font-sans font-bold block text-[10px] uppercase">4. Monto y Transacción:</span>
+                      <span className="text-white font-semibold">Monto exacto y N° Orden visible</span>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Campos Numéricos Siempre Editables */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    N° de Comprobante / Transacción *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={numeroTransaccion}
-                    onChange={(e) => setNumeroTransaccion(e.target.value)}
-                    placeholder="Ej. 10142026083007"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500"
-                  />
+                  
+                  <p className="text-[10px] text-amber-300/80 italic">
+                    * El operador del sistema contrastará estos 4 puntos contra el extracto bancario antes de confirmar tu cupo.
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Monto Pagado (Bs.)
-                  </label>
-                  <input
-                    type="text"
-                    value={monto}
-                    onChange={(e) => setMonto(e.target.value)}
-                    placeholder="Ej. 50.00"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-              </div>
 
+                {/* Sección de Carga del Comprobante y Acciones */}
+                <div className="space-y-3 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-semibold text-slate-300">
+                      Comprobante / Captura del Movimiento
+                    </label>
+                    <span className="text-[10px] text-emerald-400 font-medium">Validación por Operador</span>
+                  </div>
+
+                  {!previewUrl ? (
+                    <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-700 hover:border-emerald-500/70 rounded-xl cursor-pointer bg-slate-900/40 transition-colors group">
+                      <span className="text-2xl mb-1 group-hover:scale-110 transition-transform" aria-hidden="true">📸</span>
+                      <span className="text-xs font-medium text-slate-200">Subir captura de la Descripción del Movimiento</span>
+                      <span className="text-[10px] text-slate-400 mt-1 text-center">Formatos soportados: JPEG, PNG, WebP (Máx. 10MB)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleArchivoSeleccionado(f);
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900 p-3 rounded-xl border border-slate-700/80">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <img
+                          src={previewUrl}
+                          alt="Voucher Preview"
+                          className="w-14 h-14 object-cover rounded-lg border border-slate-700 shrink-0 shadow"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-slate-200 font-medium truncate">{comprobanteFile?.name || 'Comprobante seleccionado'}</p>
+                          <p className="text-[10px] text-emerald-400 font-mono">
+                            {cargando ? 'Escaneando datos...' : '✓ Captura adjunta lista para validación'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                        <label className="px-2.5 py-1.5 text-[11px] font-medium text-sky-300 hover:text-sky-200 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 rounded-lg transition-colors cursor-pointer text-center">
+                          <span>Cambiar foto</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleArchivoSeleccionado(f);
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => limpiarComprobante({ eliminarDelServidor: true })}
+                          className="px-2.5 py-1.5 text-[11px] font-medium text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Cancelar / Quitar esta captura
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {advertenciaOCR && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] p-2.5 rounded-lg flex items-start gap-2">
+                      <span className="text-sm" aria-hidden="true">⚠️</span>
+                      <div>
+                        <span>{advertenciaOCR}</span>
+                        <p className="font-semibold mt-0.5 text-amber-200">
+                          Verifica o completa el número de transacción y monto manualmente abajo.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Transacción N° *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={numeroTransaccion}
+                      onChange={(e) => setNumeroTransaccion(e.target.value)}
+                      placeholder="Ej. 14262609090458"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Monto Pagado (Bs.) *
+                    </label>
+                    <input
+                      type="text"
+                      value={monto}
+                      onChange={(e) => setMonto(e.target.value)}
+                      placeholder="Ej. 120.00"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex shrink-0 gap-2 border-t border-slate-800 bg-slate-900/90 p-4">

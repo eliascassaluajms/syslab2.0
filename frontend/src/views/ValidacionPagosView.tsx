@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import { httpClient } from '../services/httpClient';
-import { getPublicAssetUrl } from '../utils/urlHelper';
+import { getPublicAssetUrl, obtenerUrlComprobante } from '../utils/urlHelper';
 
 type EstadoInscripcion = 'PRE_INSCRITO' | 'PAGO_VERIFICADO' | 'RECHAZADO' | 'ASISTENCIA_CONFIRMADA';
 type Participante = {
@@ -31,6 +31,8 @@ export const ValidacionPagosView: React.FC = () => {
   const [confirmandoRechazo, setConfirmandoRechazo] = useState<string | null>(null);
   const [conciliando, setConciliando] = useState(false);
   const [discrepancias, setDiscrepancias] = useState<Array<Record<string, unknown>>>([]);
+  const [imagenModalUrl, setImagenModalUrl] = useState<string | null>(null);
+  const [errorCargaImagen, setErrorCargaImagen] = useState<boolean>(false);
 
   const cargarDatos = async (): Promise<void> => {
     try {
@@ -220,14 +222,19 @@ export const ValidacionPagosView: React.FC = () => {
 
               {p.comprobanteUrl ? (
                 <div className="space-y-2">
-                  <a 
-                    href={getPublicAssetUrl(p.comprobanteUrl)} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="block text-center py-2 px-3 bg-blue-600/15 border border-blue-500/30 rounded-xl text-blue-400 text-xs font-semibold hover:bg-blue-600/25 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = obtenerUrlComprobante(p.comprobanteUrl);
+                      if (url) {
+                        setErrorCargaImagen(false);
+                        setImagenModalUrl(url);
+                      }
+                    }}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                   >
-                    Ver Comprobante / OCR
-                  </a>
+                    <span>Ver Comprobante / OCR</span>
+                  </button>
                 </div>
               ) : (
                 <p className="text-[11px] text-gray-500 italic text-center">Sin comprobante adjunto</p>
@@ -273,6 +280,79 @@ export const ValidacionPagosView: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Modal de Previsualización Nativo */}
+      {imagenModalUrl && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md"
+          onClick={() => setImagenModalUrl(null)}
+        >
+          <div 
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl text-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-sm text-white">Validación de Comprobante Bancario</h3>
+              <button
+                type="button"
+                onClick={() => setImagenModalUrl(null)}
+                className="text-slate-400 hover:text-white text-xs cursor-pointer font-bold px-2 py-1 bg-slate-800 rounded"
+              >
+                ✕ Cerrar
+              </button>
+            </div>
+            
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-center items-center min-h-[300px]">
+              {errorCargaImagen ? (
+                <div className="text-center p-4 space-y-2">
+                  <p className="text-amber-400 text-xs font-medium">No se pudo cargar la vista previa directa de la imagen.</p>
+                  <p className="text-slate-500 text-[11px] break-all">{imagenModalUrl}</p>
+                  <a
+                    href={imagenModalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs"
+                  >
+                    Intentar abrir en pestaña nueva ↗
+                  </a>
+                </div>
+              ) : (
+                <img
+                  src={imagenModalUrl}
+                  alt="Comprobante de Pago Subido"
+                  className="max-h-[60vh] max-w-full object-contain rounded-lg border border-slate-800"
+                  onError={() => {
+                    console.error("Error al cargar la imagen del comprobante:", imagenModalUrl);
+                    setErrorCargaImagen(true);
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-400">
+              <p>
+                Verifica que el número de transacción coincida con el extracto.
+              </p>
+              <a
+                href={imagenModalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline shrink-0 ml-2 text-xs"
+              >
+                Abrir en pestaña nueva ↗
+              </a>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setImagenModalUrl(null)}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
+            >
+              Cerrar Vista Previa
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

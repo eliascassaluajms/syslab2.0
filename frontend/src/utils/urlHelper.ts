@@ -1,30 +1,51 @@
-export const getPublicAssetUrl = (path?: string | null): string => {
-  if (!path) return '';
+/**
+ * Utilidad para resolver URLs de comprobantes bancarios anteponiendo /api/
+ * para que Nginx los derive al backend por el proxy existente de /api/.
+ */
+export const obtenerUrlComprobante = (urlRelativa?: string | null): string => {
+  if (!urlRelativa) return '';
 
-  // 1. Eliminar cualquier prefijo rígido de localhost o 127.0.0.1 guardado previamente en BD
-  let rutaLimpia = path.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i, '');
+  const url = urlRelativa.trim();
 
-  // 2. Corregir posibles duplicaciones de prefijos en la ruta relativa
-  rutaLimpia = rutaLimpia.replace(/^\/api\/api\//, '/api/');
-  rutaLimpia = rutaLimpia.startsWith('/') ? rutaLimpia : `/${rutaLimpia}`;
-
-  // 3. Si es una URL externa legítima (S3, Cloudinary u otro servidor que no sea localhost), respetarla
-  if (rutaLimpia.startsWith('http://') || rutaLimpia.startsWith('https://')) {
-    return rutaLimpia;
+  // Si ya es una URL absoluta completa (http:// o https://)
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    // Si apunta a /comprobantes/ sin /api/, lo transformamos a /api/comprobantes/
+    if (url.includes('/comprobantes/') && !url.includes('/api/comprobantes/')) {
+      return url.replace('/comprobantes/', '/api/comprobantes/');
+    }
+    return url;
   }
 
-  // 4. Detectar dinámicamente el host real desde la barra de direcciones del navegador
-  const hostname = window.location.hostname; // ej. registrocitren.duckdns.org, 200.87.27.36 o localhost
-  const protocol = window.location.protocol;
-
-  // Caso A: Si se accede a través del dominio DuckDNS (Nginx Proxy Manager maneja puertos 80/443)
-  if (hostname.includes('duckdns.org')) {
-    return `${protocol}//${hostname}${rutaLimpia}`;
+  // Si es solo el nombre de archivo (ej. comprobante_123.jpg)
+  if (!url.includes('/')) {
+    const ruta = `/api/comprobantes/${url}`;
+    const hostname = window.location.hostname;
+    const port = window.location.port;
+    if ((hostname === 'localhost' || hostname === '127.0.0.1') && port && port !== '80' && port !== '443') {
+      return `http://${hostname}:5000${ruta}`;
+    }
+    return `${window.location.origin}${ruta}`;
   }
 
-  // Caso B: Si se accede por IP pública o red local (el backend corre en el puerto 5000)
-  const isDevLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-  const backendPort = isDevLocalhost ? '5000' : '5000';
+  // Si la ruta empieza con /comprobantes/ o comprobantes/
+  let rutaLimpia = url;
+  if (rutaLimpia.startsWith('/comprobantes/')) {
+    rutaLimpia = rutaLimpia.replace('/comprobantes/', '/api/comprobantes/');
+  } else if (rutaLimpia.startsWith('comprobantes/')) {
+    rutaLimpia = `/api/${rutaLimpia}`;
+  } else if (!rutaLimpia.startsWith('/api/')) {
+    rutaLimpia = `/api${rutaLimpia.startsWith('/') ? '' : '/'}${rutaLimpia}`;
+  }
 
-  return `${protocol}//${hostname}:${backendPort}${rutaLimpia}`;
+  // Si estamos en desarrollo local con Vite (puerto 5173), apuntar al backend local en 5000
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  if ((hostname === 'localhost' || hostname === '127.0.0.1') && port && port !== '80' && port !== '443') {
+    return `http://${hostname}:5000${rutaLimpia}`;
+  }
+
+  return `${window.location.origin}${rutaLimpia}`;
 };
+
+export const getPublicAssetUrl = obtenerUrlComprobante;
+

@@ -53,5 +53,12 @@ export const EventoParticipanteService = {
       responseType: 'blob',
     });
     return data;
+  },
+
+  async eliminarComprobanteTemporal(comprobanteUrl: string) {
+    const { data } = await httpClient.delete('/evento-participantes/comprobante-temp', {
+      data: { comprobanteUrl },
+    });
+    return data;
   }
 };
