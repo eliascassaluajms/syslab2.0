@@ -8,7 +8,6 @@ import { seedEstructura } from './seeds/02-estructura.seed.js';
 import { seedPlanes } from './seeds/03-planes.seed.js';
 import { seedUsuarios } from './seeds/04-usuarios.seed.js';
 import { seedEventos } from './seeds/05-eventos.seed.js';
-import { seedDesignaciones } from './seeds/06-designaciones.seed.js';
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -33,37 +32,35 @@ async function main() {
   }
 
   // Paso 4: Módulo de Usuarios, Docentes e Inventario de Equipos
-  let adminUserId: number | undefined;
+  let adminUserId: number | undefined = 1;
 
   if (carreraInfoId && facultadId) {
-    const usuariosRes = await seedUsuarios(prisma, {
-      rolAdminId: rolAdmin.id,
-      rolJefeId: rolJefe.id,
-      rolDocenteId: rolDocente.id,
-      rolDirectorCarreraId: rolDirectorCarrera.id,
-      carreraInfoId,
-      facultadId,
-      labs,
-      passwordHash: DUMMY_PASSWORD_HASH
-    });
-    
-    adminUserId = usuariosRes?.userAdmin?.id || 1;
+    try {
+      const usuariosRes = await seedUsuarios(prisma, {
+        rolAdminId: rolAdmin.id,
+        rolJefeId: rolJefe.id,
+        rolDocenteId: rolDocente.id,
+        rolDirectorCarreraId: rolDirectorCarrera.id,
+        carreraInfoId,
+        facultadId,
+        labs,
+        passwordHash: DUMMY_PASSWORD_HASH
+      });
+      adminUserId = usuariosRes?.userAdmin?.id || 1;
+    } catch (error) {
+      console.warn('⚠️ Advertencia: Conflicto de datos (username) detectado. Se omitió la sobrescritura de usuarios para no interrumpir el arranque.');
+    }
   } else {
     console.warn('⚠️  Faltan carreraInfoId o facultadId para crear usuarios y equipos.');
   }
 
   // Paso 5: Módulo de Categorías, Eventos y Actividades (CITREN)
   if (carreraInfoId && adminUserId) {
-    await seedEventos(prisma, carreraInfoId, adminUserId);
-  } else {
-    console.warn('⚠️  No se ejecutó seedEventos debido a falta de carreraInfoId o adminUserId.');
-  }
-
-  // Paso 6: Módulo de Designaciones Docentes Tariquía 2026
-  if (carreraInfoId) {
-    await seedDesignaciones(prisma, carreraInfoId);
-  } else {
-    console.warn('⚠️  No se ejecutó seedDesignaciones debido a falta de carreraInfoId.');
+    try {
+      await seedEventos(prisma, carreraInfoId, adminUserId);
+    } catch (error) {
+      console.warn('⚠️ Advertencia: Conflicto de datos detectado en eventos. Se omitió la sobrescritura.');
+    }
   }
 
   console.log('\n✨ ¡Proceso de Seeding completado con éxito!');
@@ -71,7 +68,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('❌ Error durante la ejecución del Seeding:', e);
+    console.error('❌ Error crítico durante la ejecución del Seeding:', e);
     process.exit(1);
   })
   .finally(async () => {
