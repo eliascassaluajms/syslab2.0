@@ -66,4 +66,6 @@ export const activityService = {
   eliminar: deleteActivity
 };
 
+export const ActivityService = activityService;
 export default activityService;
+

@@ -54,10 +54,11 @@ export const ValidacionPagosView: React.FC = () => {
   ): Promise<void> => {
     setProcesando(id);
     try {
-      await httpClient.put(`/evento-participantes/${id}`, { estado: nuevoEstado });
+      await EventoParticipanteService.actualizar(id, { estado: nuevoEstado });
       setError(null);
       setConfirmandoRechazo(null);
       await cargarDatos();
+
     } catch (err: unknown) {
       const errorData = err as { response?: { data?: { error?: string } } };
       const errorMessage = errorData?.response?.data?.error || 

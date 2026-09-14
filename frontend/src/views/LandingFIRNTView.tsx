@@ -1,10 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { ActivityService } from '../services/activity.service';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
-import { activityService } from '../services/activity.service';
-import { httpClient } from '../services/httpClient';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Award,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Building,
+  UploadCloud,
+  FileCheck,
+  AlertTriangle,
+  Download,
+  CheckCircle,
+  RefreshCw,
+  XCircle,
+  Info,
+} from 'lucide-react';
 import { CertificadoPreview } from '../components/citren/CertificadoPreview';
 import { capitalizarNombrePropio } from '../utils/textHelper';
+
 
 interface IActividad {
   id: string | number;
@@ -60,6 +79,7 @@ export const LandingFIRNTView: React.FC = () => {
 
   const [honeypot, setHoneypot] = useState('');
   const [formStartTime] = useState<number>(() => Date.now());
+  const comprobanteUrlSubidoRef = useRef<string | null>(null);
 
   const [cargando, setCargando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(false);
@@ -70,7 +90,7 @@ export const LandingFIRNTView: React.FC = () => {
   const limpiarComprobante = async (opciones: { eliminarDelServidor?: boolean } = { eliminarDelServidor: true }) => {
     // 1. Si se solicita y existía una URL temporal subida en el servidor, invocar borrado físico
     if (opciones.eliminarDelServidor) {
-      const urlSubida = (window as any).__comprobanteUrlSubido;
+      const urlSubida = comprobanteUrlSubidoRef.current;
       if (urlSubida) {
         try {
           await EventoParticipanteService.eliminarComprobanteTemporal(urlSubida);
@@ -89,7 +109,7 @@ export const LandingFIRNTView: React.FC = () => {
     setComprobanteFile(null);
     setPreviewUrl(null);
     setAdvertenciaOCR(null);
-    delete (window as any).__comprobanteUrlSubido;
+    comprobanteUrlSubidoRef.current = null;
   };
 
   const autoFormatearNombres = () => {
@@ -104,10 +124,10 @@ export const LandingFIRNTView: React.FC = () => {
     }
 
     // 1. Si ya existía un comprobante temporal previo subido, eliminarlo del servidor para evitar huérfanos
-    const urlPrevia = (window as any).__comprobanteUrlSubido;
+    const urlPrevia = comprobanteUrlSubidoRef.current;
     if (urlPrevia) {
       EventoParticipanteService.eliminarComprobanteTemporal(urlPrevia).catch(() => {});
-      delete (window as any).__comprobanteUrlSubido;
+      comprobanteUrlSubidoRef.current = null;
     }
 
     // 2. Limpiar imagen anterior local para liberar memoria y evitar persistencias
@@ -126,23 +146,20 @@ export const LandingFIRNTView: React.FC = () => {
     formData.append('comprobante', file);
 
     try {
-      const res = await httpClient.post('/evento-participantes/ocr', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const resData = res.data?.data || res.data;
+      const res = await EventoParticipanteService.procesarOCR(formData);
+      const resData = (res as { data?: { codigoTransaccion?: string; monto?: number | null; comprobanteUrl?: string } })?.data || res;
       if (resData?.codigoTransaccion) {
         setNumeroTransaccion(resData.codigoTransaccion);
       }
       if (resData?.monto !== undefined && resData?.monto !== null) {
-        setMonto(resData.monto);
+        setMonto(String(resData.monto));
       }
       if (resData?.comprobanteUrl) {
-        (window as any).__comprobanteUrlSubido = resData.comprobanteUrl;
+        comprobanteUrlSubidoRef.current = resData.comprobanteUrl;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg =
-        err?.response?.data?.message ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
         'No se pudo extraer la información automáticamente.';
       setAdvertenciaOCR(msg);
     } finally {
@@ -153,18 +170,18 @@ export const LandingFIRNTView: React.FC = () => {
   useEffect(() => {
     const cargarCatalogosPublicos = async () => {
       try {
-        const config = await (EventoParticipanteService as any).obtenerConfiguracionPago?.();
+        const config = await EventoParticipanteService.obtenerConfiguracionPago();
         if (config) {
           setConfigPago(config);
         }
 
-        const listaActividades = await activityService.listar();
+        const listaActividades = await ActivityService.listar();
         const items: IActividad[] = Array.isArray(listaActividades) ? listaActividades : [];
         
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
-        const activasVigentes = items.filter((act: any) => {
+        const activasVigentes = items.filter((act: IActividad) => {
           if (act.activo === false) return false;
           const fechaRef = act.fechaFin || act.fecha || act.fechaInicio;
           if (!fechaRef) return true;
@@ -176,6 +193,7 @@ export const LandingFIRNTView: React.FC = () => {
         console.error('Error al cargar actividades públicas:', err);
       }
     };
+
     cargarCatalogosPublicos();
     
     // Cleanup al desmontar componente
@@ -223,8 +241,7 @@ export const LandingFIRNTView: React.FC = () => {
   };
 
   const registrarPreinscripcion = async (payload: IPreinscripcionPayload) => {
-    const response = await httpClient.post('/evento-participantes', payload);
-    return response.data;
+    return await EventoParticipanteService.registrar(payload as unknown as RegistrarParticipanteDTO);
   };
 
   const descargarVoucher = async () => {
@@ -238,8 +255,9 @@ export const LandingFIRNTView: React.FC = () => {
       enlace.download = `comprobante_${apellido || 'preinscripcion'}.pdf`;
       enlace.click();
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || 'No se pudo descargar el comprobante.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'No se pudo descargar el comprobante.';
+      setErrorMsg(msg);
     } finally {
       setDescargandoVoucher(false);
     }
@@ -300,17 +318,21 @@ export const LandingFIRNTView: React.FC = () => {
         activityId: actividadSeleccionada.id,
         codigoTransaccion: codigoLimpio,
         montoPagado: Number(monto) || 0,
-        comprobanteUrl: (window as any).__comprobanteUrlSubido || undefined,
+        comprobanteUrl: comprobanteUrlSubidoRef.current || undefined,
         honeypot,
         formStartTime,
       });
-      setParticipanteCreadoId(registro?.id || registro?.data?.id || null);
+      setParticipanteCreadoId(registro?.id || (registro as { data?: { id?: string } })?.data?.id || null);
       setMensajeExito(true);
       setModalAbierto(false);
       setNumeroTransaccion('');
       limpiarComprobante({ eliminarDelServidor: false });
-    } catch (err: any) {
-      setErrorMsg(err?.response?.data?.message || err?.message || 'Error al procesar la preinscripción. Intenta nuevamente.');
+    } catch (err: unknown) {
+      const msg = 
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 
+        (err as Error)?.message || 
+        'Error al procesar la preinscripción. Intenta nuevamente.';
+      setErrorMsg(msg);
     } finally {
       setCargando(false);
     }

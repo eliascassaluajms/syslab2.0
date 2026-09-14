@@ -1,6 +1,57 @@
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
 
+export const validarCodigoTransaccion = (codigo?: string | null): boolean => {
+  if (!codigo || typeof codigo !== 'string') return false;
+  return /^\d{6,25}$/.test(codigo.trim());
+};
+
+export const sanitizarNombrePropio = (texto?: string | null): string => {
+  if (!texto || typeof texto !== 'string') return '';
+  return texto
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .replace(/(?:^|\s)\S/g, (a) => a.toUpperCase());
+};
+
+export const sanitizarCorreo = (correo?: string | null): string => {
+  if (!correo || typeof correo !== 'string') return '';
+  return correo.trim().toLowerCase();
+};
+
+export const calcularMontoEsperado = (
+  tipo: string,
+  precios?: { costoEstudiante?: number | null; costoProfesional?: number | null; costoGeneral?: number | null } | null
+): number => {
+  const tipoUpper = (tipo || '').toUpperCase().trim();
+  if (tipoUpper === 'ESTUDIANTE') {
+    return Number(precios?.costoEstudiante ?? 80);
+  }
+  if (tipoUpper === 'PROFESIONAL' || tipoUpper === 'DOCENTE') {
+    return Number(precios?.costoProfesional ?? 120);
+  }
+  return Number(precios?.costoGeneral ?? 100);
+};
+
+export const validarVigenciaActividad = (
+  fechaFin?: Date | string | null,
+  activo: boolean = true
+): { valido: boolean; motivo?: string } => {
+  if (!activo) {
+    return { valido: false, motivo: 'La actividad se encuentra actualmente inactiva.' };
+  }
+  if (!fechaFin) {
+    return { valido: true };
+  }
+  const fechaLimite = new Date(fechaFin);
+  fechaLimite.setHours(23, 59, 59, 999);
+  if (fechaLimite.getTime() < Date.now()) {
+    return { valido: false, motivo: 'La fecha límite de la actividad ha expirado.' };
+  }
+  return { valido: true };
+};
+
 interface RegistrarParticipanteEventoDTO {
   nombre: string;
   apellido: string;
@@ -13,6 +64,7 @@ interface RegistrarParticipanteEventoDTO {
 }
 
 export class ParticipanteEventoService {
+
   static async registrar(data: RegistrarParticipanteEventoDTO) {
     // Validar si la actividad existe en caso de ser provista
     if (data.activityId) {

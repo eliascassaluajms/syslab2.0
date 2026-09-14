@@ -6,6 +6,13 @@ import Tesseract from 'tesseract.js';
 import { prisma } from '../config/prisma.js';
 import { extraerDatosComprobante, OcrParserService, DatosTransaccionOCR, ocrService } from '../services/ocr.service.js';
 import { VoucherPdfService } from '../services/voucherPdf.service.js';
+import {
+  validarCodigoTransaccion,
+  sanitizarNombrePropio,
+  sanitizarCorreo,
+  validarVigenciaActividad,
+} from '../services/participanteEvento.service.js';
+
 
 // Diccionario de términos bancarios comunes en Bolivia
 const TERMINOS_BANCARIOS = [
@@ -71,6 +78,33 @@ export const EventoParticipanteController = {
       }
 
       const codigoLimpio = String(codigoTransaccion).trim();
+      if (!validarCodigoTransaccion(codigoLimpio)) {
+        res.status(400).json({
+          status: 'fail',
+          message: 'El número de comprobante o transacción debe contener exclusivamente dígitos numéricos (entre 6 y 25 caracteres).',
+        });
+        return;
+      }
+
+      // Validar existencia y vigencia de la actividad seleccionada
+      const actividad = await prisma.activity.findUnique({
+        where: { id: String(activityId) },
+      });
+      if (!actividad) {
+        res.status(404).json({
+          message: 'La actividad seleccionada no existe.',
+        });
+        return;
+      }
+
+      const vigencia = validarVigenciaActividad(actividad.fechaFin || actividad.fechaInicio, actividad.activo);
+      if (!vigencia.valido) {
+        res.status(400).json({
+          message: vigencia.motivo || 'La actividad seleccionada no está disponible para preinscripción.',
+        });
+        return;
+      }
+
       const transaccionExistente = await prisma.eventoParticipante.findFirst({
         where: {
           codigoTransaccion: codigoLimpio,
@@ -84,6 +118,9 @@ export const EventoParticipanteController = {
         return;
       }
 
+      const nombreSaneado = sanitizarNombrePropio(nombre);
+      const apellidoSaneado = sanitizarNombrePropio(apellido);
+      const correoSaneado = sanitizarCorreo(correo);
       const tipoNormalizado = tipo === 'PROFESIONAL' ? 'PROFESIONAL' : 'ESTUDIANTE';
 
       let comprobanteUrlLimpia = comprobanteUrl;
@@ -96,10 +133,10 @@ export const EventoParticipanteController = {
 
       const participanteCreado = await prisma.eventoParticipante.create({
         data: {
-          nombre,
-          apellido,
-          correo,
-          telefono,
+          nombre: nombreSaneado,
+          apellido: apellidoSaneado,
+          correo: correoSaneado,
+          telefono: String(telefono).trim(),
           tipo: tipoNormalizado,
           activityId: String(activityId),
           codigoTransaccion: codigoLimpio,
@@ -112,6 +149,7 @@ export const EventoParticipanteController = {
           activity: { select: { id: true, title: true } },
         },
       });
+
 
       res.status(201).json(participanteCreado);
     } catch (error: any) {
@@ -375,10 +413,11 @@ export const EventoParticipanteController = {
       } else {
         res.status(500).json({
           error: 'Error al procesar el comprobante. Por favor intente nuevamente.',
-          details: (error as any)?.message || 'Error desconocido'
+          details: error instanceof Error ? error.message : 'Error desconocido'
         });
       }
     }
+
   },
 
   async procesarOCR(req: Request, res: Response, next?: NextFunction): Promise<void> {

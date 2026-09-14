@@ -1,27 +1,51 @@
 import { httpClient } from './httpClient';
+import { 
+  EventoParticipante, 
+  RegistrarParticipanteDTO, 
+  ResultadoOCRResponse, 
+  EliminarComprobanteResponse,
+  EventoPaymentConfig 
+} from '../interfaces/eventoParticipante.interface';
 
 export const EventoParticipanteService = {
-  async listar() {
-    const { data } = await httpClient.get('/evento-participantes');
+  async listar(): Promise<EventoParticipante[]> {
+    const { data } = await httpClient.get<EventoParticipante[]>('/evento-participantes');
     return data;
   },
 
-  async actualizar(id: string, datos: any) {
+  async registrar(payload: RegistrarParticipanteDTO): Promise<{ id: string; success: boolean; data?: EventoParticipante; message?: string }> {
+    const { data } = await httpClient.post('/evento-participantes', payload);
+    return data;
+  },
+
+  async procesarOCR(formData: FormData): Promise<ResultadoOCRResponse> {
+    const { data } = await httpClient.post<ResultadoOCRResponse>('/evento-participantes/ocr', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+
+  async obtenerConfiguracionPago(): Promise<EventoPaymentConfig> {
+    const { data } = await httpClient.get<EventoPaymentConfig>('/payment-config');
+    return data;
+  },
+
+  async actualizar(id: string, datos: Partial<EventoParticipante>): Promise<EventoParticipante> {
     const { data } = await httpClient.put(`/evento-participantes/${id}`, datos);
     return data;
   },
 
-  async eliminar(id: string) {
+  async eliminar(id: string): Promise<{ success: boolean; message?: string }> {
     const { data } = await httpClient.delete(`/evento-participantes/${id}`);
     return data;
   },
 
-  async validarPago(id: string, estado: string, observaciones?: string) {
+  async validarPago(id: string, estado: string, observaciones?: string): Promise<EventoParticipante> {
     const { data } = await httpClient.patch(`/evento-participantes/${id}/validar-pago`, { estado, observaciones });
     return data;
   },
 
-  async subirComprobante(id: string, formData: FormData) {
+  async subirComprobante(id: string, formData: FormData): Promise<EventoParticipante> {
     const { data } = await httpClient.post(`/evento-participantes/${id}/comprobante`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -38,12 +62,12 @@ export const EventoParticipanteService = {
     codigoTransaccion?: string;
     estadoPago?: string;
     observaciones?: string;
-  }) {
+  }): Promise<EventoParticipante> {
     const { data } = await httpClient.post('/evento-participantes/matricular-manual', datos);
     return data;
   },
 
-  async listarVerificadosPorActividad(activityId: string) {
+  async listarVerificadosPorActividad(activityId: string): Promise<EventoParticipante[]> {
     const { data } = await httpClient.get(`/evento-participantes/verificados/${activityId}`);
     return data;
   },
@@ -55,10 +79,11 @@ export const EventoParticipanteService = {
     return data;
   },
 
-  async eliminarComprobanteTemporal(comprobanteUrl: string) {
-    const { data } = await httpClient.delete('/evento-participantes/comprobante-temp', {
+  async eliminarComprobanteTemporal(comprobanteUrl: string): Promise<EliminarComprobanteResponse> {
+    const { data } = await httpClient.delete<EliminarComprobanteResponse>('/evento-participantes/comprobante-temp', {
       data: { comprobanteUrl },
     });
     return data;
   }
 };
+

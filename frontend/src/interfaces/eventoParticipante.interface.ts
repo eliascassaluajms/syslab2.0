@@ -39,4 +39,32 @@ export interface RegistrarParticipanteDTO {
   codigoTransaccion?: string;
   montoPagado?: number;
   comprobanteUrl?: string;
+  observaciones?: string;
 }
+
+export interface ResultadoOCRResponse {
+  status: 'success' | 'fail' | 'error';
+  valido: boolean;
+  codigoTransaccion?: string;
+  monto?: number | null;
+  comprobanteUrl: string;
+  advertencia?: string;
+  datosOcr?: {
+    codigoTransaccion?: string;
+    monto?: number | null;
+    comprobanteUrl: string;
+    rawText?: string;
+  };
+  message?: string;
+}
+
+export interface EliminarComprobanteTemporalDTO {
+  comprobanteUrl: string;
+}
+
+export interface EliminarComprobanteResponse {
+  status: 'success' | 'fail' | 'error';
+  eliminado: boolean;
+  message: string;
+}
+
