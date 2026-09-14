@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ActivityService } from '../services/activity.service';
+import { activityService, ActivityService } from '../services/activity.service';
 import { EventoParticipanteService } from '../services/eventoParticipante.service';
 import {
   Calendar,
@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { CertificadoPreview } from '../components/citren/CertificadoPreview';
 import { capitalizarNombrePropio } from '../utils/textHelper';
-
 
 interface IActividad {
   id: string | number;
@@ -59,8 +58,10 @@ interface IPreinscripcionPayload {
 
 export const LandingFIRNTView: React.FC = () => {
   const [actividades, setActividades] = useState<IActividad[]>([]);
+  const setEventos = setActividades;
   const [actividadSeleccionada, setActividadSeleccionada] = useState<IActividad | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [cargandoActividades, setCargandoActividades] = useState(true);
 
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -167,28 +168,37 @@ export const LandingFIRNTView: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const cargarCatalogosPublicos = async () => {
-      try {
-        const config = await EventoParticipanteService.obtenerConfiguracionPago();
-        if (config) {
-          setConfigPago(config);
-        }
-
-        const data = await ActivityService.listar(true);
-        const items: IActividad[] = Array.isArray(data)
-          ? data
-          : (data as any)?.data || [];
-
-        // Guardar las actividades activas directamente sin filtrado excluyente por fecha en cliente
-        const activas = items.filter((act: IActividad) => act.activo !== false);
-        setActividades(activas);
-      } catch (err) {
-        console.error('Error al cargar actividades públicas:', err);
+  const cargarActividadesPublicas = async () => {
+    try {
+      setCargandoActividades(true);
+      const config = await EventoParticipanteService.obtenerConfiguracionPago();
+      if (config) {
+        setConfigPago(config);
       }
-    };
 
-    cargarCatalogosPublicos();
+      // Solicitamos al servicio las actividades filtradas por soloActivos=true
+      const response = await ActivityService.listar(true);
+      
+      // Extracción ultra-robusta: soporta tanto array plano como respuestas envueltas
+      const listaCruda = Array.isArray(response) 
+        ? response 
+        : (response?.data || (response as any)?.actividades || (response as any)?.items || []);
+
+      // Aseguramos que filtremos por la propiedad booleana 'activo' 
+      // evitando bloqueos por diferencias de zona horaria o formato de fechas en el cliente
+      const eventosValidos = listaCruda.filter((ev: any) => ev.activo === true || ev.activo !== false);
+
+      setEventos(eventosValidos);
+    } catch (err) {
+      console.error('Error crítico al cargar eventos en la landing:', err);
+      setEventos([]);
+    } finally {
+      setCargandoActividades(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarActividadesPublicas();
     
     // Cleanup al desmontar componente
     return () => {
@@ -351,7 +361,13 @@ export const LandingFIRNTView: React.FC = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-10 w-full flex-grow flex flex-col gap-10 relative z-10">
-        {ultimosTresVigentes.length === 0 ? (
+        {cargandoActividades ? (
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-800 rounded-2xl p-10 text-center space-y-3 shadow-2xl">
+            <div className="inline-block animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-2" />
+            <h2 className="text-lg font-semibold text-white">Cargando actividades disponibles...</h2>
+            <p className="text-slate-400 text-sm">Consultando los eventos activos de la facultad...</p>
+          </div>
+        ) : ultimosTresVigentes.length === 0 ? (
           <div className="bg-slate-800/60 backdrop-blur-md border border-slate-800 rounded-2xl p-10 text-center space-y-3 shadow-2xl">
             <h2 className="text-xl font-bold text-white">No hay eventos vigentes disponibles</h2>
             <p className="text-slate-400 text-sm">
