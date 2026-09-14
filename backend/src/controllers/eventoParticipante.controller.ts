@@ -349,7 +349,7 @@ export const EventoParticipanteController = {
         try { fs.unlinkSync(req.file.path); } catch (e) {}
       }
 
-      const comprobanteUrl = `/comprobantes/${filename}`;
+      const comprobanteUrl = `/api/comprobantes/${filename}`;
 
       res.status(200).json({
         status: 'success',
@@ -383,6 +383,75 @@ export const EventoParticipanteController = {
 
   async procesarOCR(req: Request, res: Response, next?: NextFunction): Promise<void> {
     return this.procesarComprobanteOCR(req, res, next);
+  },
+
+  async eliminarComprobanteTemporal(req: Request, res: Response, next?: NextFunction): Promise<void> {
+    try {
+      const { comprobanteUrl } = req.body;
+
+      if (!comprobanteUrl || typeof comprobanteUrl !== 'string') {
+        res.status(400).json({
+          status: 'fail',
+          message: 'Se requiere la URL del comprobante a eliminar.',
+        });
+        return;
+      }
+
+      // 1. Sanitizar contra Path Traversal extrayendo únicamente el nombre base del archivo
+      const filename = path.basename(comprobanteUrl.trim());
+
+      // 2. Validar que el archivo pertenezca a la convención de comprobantes temporales
+      const esNombreValido = /^comprobante_[\w-]+\.(jpe?g|png|webp)$/i.test(filename);
+      if (!esNombreValido) {
+        res.status(400).json({
+          status: 'fail',
+          message: 'Nombre o formato de comprobante inválido.',
+        });
+        return;
+      }
+
+      // 3. Eliminar de la carpeta uploads/comprobantes del backend
+      const uploadDir = path.join(process.cwd(), 'uploads', 'comprobantes');
+      const targetPath = path.join(uploadDir, filename);
+
+      let eliminado = false;
+      if (fs.existsSync(targetPath)) {
+        try {
+          fs.unlinkSync(targetPath);
+          eliminado = true;
+        } catch (e) {
+          console.warn('[ELIMINAR_TEMP] No se pudo borrar de uploads:', e);
+        }
+      }
+
+      // 4. Eliminar también de frontend/public/comprobantes si existe por retrocompatibilidad
+      try {
+        const frontendDir = path.resolve(process.cwd(), '../frontend/public/comprobantes');
+        const frontendPath = path.join(frontendDir, filename);
+        if (fs.existsSync(frontendPath)) {
+          fs.unlinkSync(frontendPath);
+          eliminado = true;
+        }
+      } catch (fErr) {
+        // Ignorar si el frontend no está en la misma ruta
+      }
+
+      res.status(200).json({
+        status: 'success',
+        eliminado,
+        message: 'Comprobante temporal eliminado correctamente.',
+      });
+    } catch (error) {
+      console.error('[ELIMINAR_TEMP] Error al eliminar comprobante temporal:', error);
+      if (next) {
+        next(error);
+      } else {
+        res.status(500).json({
+          status: 'error',
+          message: 'Error al eliminar el comprobante temporal.',
+        });
+      }
+    }
   },
 
   async eliminar(req: Request, res: Response): Promise<void> {

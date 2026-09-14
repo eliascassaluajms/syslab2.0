@@ -42,6 +42,15 @@ router.post('/ocr',
   }
 );
 
+// DELETE /api/evento-participantes/comprobante-temp (DEBE IR ANTES DE /:id)
+// Endpoint público para eliminar comprobantes temporales en reemplazo o cancelación
+router.delete('/comprobante-temp',
+  ocrRateLimiter,
+  (req: Request, res: Response, next: NextFunction) => {
+    EventoParticipanteController.eliminarComprobanteTemporal(req, res, next).catch(next);
+  }
+);
+
 // GET /api/evento-participantes/:id/voucher (descarga publica limitada)
 router.get('/:id/voucher', voucherRateLimiter, (req: Request, res: Response, next: NextFunction) => {
   EventoParticipanteController.descargarVoucher(req, res).catch(next);
