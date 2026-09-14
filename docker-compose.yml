@@ -42,6 +42,7 @@ services:
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
+      - backend_uploads:/usr/src/app/uploads
     networks:
       - lab_network
 
@@ -70,6 +71,7 @@ services:
 
 volumes:
   postgres_data:
+  backend_uploads:
 
 networks:
   lab_network:
