@@ -175,20 +175,14 @@ export const LandingFIRNTView: React.FC = () => {
           setConfigPago(config);
         }
 
-        const listaActividades = await ActivityService.listar();
-        const items: IActividad[] = Array.isArray(listaActividades) ? listaActividades : [];
-        
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+        const data = await ActivityService.listar(true);
+        const items: IActividad[] = Array.isArray(data)
+          ? data
+          : (data as any)?.data || [];
 
-        const activasVigentes = items.filter((act: IActividad) => {
-          if (act.activo === false) return false;
-          const fechaRef = act.fechaFin || act.fecha || act.fechaInicio;
-          if (!fechaRef) return true;
-          return new Date(fechaRef) >= hoy;
-        });
-
-        setActividades(activasVigentes);
+        // Guardar las actividades activas directamente sin filtrado excluyente por fecha en cliente
+        const activas = items.filter((act: IActividad) => act.activo !== false);
+        setActividades(activas);
       } catch (err) {
         console.error('Error al cargar actividades públicas:', err);
       }
@@ -204,17 +198,7 @@ export const LandingFIRNTView: React.FC = () => {
     };
   }, []);
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  const eventosVigentes = actividades.filter((act) => {
-    if (act.activo === false) return false;
-    const fechaRef = act.fechaFin || act.fecha || act.fechaInicio;
-    if (!fechaRef) return true;
-    const fechaEvento = new Date(fechaRef);
-    return fechaEvento >= hoy;
-  });
-
+  const eventosVigentes = actividades.filter((act) => act.activo !== false);
   const ultimosTresVigentes = eventosVigentes.slice(-3);
 
   useEffect(() => {
