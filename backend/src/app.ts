@@ -108,6 +108,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/evento', eventoRoutes);
 
 app.use('/api/actividades/categorias', categoriaEventoRoutes);
+app.use('/api/actividades', activityRoutes);
 app.use('/api/categorias-eventos', categoriaEventoRoutes);
 app.use('/api/categorias', categoriaEventoRoutes);
 

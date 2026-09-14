@@ -123,4 +123,61 @@ export class ActivityController {
       next(error);
     }
   }
+
+  static async obtenerPorId(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await service.getActivityById(id);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async actualizar(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const title = req.body.title ?? req.body.nombre;
+      const description = req.body.description !== undefined ? req.body.description : req.body.descripcion;
+      const careerScope = req.body.careerScope !== undefined 
+        ? String(req.body.careerScope) 
+        : (req.body.carreraId ? String(req.body.carreraId) : (req.body.carrera_id ? String(req.body.carrera_id) : undefined));
+      const labId = req.body.labId !== undefined 
+        ? Number(req.body.labId) 
+        : (req.body.lab_id !== undefined ? Number(req.body.lab_id) : (req.body.id_laboratorio ? Number(req.body.id_laboratorio) : undefined));
+      const bannerUrl = req.body.bannerUrl !== undefined ? req.body.bannerUrl : req.body.banner_url;
+      const fechaInicio = req.body.fechaInicio !== undefined 
+        ? (req.body.fechaInicio ? new Date(req.body.fechaInicio) : null) 
+        : (req.body.fecha_inicio !== undefined ? (req.body.fecha_inicio ? new Date(req.body.fecha_inicio) : null) : undefined);
+      const fechaFin = req.body.fechaFin !== undefined 
+        ? (req.body.fechaFin ? new Date(req.body.fechaFin) : null) 
+        : (req.body.fecha_fin !== undefined ? (req.body.fecha_fin ? new Date(req.body.fecha_fin) : null) : undefined);
+      const activo = typeof req.body.activo === 'boolean' ? req.body.activo : undefined;
+
+      const updateData: any = {};
+      if (title !== undefined) updateData.title = String(title).trim();
+      if (description !== undefined) updateData.description = description ? String(description).trim() : null;
+      if (careerScope !== undefined) updateData.careerScope = String(careerScope).trim();
+      if (labId !== undefined && !isNaN(labId)) updateData.labId = labId;
+      if (bannerUrl !== undefined) updateData.bannerUrl = bannerUrl ? String(bannerUrl).trim() : null;
+      if (fechaInicio !== undefined) updateData.fechaInicio = fechaInicio;
+      if (fechaFin !== undefined) updateData.fechaFin = fechaFin;
+      if (activo !== undefined) updateData.activo = activo;
+
+      const result = await service.updateActivity(id, updateData);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async eliminar(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      await service.deleteActivity(id);
+      res.status(200).json({ status: 'success', message: 'Actividad eliminada correctamente.' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

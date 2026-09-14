@@ -14,6 +14,12 @@ export class ActivityService {
     return this.activityRepo.findAll(undefined, soloActivos);
   }
 
+  async getActivityById(id: string) {
+    const activity = await this.activityRepo.findById(id);
+    if (!activity) throw new AppError('Actividad no encontrada', 404);
+    return activity;
+  }
+
   async createActivity(data: CreateActivityDTO, userCareerScope: string, userRole: string) {
     if (userRole !== 'ADMIN_GLOBAL' && data.careerScope !== userCareerScope) {
       throw new AppError('No tienes autorización para crear actividades fuera de tu ámbito de carrera', 403);

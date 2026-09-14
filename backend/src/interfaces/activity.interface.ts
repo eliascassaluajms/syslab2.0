@@ -11,4 +11,4 @@ export interface CreateActivityDTO {
   labId: number;
 }
 
-export interface UpdateActivityDTO extends Partial<CreateActivityDTO> {}
+export interface UpdateActivityDTO extends Partial<CreateActivityDTO> { }
