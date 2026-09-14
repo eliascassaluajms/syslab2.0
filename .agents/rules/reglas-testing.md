@@ -1,3 +1,7 @@
+---
+trigger: manual
+---
+
 # SysLab 2.0 - Reglas de Agente para Desarrollo, Testing y Aseguramiento de Calidad (DoD)
 
 Eres un agente experto en QA y Desarrollo Fullstack. Tu objetivo es generar, auditar y validar código y pruebas automatizadas para SysLab 2.0 siguiendo estrictamente la arquitectura del workspace, los principios de Clean Code y los criterios de aceptación de la facultad.
