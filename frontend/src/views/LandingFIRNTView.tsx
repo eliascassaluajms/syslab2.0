@@ -171,9 +171,14 @@ export const LandingFIRNTView: React.FC = () => {
   const cargarActividadesPublicas = async () => {
     try {
       setCargandoActividades(true);
-      const config = await EventoParticipanteService.obtenerConfiguracionPago();
-      if (config) {
-        setConfigPago(config);
+      // Carga independiente de la configuración de pagos: si falla, no bloquea los eventos
+      try {
+        const config = await EventoParticipanteService.obtenerConfiguracionPago();
+        if (config) {
+          setConfigPago(config);
+        }
+      } catch (errConfig) {
+        console.warn('Configuración de pagos no disponible o no configurada:', errConfig);
       }
 
       // Solicitamos al servicio las actividades filtradas por soloActivos=true

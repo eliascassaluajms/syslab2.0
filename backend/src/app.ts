@@ -113,6 +113,7 @@ app.use('/api/categorias-eventos', categoriaEventoRoutes);
 app.use('/api/categorias', categoriaEventoRoutes);
 
 app.use('/api/payment-config', eventoPaymentConfigRoutes);
+app.use('/api/configuracion-pagos', eventoPaymentConfigRoutes);
 app.use('/api/evento-participantes', eventoParticipanteRoutes);
 app.use('/api/solicitudes-extraordinarias', solicitudExtraordinariaRoutes);
 app.use('/api/bitacora', bitacoraRoutes);

@@ -25,9 +25,18 @@ export const EventoParticipanteService = {
     return data;
   },
 
-  async obtenerConfiguracionPago(): Promise<EventoPaymentConfig> {
-    const { data } = await httpClient.get<EventoPaymentConfig>('/payment-config');
-    return data;
+  async obtenerConfiguracionPago(): Promise<EventoPaymentConfig | null> {
+    try {
+      const { data } = await httpClient.get<EventoPaymentConfig>('/payment-config');
+      return data;
+    } catch {
+      try {
+        const { data } = await httpClient.get<EventoPaymentConfig>('/payment-config/activo');
+        return data;
+      } catch {
+        return null;
+      }
+    }
   },
 
   async actualizar(id: string, datos: Partial<EventoParticipante>): Promise<EventoParticipante> {
