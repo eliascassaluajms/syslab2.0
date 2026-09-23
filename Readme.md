@@ -1,291 +1,245 @@
-# SysLab 2.0 - Documento de revisi�n del proyecto
+# SysLab 2.0
 
-## ?? Resumen ejecutivo
+## Resumen ejecutivo
 
-SysLab 2.0 es una aplicaci�n web para la gesti�n integral de laboratorios, usuarios, accesos y estructuras institucionales de la Facultad de Ciencias Integradas de Yacuiba. La implementaci�n actual ya incluye un backend en Node.js/Express con TypeScript, un frontend en React/Vite y una base de datos PostgreSQL gestionada con Prisma.
+SysLab 2.0 es una aplicación web para la gestión integral de laboratorios, usuarios, accesos y estructuras institucionales de la Facultad de Ciencias Integradas de Yacuiba (FIRNT-UA/MS). Incluye backend en Node.js/Express con TypeScript, frontend en React/Vite y una base de datos PostgreSQL gestionada con Prisma ORM.
 
-Durante la revisi�n realizada sobre la estructura real del repositorio, se confirm� que el proyecto est� en una fase de desarrollo avanzado, con m�dulos funcionales de autenticaci�n, control de acceso, gesti�n de usuarios, cat�logos institucionales y administraci�n de laboratorios.
-
----
-
-## ? Estado actual del proyecto
-
-### Alcance implementado
-
-- Autenticaci�n de usuarios con JWT y middleware de protecci�n.
-- Sistema RBAC b�sico con roles, permisos y control por middleware.
-- Gesti�n de usuarios con activaci�n/desactivaci�n l�gica.
-- Gesti�n de roles y permisos desde el backend y el frontend.
-- Cat�logos institucionales de facultades y carreras.
-- Gesti�n de laboratorios, incluyendo cambio de estado y gesti�n de equipos asociada.
-- Modelo de datos con soporte para equipos e incidencias.
-
-### �reas en desarrollo o pendientes
-
-- Integraci�n completa de la UI de incidencias con el m�dulo de backend.
-- Refinamiento del flujo de permisos en vistas espec�ficas.
-- Definici�n m�s completa de los roles institucionales y sus permisos por entorno.
-- Mejoras de validaci�n, pruebas automatizadas y documentaci�n operativa.
+La aplicación está en desarrollo activo y cubre: autenticación JWT con RBAC, gestión de usuarios y roles con ámbitos institucionales, catálogos (facultades y carreras), laboratorios y equipos, incidencias, planes de estudio y materias, designaciones docentes, horarios, solicitudes de horarios extraordinarios, bitácoras de uso con QR, asistencia estudiantil, eventos y pagos (CITREN), y defensas de trabajos de grado.
 
 ---
 
-## ?? Arquitectura actual
+## Tecnologías
 
 ### Backend
-
-El backend est� estructurado con una separaci�n clara en capas:
-
-- Routes: definen los endpoints REST.
-- Controllers: procesan peticiones y respuestas.
-- Services: encapsulan la l�gica de negocio.
-- Middlewares: manejan autenticaci�n, autorizaci�n y errores.
-- Prisma: abstrae el acceso a PostgreSQL.
-
-### Frontend
-
-El frontend est� construido con React + Vite y organiza la experiencia en:
-
-- Vistas principales: login, dashboard, usuarios, roles, cat�logos y laboratorios.
-- Componentes reutilizables: modales, tablas, controles de permisos.
-- Contexto de autenticaci�n para gestionar la sesi�n del usuario.
-- Rutas protegidas con redirecci�n seg�n el estado de autenticaci�n.
-
-### Base de datos
-
-El modelo Prisma cubre entidades como:
-
-- usuarios
-- roles
-- permisos
-- asignaciones de �mbito
-- facultades
-- carreras
-- laboratorios
-- equipos
-- incidencias
-
----
-
-## ??? Tecnolog�as utilizadas
-
-### Backend
-
-| Tecnolog�a | Uso principal |
+| Tecnología | Uso principal |
 |---|---|
 | Node.js | Runtime del servidor |
 | Express | API REST |
-| TypeScript | Tipado est�tico |
+| TypeScript | Tipado estático |
 | Prisma | ORM y migraciones |
 | PostgreSQL | Base de datos relacional |
-| JWT | Autenticaci�n stateless |
-| bcrypt/bcryptjs | Hash de contrase�as |
-| CORS | Control de acceso HTTP |
+| JWT | Autenticación stateless |
+| bcryptjs | Hash de contraseñas |
+| Multer | Subida de archivos (comprobantes, actas) |
+| Tesseract.js / ExcelJS / XLSX | Importación y OCR de datos académicos |
+| PDFKit / PDFMake | Generación de vouchers y documentos |
+| express-rate-limit | Protección de endpoints |
 
 ### Frontend
-
-| Tecnolog�a | Uso principal |
+| Tecnología | Uso principal |
 |---|---|
 | React | Interfaz de usuario |
-| TypeScript | Tipado est�tico |
-| Vite | Herramienta de compilaci�n y desarrollo |
+| TypeScript | Tipado estático |
+| Vite | Compilación y desarrollo |
 | React Router | Manejo de rutas |
 | Axios | Peticiones HTTP |
-| Tailwind CSS | Estilos y dise�o de UI |
+| Tailwind CSS | Estilos y diseño de UI |
+| lucide-react / qrcode.react | Iconografía y generación de QR |
 
 ### Infraestructura
-
-| Tecnolog�a | Uso principal |
+| Tecnología | Uso principal |
 |---|---|
-| Docker | Contenedores para backend, frontend y PostgreSQL |
-| Docker Compose | Orquestaci�n de servicios |
+| Docker / Docker Compose | Contenedores para backend, frontend y PostgreSQL |
+| Nginx + Certbot | Proxy reverso y TLS para sysfacultad.duckdns.org |
 | Git | Control de versiones |
 
 ---
 
-## ?? Estructura del repositorio
+## Arquitectura
 
-`	ext
+### Backend (`backend/`)
+
+Separación clara en capas:
+
+- `src/routes/*.routes.ts` — definen los endpoints HTTP, validaciones, `verificarJWT` y `requirePermission`.
+- `src/controllers/*.controller.ts` — gestionan `req`/`res` y retornan respuestas JSON.
+- `src/services/*.service.ts` — lógica de negocio pura (validaciones de dominio, estados, ámbitos).
+- `src/repositories/*.repository.ts` — abstracción de consultas con el cliente Prisma.
+- `src/middlewares/` — autenticación (`auth.middleware.ts`), autorización RBAC y perimetral (`authorize.middleware.ts`), errores (`errorHandler.ts`), rate limiting, subida de archivos y cabeceras de seguridad HTTP (`nosniff`, `SAMEORIGIN`, `XSS`, `Referrer-Policy`, `HSTS`).
+- `src/config/prisma.ts` — instancia única de `PrismaClient` con adapter `PrismaPg`.
+- `src/interfaces/` y `src/types/` — contratos tipados de la API y el contexto `Request.user`.
+
+Flujo de petición: `Route → Controller → Service → Repository → Prisma → PostgreSQL`.
+
+### Frontend (`frontend/`)
+
+- Vistas públicas: landing (CITREN), login, recuperación de contraseña y registro público de asistencia por QR.
+- Vistas protegidas bajo `ProtectedRoute` + `DashboardLayout` (sidebar con permisos).
+- `context/AuthContext.tsx` gestiona sesión (JWT en `localStorage`) y `tienePermiso`.
+- `services/httpClient.ts` inyecta `Authorization: Bearer <token>` y emite `auth_unauthorized` ante 401.
+- Componentes reutilizables: modales por módulo, tablas, `Can.tsx` para permisos en UI.
+
+### Base de datos
+
+El modelo Prisma (`backend/prisma/schema.prisma`) cubre:
+
+- RBAC: `Rol`, `Permiso`, `RolPermiso`, `AsignacionAmbito` (matriz rol + ámbito institucional).
+- Institucional: `Usuario`, `Facultad`, `Carrera`, `PlanEstudio`, `Materia`, `DesignacionMateria`.
+- Laboratorios: `Laboratorio`, `Horario`, `SolicitudHorarioExtraordinario`, `SesionBitacora`, `AsistenciaEstudiante`.
+- Activos: `Equipo` e `Incidencia` (con transición de estados).
+- Eventos: `Activity`, `CategoriaEvento`, `EventoParticipante`, `EventoPaymentConfig`.
+- Defensas: `TrabajoGrado`, `DesignacionTribunal`, `VersionDocumento`, `ObservacionTribunal`, `ActaDefensa`.
+
+---
+
+## Estructura del repositorio
+
+```
 syslab2.0/
-+-- backend/
-�   +-- prisma/
-�   �   +-- schema.prisma
-�   �   +-- migrations/
-�   +-- src/
-�   �   +-- controllers/
-�   �   +-- services/
-�   �   +-- routes/
-�   �   +-- middlewares/
-�   �   +-- config/
-�   �   +-- utils/
-�   +-- package.json
-�   +-- Dockerfile
-+-- frontend/
-�   +-- src/
-�   �   +-- components/
-�   �   +-- views/
-�   �   +-- hooks/
-�   �   +-- services/
-�   �   +-- routes/
-�   �   +-- context/
-�   +-- package.json
-�   +-- Dockerfile
-+-- docker-compose.yml
-+-- package.json
-+-- PROYECTO.md
-`
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── migrations/
+│   │   ├── seeds/             # Seed por módulo (seguridad, estructura, planes, usuarios, eventos)
+│   │   └── seed.ts
+│   ├── scripts/               # Importación de datos académicos (padrón, programaciones, designaciones)
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   ├── repositories/
+│   │   ├── routes/
+│   │   ├── middlewares/
+│   │   ├── config/
+│   │   ├── interfaces/
+│   │   ├── types/
+│   │   └── utils/
+│   ├── tests/
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── views/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   ├── routes/
+│   │   ├── context/
+│   │   ├── interfaces/
+│   │   └── utils/
+│   └── package.json
+├── procesador-syslab/         # Utilidades de procesamiento de PDF/OCR/XLSX
+├── docker-compose.yml
+├── nginx-syslab.conf
+├── package.json
+└── .env.example
+```
 
 ---
 
-## ?? M�dulos implementados
+## Módulos implementados
 
-### 1. Autenticaci�n y sesi�n
-
-- Login con correo y contrase�a.
-- Generaci�n de token JWT.
-- Middleware de verificaci�n de sesi�n.
-- Protecci�n de rutas seg�n permisos.
-
-### 2. Gesti�n de usuarios
-
-- Alta de usuarios b�sicos.
-- Modificaci�n de datos b�sicos.
-- Cambio de estado activo/inactivo.
-- Asignaci�n de roles y �mbitos institucionales.
-
-### 3. Roles y permisos
-
-- Creaci�n, edici�n y eliminaci�n de roles.
-- Asignaci�n de permisos granulares.
-- Uso de middleware de autorizaci�n para restringir accesos.
-
-### 4. Cat�logos institucionales
-
-- Administraci�n de facultades.
-- Administraci�n de carreras asociadas a facultades.
-- Vista protegida para usuarios con permisos correspondientes.
-
-### 5. Laboratorios y recursos
-
-- Alta, edici�n y desactivaci�n de laboratorios.
-- Gesti�n de capacidad, ubicaci�n y descripci�n.
-- Integraci�n con gesti�n de equipos por laboratorio.
-
-### 6. Equipos e incidencias
-
-- El esquema y las rutas de soporte est�n preparados para este m�dulo.
-- La l�gica de incidencias existe en backend, aunque la experiencia visual puede requerir m�s consolidaci�n.
+1. **Autenticación y sesión** — login por correo o username, JWT con expiración, middleware de verificación y logout.
+2. **RBAC y ámbitos** — roles, permisos granulares, matriz de asignaciones por facultad/carrera en el backend y en la UI, control perimetral por carrera.
+3. **Usuarios** — alta, edición, activación/desactivación lógica, cambio de contraseña, asignación de roles y ámbitos.
+4. **Catálogos institucionales** — administración de facultades y carreras.
+5. **Laboratorios y equipos** — CRUD de laboratorios, inventario de equipos con categoría y estado, códigos patrimoniales.
+6. **Incidencias** — reporte y gestión (asignación de técnico, prioridad, solución) con transición automática del estado del equipo.
+7. **Planes de estudio y materias** — planes por carrera/gestión con materias.
+8. **Designaciones** — carga académica de materias a docentes por gestión y período.
+9. **Horarios** — programación por laboratorio, materia, docente y grupo.
+10. **Solicitudes extraordinarias** — reservas fuera de horario regular con aprobación/rechazo.
+11. **Bitácoras y asistencia** — sesiones de uso con token QR, registro de asistencia por QR/PIN/manual y justificativos.
+12. **Eventos y pagos (CITREN)** — categorías, actividades, inscripción de participantes, verificación de comprobantes de pago y configuración bancaria/QR.
+13. **Defensas de grado** — trabajos de grado, designación de tribunal, revisiones con observaciones, versiones de documento y actas.
 
 ---
 
-## ??? Modelo de datos principal
+## Modelo de datos principal
 
-El esquema actual refleja un dise�o orientado a la administraci�n universitaria y al control de accesos por �mbito:
+El esquema refleja un diseño orientado a la administración universitaria y al control de accesos por ámbito:
 
-- Usuario: identidad y credenciales.
-- Rol: agrupaci�n de permisos.
-- Permiso: capacidad espec�fica del sistema.
-- AsignacionAmbito: matriz de alcance institucional por facultad o carrera.
-- Facultad y Carrera: estructura org�nica de la universidad.
-- Laboratorio: ambientes de pr�ctica e infraestructura.
-- Equipo e Incidencia: soporte t�cnico y control operativo.
-
-Este dise�o permite avanzar hacia procesos m�s completos de reserva, mantenimiento y trazabilidad.
+- `Usuario` — identidad y credenciales.
+- `Rol` / `Permiso` — agrupación de capacidades del sistema.
+- `AsignacionAmbito` — matriz de alcance institucional por facultad o carrera.
+- `Facultad` / `Carrera` — estructura orgánica.
+- `Laboratorio` / `Horario` / `SesionBitacora` — ambientes, programación y uso real.
+- `Equipo` / `Incidencia` — inventario y soporte técnico.
+- `TrabajoGrado` / `DesignacionTribunal` / `ActaDefensa` — ciclo de defensas.
+- `Activity` / `EventoParticipante` / `EventoPaymentConfig` — eventos con inscripción y pagos.
 
 ---
 
-## ?? C�mo ejecutar el proyecto
+## Cómo ejecutar el proyecto
 
-### Opci�n 1: con Docker
+### Opción 1: Docker
 
-`ash
+```bash
 docker compose up --build
-`
+```
 
 Servicios esperados:
 
 - Frontend: http://localhost:5173
-- Backend: http://localhost:5000
-- PostgreSQL: localhost:5432
+- Backend: http://localhost:5000 (health: `/api/health`)
+- PostgreSQL: localhost:5434
 
-### Opci�n 2: desarrollo local
+> Los contenedores requieren que el archivo `.env` raíz exista (ver `.env.example`). El arranque del backend ejecuta `prisma generate`, `db push` y `seed` automáticamente.
 
-Backend:
+### Opción 2: desarrollo local
 
-`ash
+Requisitos: Node.js 20+, PostgreSQL accesible.
+
+```bash
+# Backend (puerto 5000)
 cd backend
 npm install
 npm run dev
-`
 
-Frontend:
-
-`ash
+# Frontend (puerto 5173)
 cd frontend
 npm install
 npm run dev
-`
+```
+
+Las variables de entorno se cargan desde `backend/.env` (backend) y `frontend/.env` (frontend). Ajusta `DATABASE_URL` y `JWT_SECRET` según tu entorno.
 
 ---
 
-## ?? Observaciones de revisi�n
+## Pruebas
 
-La revisi�n del c�digo confirm� que el proyecto ya no est� solo en una fase conceptual: cuenta con una base s�lida para operar como sistema administrativo. La mayor fortaleza del proyecto es la combinaci�n de autenticaci�n, roles, asignaci�n de �mbitos y m�dulos de gesti�n institucionales.
+```bash
+# Backend (Node test runner) — base en backend/
+cd backend
+npm test
 
-La principal mejora pendiente es la consolidaci�n de la experiencia de usuario en los m�dulos m�s complejos, especialmente el flujo de incidencias y la integraci�n de todos los permisos con la interfaz.
+# Frontend (Vitest + Testing Library) — base en frontend/
+cd frontend
+npm test
+```
+
+---
+
+## Módulo de importación de datos académicos
+
+El backend incluye scripts de carga en `backend/scripts/` (padrón estudiantil, programaciones, designaciones) que procesan archivos XLSX/PDF/TXT con apoyo de `tesseract.js` (OCR en `src/services/ocr.service.ts`). Los resultados se persisten vía Prisma.
 
 ---
 
-## ?? Pr�ximos pasos recomendados
+## Acceso desde la red local
 
-1. Completar la integraci�n visual del m�dulo de incidencias.
-2. A�adir pruebas automatizadas para backend y frontend.
-3. Definir un cat�logo de permisos m�s detallado por rol y m�dulo.
-4. Mejorar el manejo de errores y mensajes de validaci�n en la interfaz.
-5. Documentar los endpoints y flujos de negocio para operaci�n diaria.
+Si otro dispositivo debe acceder al sistema en la misma red Wi-Fi:
+
+1. Modifica la variable en `frontend/.env`:
+   - `VITE_API_URL=http://<IP_LOCAL>:5000/api`
+2. En el `.env` raíz (o `backend/.env`):
+   - `FRONTEND_URL=http://<IP_LOCAL>:5173`
+3. Usa la IP privada del host, no `localhost`.
+4. Verifica que los puertos 5173 y 5000 estén abiertos.
 
 ---
-## ?? Configuración para acceso desde la red local
 
-Si otro desarrollador desea acceder al sistema desde su celular o desde otra computadora en la misma red Wi‑Fi, debe ajustar únicamente los puntos relacionados con la URL base del frontend y la API.
+## Buenas prácticas del backend
 
-### Archivos a configurar manualmente
+- Usar únicamente la instancia de Prisma de `src/config/prisma.ts`; prohibido crear `new PrismaClient()` en otros archivos.
+- Levantar errores con `throw new AppError('Mensaje en español', statusCode)`.
+- No usar `any`; tipar con las interfaces de `src/interfaces/` o tipos generados por Prisma.
+- Toda modificación del modelo se hace en `prisma/schema.prisma` con su migración.
+- Respuestas coherentes: `200`, `201`, `400`, `401`, `403`, `404`, `500`.
 
-- [sislab/syslab2.0/frontend/.env](sislab/syslab2.0/frontend/.env)
-  - Definir la variable:
-    - VITE_API_URL=http://<IP_LOCAL>:5000/api
-  - Ejemplo: VITE_API_URL=http://192.168.100.8:5000/api
+---
 
-- [sislab/syslab2.0/frontend/src/services/httpClient.ts](sislab/syslab2.0/frontend/src/services/httpClient.ts)
-  - Si se usa un valor por defecto en el código, debe coincidir con la misma IP local del host.
-  - Ejemplo: const API_URL = 'http://192.168.100.8:5000/api';
-  - Esto es importante cuando el proyecto no recibe la variable de entorno correctamente en el arranque.
-
-- [sislab/syslab2.0/.env](sislab/syslab2.0/.env) o [sislab/syslab2.0/backend/.env](sislab/syslab2.0/backend/.env)
-  - Definir la variable:
-    - FRONTEND_URL=http://<IP_LOCAL>:5173
-  - Ejemplo: FRONTEND_URL=http://192.168.100.8:5173
-  - Esto permite que el backend acepte correctamente las peticiones del frontend desde otra máquina en la red local.
-
-### Pasos adicionales recomendados
-
-1. Asegurarse de que la computadora que ejecuta Docker y el dispositivo que accede estén en la misma red Wi‑Fi o red local.
-2. Usar la IP privada de la máquina anfitriona, no `localhost` ni `127.0.0.1`.
-3. Abrir en el navegador del otro dispositivo:
-   - Frontend: http://<IP_LOCAL>:5173
-   - API: http://<IP_LOCAL>:5000/api
-4. Si el acceso sigue fallando, verificar que los puertos 5173 y 5000 estén abiertos y que Docker esté exponiendo los contenedores correctamente.
-
-### Acceso esperado
-
-- Frontend: http://<IP_LOCAL>:5173
-- Backend: http://<IP_LOCAL>:5000
-- API: http://<IP_LOCAL>:5000/api
-
-> No es necesario modificar [sislab/syslab2.0/docker-compose.yml](sislab/syslab2.0/docker-compose.yml) para este escenario, salvo que se desee cambiar puertos o nombres de servicios.
-
-## ?? Información de versión
+## Información de versión
 
 - Estado: desarrollo activo
 - Base de datos: PostgreSQL + Prisma
-- Stack actual: Node.js / Express / React / Vite / TypeScript
-- �ltima revisi�n: 2026-07-23
+- Stack: Node.js / Express / React / Vite / TypeScript
+- Última revisión: 2026-09-18

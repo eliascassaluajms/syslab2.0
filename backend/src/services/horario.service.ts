@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { EstadoInscripcionMateria } from '@prisma/client';
 import { AppError } from '../utils/appError.js';
 import { leerFilasHoja, SpreadsheetCell, SpreadsheetRow } from './spreadsheet.service.js';
 
@@ -466,6 +467,54 @@ export class HorarioService {
         docente: { select: { id: true, nombre: true, apellido: true } },
       },
       orderBy: [{ diaSemana: 'asc' }, { horaInicio: 'asc' }],
+    });
+  }
+
+  async listarMios(usuarioId: number) {
+    const [horariosDocente, inscripciones] = await Promise.all([
+      prisma.horario.findMany({
+        where: { docenteId: usuarioId },
+        include: {
+          laboratorio: { select: { id: true, nombre: true, codigo: true } },
+          materia: { select: { id: true, nombre: true, codigo: true } },
+          docente: { select: { id: true, nombre: true, apellido: true } },
+        },
+      }),
+      prisma.inscripcionMateria.findMany({
+        where: { estudianteId: usuarioId, estado: EstadoInscripcionMateria.ACTIVA },
+        select: { materiaId: true, grupo: true, gestion: true },
+      }),
+    ]);
+
+    const horariosEstudiante =
+      inscripciones.length > 0
+        ? await prisma.horario.findMany({
+            where: {
+              OR: inscripciones.map((ins) => ({
+                materiaId: ins.materiaId,
+                grupo: ins.grupo,
+                gestion: ins.gestion,
+              })),
+            },
+            include: {
+              laboratorio: { select: { id: true, nombre: true, codigo: true } },
+              materia: { select: { id: true, nombre: true, codigo: true } },
+              docente: { select: { id: true, nombre: true, apellido: true } },
+            },
+          })
+        : [];
+
+    const unicos = new Map<number, (typeof horariosDocente)[number]>();
+    [...horariosDocente, ...horariosEstudiante].forEach((horario) => unicos.set(horario.id, horario));
+
+    const ordenDias: Record<string, number> = {
+      Domingo: 0, Lunes: 1, Martes: 2, Miércoles: 3, Jueves: 4, Viernes: 5, Sábado: 6,
+    };
+
+    return Array.from(unicos.values()).sort((a, b) => {
+      const difDia = (ordenDias[a.diaSemana] ?? 0) - (ordenDias[b.diaSemana] ?? 0);
+      if (difDia !== 0) return difDia;
+      return a.horaInicio.localeCompare(b.horaInicio);
     });
   }
 

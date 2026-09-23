@@ -3,18 +3,32 @@ import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { MulterError } from 'multer';
 import { AppError } from '../utils/appError.js';
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  // Modo desarrollo: entregamos detalles completos del stack trace
+  if (process.env.NODE_ENV === 'development' && !(err instanceof AppError) && !(err instanceof MulterError)) {
+    res.status((err as AppError & { statusCode?: number }).statusCode || 500).json({
+      status: 'error',
+      error: err,
+      message: (err as Error).message,
+      stack: (err as Error).stack,
+    });
+    return;
+  }
+
   if (err instanceof MulterError) {
+    if (!req.complete) {
+      req.resume();
+    }
     if (err.code === 'LIMIT_FILE_SIZE') {
       res.status(400).json({
         status: 'fail',
-        message: 'El archivo del extracto bancario excede el tamaño máximo permitido (10 MB).',
+        message: 'El archivo adjunto excede el tamaño máximo permitido (10 MB).',
       });
       return;
     }
 
     res.status(400).json({
       status: 'fail',
-      message: 'No se pudo procesar el archivo del extracto bancario.',
+      message: 'No se pudo procesar el archivo adjunto.',
     });
     return;
   }

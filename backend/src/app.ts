@@ -22,11 +22,26 @@ import horarioRoutes from './routes/horarios.routes.js';
 import solicitudExtraordinariaRoutes from './routes/solicitudExtraordinaria.routes.js';
 import bitacoraRoutes from './routes/bitacora.routes.js';
 import asistenciaRoutes from './routes/asistencia.routes.js';
+import unlockRoutes from './routes/unlock.routes.js';
 import defensaRoutes from './routes/defensa.routes.js';
 import designacionRoutes from './routes/designacion.routes.js';
 const app: Application = express();
 
+app.disable('x-powered-by');
 app.set('trust proxy', 1);
+
+// Cabeceras de seguridad HTTP
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=*, microphone=(), geolocation=()');
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
 const envCorsOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -83,6 +98,16 @@ app.use('/comprobantes', express.static(uploadDir));
 app.use('/api/comprobantes', express.static(uploadDir));
 app.use('/api/api/comprobantes', express.static(uploadDir));
 
+const trabajosUploadDir = path.join(process.cwd(), 'uploads', 'trabajos');
+try {
+  if (!fs.existsSync(trabajosUploadDir)) {
+    fs.mkdirSync(trabajosUploadDir, { recursive: true });
+  }
+} catch {
+  // El directorio puede no ser escribible en el host (volumen Docker); se crea bajo demanda en el middleware de subida.
+}
+app.use('/api/documentos', express.static(path.join(process.cwd(), 'uploads')));
+
 app.use('/frontend/media', express.static(path.resolve(process.cwd(), '../frontend/media')));
 
 app.get('/api/health', (req: Request, res: Response) => {
@@ -118,6 +143,7 @@ app.use('/api/evento-participantes', eventoParticipanteRoutes);
 app.use('/api/solicitudes-extraordinarias', solicitudExtraordinariaRoutes);
 app.use('/api/bitacora', bitacoraRoutes);
 app.use('/api/asistencia', asistenciaRoutes);
+app.use('/api/desktop', unlockRoutes);
 app.use('/api/defensas', defensaRoutes);
 
 app.all('*', (req: Request, res: Response) => {

@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/appError.js';
+import { IJwtPayload } from '../interfaces/auth.interface.js';
+
+function obtenerJwtSecret(): string {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret || jwtSecret.trim() === '') {
+    throw new AppError('Configuración incompleta del servidor: falta la variable de entorno JWT_SECRET.', 500);
+  }
+  return jwtSecret;
+}
 
 export const verificarJWT = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -16,14 +25,11 @@ export const verificarJWT = async (req: Request, _res: Response, next: NextFunct
       throw new AppError('No has iniciado sesión. Por favor, proporciona un token válido.', 401);
     }
 
-    let decoded: any;
+    let decoded: IJwtPayload;
     try {
-      decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'syslab_secreto_super_seguro_uajms'
-      );
-    } catch (error: any) {
-      if (error.name === 'TokenExpiredError') {
+      decoded = jwt.verify(token, obtenerJwtSecret()) as IJwtPayload;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'TokenExpiredError') {
         throw new AppError('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.', 401);
       }
       throw new AppError('Token inválido o corrupto. Acceso denegado.', 401);
@@ -73,7 +79,7 @@ export const verificarJWT = async (req: Request, _res: Response, next: NextFunct
       : (asigConFacultad?.facultadId ?? undefined);
 
     // Inyección contextual limpia
-    (req as any).user = {
+    req.user = {
       id: Number(decoded.id),
       nombre: String(decoded.nombre),
       correo: String(decoded.correo),

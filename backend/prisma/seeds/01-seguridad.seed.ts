@@ -86,7 +86,8 @@ export async function seedSeguridad(prisma: PrismaClient) {
     { codigo: 'defensas:editar', descripcion: 'Permite editar los datos generales de un trabajo de grado' },
     { codigo: 'defensas:designar', descripcion: 'Permite designar tribunales y memorándums de grado' },
     { codigo: 'defensas:observar', descripcion: 'Permite registrar observaciones y cartas de conformidad' },
-    { codigo: 'defensas:acta', descripcion: 'Permite generar el acta oficial de defensa' }
+    { codigo: 'defensas:acta', descripcion: 'Permite generar el acta oficial de defensa' },
+    { codigo: 'defensas:eliminar', descripcion: 'Permite eliminar trabajos de grado registrados' }
   ];
 
   const permisosCreados = [];
@@ -187,6 +188,12 @@ export async function seedSeguridad(prisma: PrismaClient) {
     create: { nombre: 'Estudiante', descripcion: 'Acceso básico, consulta de horarios y eventos' }
   });
 
+  const rolTribunalExterno = await prisma.rol.upsert({
+    where: { nombre: 'Tribunal Externo' },
+    update: {},
+    create: { nombre: 'Tribunal Externo', descripcion: 'Miembro externo de tribunal evaluador de trabajos de grado (solo web)' }
+  });
+
   console.log('  └─ ✅ Roles base procesados.');
 
   // =========================================================================
@@ -257,7 +264,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'solicitudes:crear', 'solicitudes:listar', 'solicitudes:aprobar',
         'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:crear', 'solicitudes_extraordinarias:aprobar',
         'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
-        'defensas:listar', 'defensas:crear', 'defensas:designar', 'defensas:observar', 'defensas:acta'
+        'defensas:listar', 'defensas:crear', 'defensas:editar', 'defensas:designar', 'defensas:observar', 'defensas:acta', 'defensas:eliminar'
       ]
     },
     {
@@ -302,7 +309,7 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'solicitudes:crear', 'solicitudes:listar',
         'solicitudes_extraordinarias:ver', 'solicitudes_extraordinarias:crear',
         'bitacora:iniciar', 'bitacora:finalizar', 'bitacora:consultar',
-        'defensas:listar', 'defensas:designar', 'defensas:observar', 'defensas:acta'
+        'defensas:listar', 'defensas:observar'
       ]
     },
     {
@@ -343,6 +350,12 @@ export async function seedSeguridad(prisma: PrismaClient) {
         'actividades:listar', 'actividades:participantes_registrar', 'actividades:pagos_registrar',
         'bitacora:consultar'
       ]
+    },
+    {
+      rolId: rolTribunalExterno.id,
+      codigos: [
+        'defensas:listar', 'defensas:observar'
+      ]
     }
   ];
 
@@ -361,5 +374,5 @@ export async function seedSeguridad(prisma: PrismaClient) {
   console.log('  └─ ✅ Matriz de permisos vinculada exitosamente a todos los roles.');
   console.log('✅ Permisos, roles y matriz de accesos procesados con éxito.\n');
 
-  return { rolAdmin, rolJefe, rolDocente, rolDirectorCarrera, DUMMY_PASSWORD_HASH };
+  return { rolAdmin, rolJefe, rolDocente, rolDirectorCarrera, rolTribunalExterno, DUMMY_PASSWORD_HASH };
 }

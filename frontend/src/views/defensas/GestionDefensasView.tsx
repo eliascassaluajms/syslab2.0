@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { httpClient } from '../../services/httpClient';
+import { defensasService } from '../../services/defensas.service';
+import { useCatalogos } from '../../hooks/useCatalogos';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { ModalNuevoTrabajo } from '../../components/defensas/ModalNuevoTrabajo';
 import { ModalAsignarTribunal } from '../../components/defensas/ModalAsignarTribunal';
 import { ModalDetalleTrabajoDefensa } from '../../components/defensas/ModalDetalleTrabajoDefensa';
@@ -13,22 +16,47 @@ const badgeByEstado: Record<string, string> = {
   DEFENSA_PROGRAMADA: 'bg-violet-500/10 text-violet-200 border-violet-500/30',
 };
 
+const ESTADOS = ['REGISTRADO', 'TRIBUNAL_DESIGNADO', 'CON_OBSERVACIONES', 'APTO_PARA_DEFENSA', 'DEFENSA_PROGRAMADA'];
+
 export const GestionDefensasView: React.FC = () => {
+  const { tienePermiso } = useAuth();
+  const { carreras } = useCatalogos();
+  const { mostrarToast } = useToast();
   const [trabajos, setTrabajos] = useState<TrabajoGradoResumen[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState(false);
   const [modalTribunalAbierto, setModalTribunalAbierto] = useState(false);
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [trabajoSeleccionadoId, setTrabajoSeleccionadoId] = useState<string | null>(null);
 
+  const [gestion, setGestion] = useState<number>(new Date().getFullYear());
+  const [estado, setEstado] = useState<string>('');
+  const [carreraId, setCarreraId] = useState<number | ''>('');
+  const [soloMios, setSoloMios] = useState(false);
+
+  const anios = useMemo(() => {
+    const base = new Date().getFullYear();
+    return Array.from({ length: 4 }, (_, i) => base - i);
+  }, []);
+
   const cargarTrabajos = async () => {
     try {
       setLoading(true);
-      const response = await httpClient.get('/defensas');
-      const datos = Array.isArray(response.data?.data) ? response.data.data : (Array.isArray(response.data) ? response.data : []);
+      setErrorCarga(null);
+      const datos = soloMios
+        ? await defensasService.listarMisTrabajos()
+        : await defensasService.listarTrabajos({
+            gestion,
+            estado: estado || undefined,
+            carreraId: carreraId !== '' ? Number(carreraId) : undefined,
+          });
       setTrabajos(datos);
-    } catch (error) {
+    } catch (error: any) {
       console.error('No se pudieron cargar los trabajos de grado.', error);
+      const msg = error?.response?.data?.message || 'No se pudieron cargar los trabajos de grado.';
+      mostrarToast(msg, 'error');
+      setErrorCarga(msg);
       setTrabajos([]);
     } finally {
       setLoading(false);
@@ -37,7 +65,8 @@ export const GestionDefensasView: React.FC = () => {
 
   useEffect(() => {
     cargarTrabajos();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gestion, estado, carreraId, soloMios]);
 
   const totalTribunales = useMemo(
     () => trabajos.reduce((total, trabajo) => total + (trabajo.tribunales?.length ?? 0), 0),
@@ -54,16 +83,37 @@ export const GestionDefensasView: React.FC = () => {
     setModalDetalleAbierto(true);
   };
 
-  if (loading) {
+  const puedeCrear = tienePermiso('defensas:crear');
+  const puedeDesignar = tienePermiso('defensas:designar');
+  const puedeEliminar = tienePermiso('defensas:eliminar');
+
+  if (loading && trabajos.length === 0 && !errorCarga) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-slate-300">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 px-6 py-4 text-sm shadow-lg shadow-slate-950/30">Cargando defensas...</div>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900 px-8 py-6 text-sm shadow-xl shadow-slate-950/30">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <span className="font-medium text-slate-200">Cargando defensas de grado...</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 text-slate-100">
+      {errorCarga && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200 shadow-lg shadow-rose-950/20">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">⚠️</span>
+            <span>{errorCarga}</span>
+          </div>
+          <button
+            onClick={cargarTrabajos}
+            className="rounded-xl bg-rose-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-rose-500"
+          >
+            Reintentar carga
+          </button>
+        </div>
+      )}
       <div className="rounded-3xl border border-slate-700 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950/60 p-6 shadow-2xl shadow-slate-950/30">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
@@ -74,16 +124,46 @@ export const GestionDefensasView: React.FC = () => {
               <p className="mt-2 text-sm text-slate-300">Gestión académica, designación de tribunales, revisión documental y emisión de actas.</p>
             </div>
           </div>
-          <button onClick={() => setModalNuevoAbierto(true)} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500">
-            + Nuevo trabajo
-          </button>
+          {puedeCrear && (
+            <button onClick={() => setModalNuevoAbierto(true)} className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500">
+              + Nuevo trabajo
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Gestión</span>
+          <select value={gestion} onChange={(e) => setGestion(Number(e.target.value))} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+            {anios.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Estado</span>
+          <select value={estado} onChange={(e) => setEstado(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+            <option value="">Todos</option>
+            {ESTADOS.map((e) => <option key={e} value={e}>{e.replace(/_/g, ' ')}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Carrera</span>
+          <select value={carreraId} onChange={(e) => setCarreraId(e.target.value ? Number(e.target.value) : '')} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
+            <option value="">Todas</option>
+            {(carreras || []).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200">
+          <input type="checkbox" checked={soloMios} onChange={(e) => setSoloMios(e.target.checked)} className="h-4 w-4 accent-blue-500" />
+          Mis trabajos (tribunal asignado)
+        </label>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/20">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Total trabajos</p>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Total trabajos · Gestión {gestion}</p>
             <span className="rounded-full border border-blue-400/20 bg-blue-500/10 p-2 text-lg">📘</span>
           </div>
           <p className="mt-3 text-3xl font-bold text-white">{trabajos.length}</p>
@@ -120,14 +200,14 @@ export const GestionDefensasView: React.FC = () => {
             <tbody>
               {trabajos.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-slate-400">No hay trabajos de grado registrados aún.</td>
+                  <td colSpan={6} className="px-4 py-10 text-center text-slate-400">No hay trabajos de grado para los filtros seleccionados.</td>
                 </tr>
               ) : (
                 trabajos.map((trabajo) => (
                   <tr key={trabajo.id} className="border-t border-slate-800 transition hover:bg-slate-800/40">
                     <td className="px-4 py-4 align-top">
                       <div className="font-semibold text-white">{trabajo.titulo}</div>
-                      <div className="mt-1 text-xs text-slate-400">{trabajo.modalidad || 'Trabajo dirigido'}</div>
+                      <div className="mt-1 text-xs text-slate-400">{trabajo.modalidad || 'Trabajo dirigido'}{trabajo.esTribunal ? ' · 👤 su tribunal' : ''}</div>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <div className="text-white">{trabajo.estudianteNombre}</div>
@@ -136,22 +216,47 @@ export const GestionDefensasView: React.FC = () => {
                     <td className="px-4 py-4 align-top text-slate-300">{trabajo.carrera?.nombre || 'Sin carrera'}</td>
                     <td className="px-4 py-4 align-top">
                       <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${badgeByEstado[trabajo.estado] || 'bg-slate-500/10 text-slate-300 border-slate-500/20'}`}>
-                        {trabajo.estado}
+                        {trabajo.estado.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-4 align-top text-slate-300">
+                    <td className="px-4 py-4 align-top text-xs text-slate-300">
                       {trabajo.tribunales && trabajo.tribunales.length > 0
-                        ? trabajo.tribunales.map((t) => `${t.rol}: ${t.docente?.nombre || 'Sin docente'}`).join(' • ')
-                        : 'Sin designación'}
+                        ? (
+                          <ul className="space-y-1">
+                            {trabajo.tribunales.map((t) => (
+                              <li key={t.id} className="flex flex-wrap items-center gap-1.5">
+                                <span>{t.docente?.nombre} {t.docente?.apellido || ''}</span>
+                                {t.preside && <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-200">Preside</span>}
+                                {t.esExterno && <span className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-cyan-200">Ext.</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : 'Sin designación'}
                     </td>
                     <td className="px-4 py-4 align-top">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => abrirDesignacion(trabajo.id)} className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:bg-emerald-500/20">
-                          Designar
-                        </button>
+                        {puedeDesignar && (
+                          <button onClick={() => abrirDesignacion(trabajo.id)} className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-xs font-medium text-emerald-200 transition hover:bg-emerald-500/20">
+                            Designar
+                          </button>
+                        )}
                         <button onClick={() => abrirDetalle(trabajo.id)} className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-slate-700">
                           Ver
                         </button>
+                        {puedeEliminar && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`¿Eliminar definitivamente el trabajo "${trabajo.titulo}"?`)) {
+                                defensasService.eliminar(trabajo.id)
+                                  .then(() => { mostrarToast('Trabajo eliminado.', 'success'); cargarTrabajos(); })
+                                  .catch((err: any) => mostrarToast(err?.response?.data?.message || 'No se pudo eliminar.', 'error'));
+                              }
+                            }}
+                            className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/20"
+                          >
+                            Eliminar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -161,6 +266,14 @@ export const GestionDefensasView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {soloMios && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
+          Mostrando únicamente los trabajos donde usted integra el tribunal. Utilice la búsqueda general para ver todos los trabajos de la gestión.
+        </div>
+      )}
+
+      <ControlMemorandumCard />
 
       <ModalNuevoTrabajo
         abierto={modalNuevoAbierto}
@@ -190,3 +303,83 @@ export const GestionDefensasView: React.FC = () => {
     </div>
   );
 };
+
+const ControlMemorandumCard: React.FC = () => {
+  const { tienePermiso } = useAuth();
+  const { carreras } = useCatalogos();
+  const { mostrarToast } = useToast();
+  const gestionActual = new Date().getFullYear();
+
+  const [carreraId, setCarreraId] = useState<number | ''>('');
+  const [gestion, setGestion] = useState<number>(gestionActual);
+  const [ultimoNumero, setUltimoNumero] = useState<number>(0);
+  const [cargado, setCargado] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  const cargarControl = async () => {
+    if (carreraId === '') return;
+    try {
+      const control = await defensasService.obtenerControlMemorandum(Number(carreraId), gestion);
+      setUltimoNumero(control?.ultimoNumero ?? 0);
+      setCargado(true);
+    } catch (error: any) {
+      mostrarToast(error?.response?.data?.message || 'No se pudo obtener el correlativo.', 'error');
+    }
+  };
+
+  const guardar = async () => {
+    if (carreraId === '') return;
+    try {
+      setGuardando(true);
+      await defensasService.actualizarControlMemorandum(Number(carreraId), gestion, ultimoNumero);
+      mostrarToast('Correlativo de memorándums actualizado para coordinación con secretaría.', 'success');
+      await cargarControl();
+    } catch (error: any) {
+      mostrarToast(error?.response?.data?.message || 'No se pudo actualizar el correlativo.', 'error');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  if (!tienePermiso('defensas:designar')) return null;
+
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/20">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-300">Correlativo de memorándums</h3>
+        <span className="text-xs text-slate-400">Numeración {gestion} · M-{gestion}-NNN</span>
+      </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Carrera</span>
+          <select value={carreraId} onChange={(e) => { setCarreraId(e.target.value ? Number(e.target.value) : ''); setCargado(false); }} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500">
+            <option value="">Seleccione</option>
+            {(carreras || []).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Gestión</span>
+          <select value={gestion} onChange={(e) => { setGestion(Number(e.target.value)); setCargado(false); }} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500">
+            {[gestionActual, gestionActual - 1, gestionActual - 2, gestionActual - 3].map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </label>
+        <button onClick={cargarControl} disabled={carreraId === ''} className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-200 hover:bg-cyan-500/20 disabled:opacity-50">
+          Consultar
+        </button>
+        {cargado && (
+          <>
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Último número emitido</span>
+              <input type="number" min={0} value={ultimoNumero} onChange={(e) => setUltimoNumero(Number(e.target.value))} className="w-28 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500" />
+            </label>
+            <button onClick={guardar} disabled={guardando} className="rounded-lg bg-cyan-600 px-3 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-60">
+              {guardando ? 'Guardando...' : 'Guardar correlativo'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GestionDefensasView;

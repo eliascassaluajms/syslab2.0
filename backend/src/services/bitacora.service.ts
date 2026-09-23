@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { TipoUsoLaboratorio, EstadoInscripcionMateria, EstadoAsistencia, OrigenMarcado } from '@prisma/client';
+import { TipoUsoLaboratorio, EstadoInscripcionMateria, EstadoAsistencia, OrigenMarcado, EstadoUsoEquipo } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { bitacoraRepository } from '../repositories/bitacora.repository.js';
 import { asistenciaRepository } from '../repositories/asistencia.repository.js';
@@ -202,10 +202,25 @@ export class BitacoraService {
       }
     }
 
+    // Si no se indicó un equipo, se auto-asigna el PC del laboratorio que el estudiante
+    // tiene desbloqueado (UsoEquipo ACTIVO). Si vino con su propio equipo, queda nulo.
+    if (!equipoId) {
+      const usoActivo = await prisma.usoEquipo.findFirst({
+        where: {
+          estudianteId,
+          laboratorioId: sesion.laboratorioId,
+          estado: EstadoUsoEquipo.ACTIVO,
+        },
+        orderBy: { fechaHoraInicio: 'desc' },
+      });
+      if (usoActivo) {
+        equipoId = usoActivo.equipoId;
+      }
+    }
+
     const now = new Date();
-    const [horaH, horaM] = sesion.horaInicio.split(':').map(Number);
-    const fechaSesion = new Date(sesion.fecha);
-    fechaSesion.setHours(horaH, horaM, 0, 0);
+    const fechaISO = sesion.fecha.toISOString().slice(0, 10);
+    const fechaSesion = new Date(`${fechaISO}T${sesion.horaInicio}:00`);
 
     const diferenciaMinutos = (now.getTime() - fechaSesion.getTime()) / (1000 * 60);
     const estado: EstadoAsistencia = diferenciaMinutos > 15 ? EstadoAsistencia.ATRASO : EstadoAsistencia.PRESENTE;

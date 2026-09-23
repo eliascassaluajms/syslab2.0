@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
-import app from '../src/app.js';
+import { app } from './helpers/environment.js';
 
 let server: any;
 let baseUrl: string;
@@ -19,6 +19,9 @@ test.before(async () => {
 
 test.after(async () => {
   if (server) {
+    if (typeof server.closeAllConnections === 'function') {
+      server.closeAllConnections();
+    }
     await new Promise<void>((resolve) => server.close(resolve));
   }
 });

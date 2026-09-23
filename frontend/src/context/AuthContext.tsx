@@ -12,7 +12,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState<boolean>(false);
 
   const logout = () => {
+    const refreshToken = localStorage.getItem('syslab_refresh_token');
+    if (refreshToken) {
+      httpClient.post('/auth/logout', { refreshToken }).catch(() => {});
+    }
     localStorage.removeItem('syslab_token');
+    localStorage.removeItem('syslab_refresh_token');
     localStorage.removeItem('syslab_user');
     localStorage.removeItem('syslab_ambito_activo');
     setUser(null);
@@ -25,7 +30,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (typeof user.rol === 'string') {
       nombreRol = user.rol;
     } else if (user.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
-      nombreRol = (user.rol as any).nombre;
+      nombreRol = user.rol.nombre;
     }
 
     const esAdmin = nombreRol.toLowerCase().includes('admin');
@@ -72,10 +77,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
       
       localStorage.setItem('syslab_token', token);
+      if (responseData.refreshToken) {
+        localStorage.setItem('syslab_refresh_token', responseData.refreshToken);
+      }
       localStorage.setItem('syslab_user', JSON.stringify(usuarioNormalizado));
       setUser(usuarioNormalizado);
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || error.message || 'Error al autenticar');
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string };
+      throw new Error(err.response?.data?.message || err.message || 'Error al autenticar');
     }
   };
 

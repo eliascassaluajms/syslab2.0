@@ -111,9 +111,10 @@ export const IncidenciasView: React.FC = () => {
           >
             <option value="">-- Todos los Estados --</option>
             <option value="PENDIENTE">Pendiente</option>
+            <option value="EN_REVISION">En Revisión</option>
             <option value="EN_PROCESO">En Proceso</option>
             <option value="RESUELTO">Resuelto</option>
-            <option value="RECHAZADO">Rechazado</option>
+            <option value="DESCARTADO">Descartado</option>
           </select>
         </div>
         <div>
@@ -195,6 +196,10 @@ export const IncidenciasView: React.FC = () => {
                         ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
                         : item.estado === 'EN_PROCESO'
                         ? 'bg-blue-950/60 text-blue-300 border-blue-500/40'
+                        : item.estado === 'DESCARTADO'
+                        ? 'bg-slate-800 text-slate-400 border-slate-700'
+                        : item.estado === 'EN_REVISION'
+                        ? 'bg-violet-950/60 text-violet-300 border-violet-500/40'
                         : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
                     }`}>
                       {item.estado}

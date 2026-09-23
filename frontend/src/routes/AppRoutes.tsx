@@ -26,9 +26,14 @@ const ValidacionPagosView = lazy(() => import('../views/ValidacionPagosView').th
 const HistorialBitacorasView = lazy(() => import('../views/bitacora/HistorialBitacorasView').then((module) => ({ default: module.HistorialBitacorasView })));
 const IncidenciasView = lazy(() => import('../views/incidencias/IncidenciasView'));
 const InventarioEquiposView = lazy(() => import('../views/equipos/InventarioEquiposView'));
-const GestionDefensasView = lazy(() => import('../views/defensas/GestionDefensasView').then((module) => ({ default: module.GestionDefensasView })));
+const GestionDefensasView = lazy(() =>
+  import('../views/defensas/GestionDefensasView').then((module: any) => ({
+    default: module.GestionDefensasView || module.default,
+  }))
+);
 const DesignacionesView = lazy(() => import('../views/DesignacionesView').then((module) => ({ default: module.DesignacionesView })));
 const SolicitudesExtraordinariasView = lazy(() => import('../views/SolicitudesExtraordinariasView').then((module) => ({ default: module.SolicitudesExtraordinariasView })));
+const MisIncidenciasView = lazy(() => import('../views/docente/MisIncidenciasView').then((module) => ({ default: module.MisIncidenciasView })));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -71,6 +76,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="uso-laboratorios" element={<HistorialBitacorasView />} />
             <Route path="incidencias" element={<IncidenciasView />} />
             <Route path="fallas" element={<IncidenciasView />} />
+            <Route path="mis-incidencias" element={<MisIncidenciasView />} />
             <Route path="inventario" element={<InventarioEquiposView />} />
             <Route path="equipos" element={<InventarioEquiposView />} />
             <Route path="defensas" element={<GestionDefensasView />} />
@@ -96,6 +102,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/bitacoras" element={<HistorialBitacorasView />} />
           <Route path="/activities" element={<ActivitiesView />} />
           <Route path="/incidencias" element={<IncidenciasView />} />
+          <Route path="/admin/mis-incidencias" element={<MisIncidenciasView />} />
           <Route path="/admin/incidencias" element={<IncidenciasView />} />
           <Route path="/admin/fallas" element={<IncidenciasView />} />
           <Route path="/admin/defensas" element={<GestionDefensasView />} />

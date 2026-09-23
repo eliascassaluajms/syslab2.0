@@ -97,6 +97,12 @@ const menuConfig: MenuItem[] = [
         icono: '⚠️',
         permiso: ['fallas:listar', 'incidencias:listar'],
       },
+      {
+        titulo: 'Mis Incidencias',
+        ruta: '/admin/mis-incidencias',
+        icono: '🧾',
+        permiso: ['fallas:crear', 'fallas:listar'],
+      },
     ],
   },
   {

@@ -1,14 +1,21 @@
 import { NextFunction, Request, Response } from 'express';
-import { prisma } from '../config/prisma.js';
 import { defensaService } from '../services/defensa.service.js';
 import { AppError } from '../utils/appError.js';
+
+const URL_DOCUMENTO = (filename: string) => `/api/documentos/trabajos/${filename}`;
 
 export class DefensaController {
   async listar(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = (req as any).user;
       const trabajos = await defensaService.listarTrabajos({
         carreraId: req.query.carreraId ? Number(req.query.carreraId) : undefined,
+        gestion: req.query.gestion ? Number(req.query.gestion) : undefined,
         estado: req.query.estado ? String(req.query.estado) : undefined,
+        soloMios: req.query.soloMios === 'true' || req.query.mios === 'true',
+        usuarioId: user?.id,
+        roles: user?.roles,
+        carreras: user?.carreras?.length ? user.carreras.map(Number) : undefined,
       });
 
       res.status(200).json({ status: 'success', results: trabajos.length, data: trabajos });
@@ -38,23 +45,18 @@ export class DefensaController {
   async actualizar(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const trabajoActual = await defensaService.obtenerTrabajoPorId(id);
-      const trabajo = await prisma.trabajoGrado.update({
-        where: { id },
-        data: {
-          titulo: req.body.titulo ?? trabajoActual.titulo,
-          modalidad: req.body.modalidad ?? trabajoActual.modalidad,
-          gradoOptado: req.body.gradoOptado ?? trabajoActual.gradoOptado,
-          estudianteNombre: req.body.estudianteNombre ?? trabajoActual.estudianteNombre,
-          estudianteCi: req.body.estudianteCi ?? trabajoActual.estudianteCi,
-          estudianteRu: req.body.estudianteRu ?? trabajoActual.estudianteRu,
-          estudianteEmail: req.body.estudianteEmail ?? trabajoActual.estudianteEmail,
-          estudianteTelefono: req.body.estudianteTelefono ?? trabajoActual.estudianteTelefono,
-          carreraId: req.body.carreraId ? Number(req.body.carreraId) : trabajoActual.carreraId,
-        },
-      });
-
+      const trabajo = await defensaService.actualizarTrabajo(id, req.body);
       res.status(200).json({ status: 'success', data: trabajo });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async eliminar(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const resultado = await defensaService.eliminarTrabajo(id);
+      res.status(200).json({ status: 'success', data: resultado });
     } catch (error) {
       next(error);
     }
@@ -66,8 +68,8 @@ export class DefensaController {
       if (!Array.isArray(tribunales)) {
         throw new AppError('Debe enviar una lista válida de tribunales.', 400);
       }
-      const trabajo = await defensaService.asignarTribunales(req.params.id, tribunales);
-      res.status(200).json({ status: 'success', data: trabajo });
+      const resultado = await defensaService.asignarTribunales(req.params.id, tribunales);
+      res.status(200).json({ status: 'success', data: resultado });
     } catch (error) {
       next(error);
     }
@@ -75,10 +77,18 @@ export class DefensaController {
 
   async subirVersion(req: Request, res: Response, next: NextFunction) {
     try {
-      const { archivoUrl, descripcionCambios } = req.body;
-      if (!archivoUrl) {
-        throw new AppError('Debe indicar la URL del documento.', 400);
+      const { descripcionCambios } = req.body;
+      const archivo = (req as any).file;
+
+      let archivoUrl = req.body.archivoUrl;
+      if (archivo) {
+        archivoUrl = URL_DOCUMENTO(archivo.filename);
       }
+
+      if (!archivoUrl) {
+        throw new AppError('Debe adjuntar el documento (PDF) o indicar la URL de la versión.', 400);
+      }
+
       const version = await defensaService.registrarVersion(req.params.id, archivoUrl, descripcionCambios);
       res.status(201).json({ status: 'success', data: version });
     } catch (error) {
@@ -88,12 +98,39 @@ export class DefensaController {
 
   async registrarObservacion(req: Request, res: Response, next: NextFunction) {
     try {
-      const { designacionId, detalleObservacion, archivoCorreccionesUrl } = req.body;
-      if (!designacionId || !detalleObservacion) {
-        throw new AppError('Debe indicar la designación y la observación.', 400);
+      const { designacionId, detalleObservacion, esExtraordinaria } = req.body;
+      const archivo = (req as any).file;
+
+      if (!designacionId) {
+        throw new AppError('Debe indicar la designación de tribunal.', 400);
       }
-      const observacion = await defensaService.registrarObservacion(req.params.id, designacionId, detalleObservacion, archivoCorreccionesUrl);
+
+      let archivoCorreccionesUrl = req.body.archivoCorreccionesUrl;
+      if (archivo) {
+        archivoCorreccionesUrl = URL_DOCUMENTO(archivo.filename);
+      }
+
+      const observacion = await defensaService.registrarObservacion(
+        req.params.id,
+        designacionId,
+        detalleObservacion || '',
+        archivoCorreccionesUrl || undefined,
+        esExtraordinaria === true || esExtraordinaria === 'true'
+      );
       res.status(201).json({ status: 'success', data: observacion });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizarFechaLimite(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { designacionId, fechaLimite } = req.body;
+      if (!designacionId || !fechaLimite) {
+        throw new AppError('Debe enviar la designación y la nueva fecha límite.', 400);
+      }
+      const designacion = await defensaService.actualizarFechaLimite(req.params.id, designacionId, fechaLimite);
+      res.status(200).json({ status: 'success', data: designacion });
     } catch (error) {
       next(error);
     }
@@ -101,11 +138,11 @@ export class DefensaController {
 
   async emitirConformidad(req: Request, res: Response, next: NextFunction) {
     try {
-      const { designacionId, cartaConformidadUrl } = req.body;
-      if (!designacionId || !cartaConformidadUrl) {
-        throw new AppError('Debe enviar la designación y la URL del PDF de conformidad.', 400);
+      const { designacionId } = req.body;
+      if (!designacionId) {
+        throw new AppError('Debe enviar la designación del tribunal.', 400);
       }
-      const conformidad = await defensaService.emitirConformidad(req.params.id, designacionId, cartaConformidadUrl);
+      const conformidad = await defensaService.emitirConformidad(req.params.id, designacionId);
       res.status(200).json({ status: 'success', data: conformidad });
     } catch (error) {
       next(error);
@@ -138,6 +175,32 @@ export class DefensaController {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="acta-defensa-${req.params.id}.pdf"`);
       res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async obtenerControlMemorandum(req: Request, res: Response, next: NextFunction) {
+    try {
+      const carreraId = Number(req.params.carreraId || req.query.carreraId);
+      if (!carreraId) {
+        throw new AppError('Debe indicar la carrera.', 400);
+      }
+      const control = await defensaService.obtenerControlMemorandum(carreraId);
+      res.status(200).json({ status: 'success', data: control });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async actualizarControlMemorandum(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { carreraId, gestion, ultimoNumero } = req.body;
+      if (!carreraId || !gestion) {
+        throw new AppError('Debe indicar la carrera y la gestión académica.', 400);
+      }
+      const control = await defensaService.actualizarControlMemorandum(carreraId, gestion, ultimoNumero);
+      res.status(200).json({ status: 'success', data: control });
     } catch (error) {
       next(error);
     }

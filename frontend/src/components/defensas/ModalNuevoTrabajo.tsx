@@ -13,6 +13,7 @@ const initialForm = {
   titulo: '',
   modalidad: 'Trabajo Dirigido',
   gradoOptado: 'Licenciatura en Ingeniería Informática',
+  gestion: String(new Date().getFullYear()),
   carreraId: '',
   estudianteNombre: '',
   estudianteCi: '',
@@ -47,6 +48,7 @@ export const ModalNuevoTrabajo: React.FC<ModalNuevoTrabajoProps> = ({ abierto, o
         titulo: form.titulo,
         modalidad: form.modalidad,
         gradoOptado: form.gradoOptado,
+        gestion: Number(form.gestion) || undefined,
         carreraId: Number(form.carreraId),
         estudianteNombre: form.estudianteNombre,
         estudianteCi: form.estudianteCi,
@@ -97,6 +99,11 @@ export const ModalNuevoTrabajo: React.FC<ModalNuevoTrabajoProps> = ({ abierto, o
             <label>
               <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Grado</span>
               <input value={form.gradoOptado} onChange={(e) => handleChange('gradoOptado', e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-500" />
+            </label>
+
+            <label>
+              <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Gestión académica</span>
+              <input type="number" min="2020" max="2100" value={form.gestion} onChange={(e) => handleChange('gestion', e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-blue-500" />
             </label>
 
             <label>

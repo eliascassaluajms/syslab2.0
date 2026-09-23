@@ -359,13 +359,28 @@ export const LandingFIRNTView: React.FC = () => {
         </div>
         <Link
           to="/login"
-          className="text-xs text-slate-400 hover:text-emerald-400 transition-colors px-3 py-1.5 rounded border border-slate-700/60 hover:border-emerald-500/50"
+          className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-lg shadow-emerald-900/30 cursor-pointer"
         >
-          Acceder al Sistema →
+          Ingresar al Sistema →
         </Link>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-10 w-full flex-grow flex flex-col gap-10 relative z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 bg-slate-800/50 border border-slate-700/70 rounded-2xl px-6 py-4 shadow-lg backdrop-blur-md">
+          <span className="text-sm text-slate-300">
+            Instala la app del laboratorio en tu celular: asistencia, horarios y desbloqueo de equipos.
+          </span>
+          <a
+            href="http://200.87.27.36:5173/descargas/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-lg shadow-emerald-900/30 cursor-pointer"
+          >
+            <Download size={16} />
+            Descargar App Móvil
+          </a>
+        </div>
+
         {cargandoActividades ? (
           <div className="bg-slate-800/60 backdrop-blur-md border border-slate-800 rounded-2xl p-10 text-center space-y-3 shadow-2xl">
             <div className="inline-block animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-2" />

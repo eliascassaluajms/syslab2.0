@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { PrioridadIncidencia } from '../../interfaces/incidencia.interface';
+import { PrioridadIncidencia, TipoIncidencia, CategoriaEquipoIncidencia } from '../../interfaces/incidencia.interface';
+import { generarClienteUuid } from '../../utils/uuid';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onGuardar: (data: {
+    clienteUuid: string;
     laboratorioId: number;
+    equipoId?: number | null;
     titulo: string;
     descripcion: string;
+    tipo: TipoIncidencia;
+    categoriaEquipo: CategoriaEquipoIncidencia;
     prioridad: PrioridadIncidencia;
   }) => Promise<void>;
   laboratorios: Array<{ id: number; nombre: string }>;
@@ -17,6 +22,8 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
   const [labId, setLabId] = useState<number | ''>('');
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [tipo, setTipo] = useState<TipoIncidencia>('HARDWARE');
+  const [categoria, setCategoria] = useState<CategoriaEquipoIncidencia>('PC');
   const [prioridad, setPrioridad] = useState<PrioridadIncidencia>('MEDIA');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +32,7 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (enviando) return;
     if (!labId || !titulo.trim() || !descripcion.trim()) {
       setError('Por favor, complete los campos requeridos.');
       return;
@@ -33,9 +41,13 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
     setError(null);
     try {
       await onGuardar({
+        clienteUuid: generarClienteUuid(),
         laboratorioId: Number(labId),
+        equipoId: null,
         titulo: titulo.trim(),
         descripcion: descripcion.trim(),
+        tipo,
+        categoriaEquipo: categoria,
         prioridad,
       });
       onClose();
@@ -46,13 +58,13 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
     }
   };
 
+  const tipoClases = 'w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-red-500';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-slate-100 shadow-2xl space-y-4">
         <div className="border-b border-slate-800 pb-3">
-          <h3 className="text-lg font-bold flex items-center gap-2 text-white">
-            <span>⚠️</span> Reportar Falla o Incidencia
-          </h3>
+          <h3 className="text-lg font-bold text-white">Reportar Falla o Incidencia</h3>
           <p className="text-xs text-slate-400 mt-1">El ticket será canalizado a la Jefatura de Laboratorios.</p>
         </div>
 
@@ -65,13 +77,37 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
               required
               value={labId}
               onChange={(e) => setLabId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+              className={tipoClases}
             >
               <option value="">-- Seleccionar Laboratorio --</option>
               {laboratorios.map((l) => (
                 <option key={l.id} value={l.id}>{l.nombre}</option>
               ))}
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs uppercase font-semibold text-slate-400 mb-1">Tipo de Falla</label>
+              <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoIncidencia)} className={tipoClases}>
+                <option value="HARDWARE">Hardware</option>
+                <option value="SOFTWARE">Software</option>
+                <option value="RED">Red / Internet</option>
+                <option value="INFRAESTRUCTURA">Infraestructura</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase font-semibold text-slate-400 mb-1">Activo / Categoría</label>
+              <select value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaEquipoIncidencia)} className={tipoClases}>
+                <option value="PC">PC / Equipo de escritorio</option>
+                <option value="PROYECTOR">Proyector</option>
+                <option value="AIRE_ACONDICIONADO">Aire acondicionado</option>
+                <option value="RED_INTERNET">Red / Internet</option>
+                <option value="PERIFERICO">Periférico</option>
+                <option value="SOFTWARE">Software</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
           </div>
 
           <div>
@@ -82,7 +118,7 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
               placeholder="Ej: Falla en red cableada / Proyector sin señal"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+              className={tipoClases}
             />
           </div>
 
@@ -94,7 +130,7 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
               placeholder="Describa el fallo observado de manera clara..."
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+              className={tipoClases}
             />
           </div>
 
@@ -103,7 +139,7 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
             <select
               value={prioridad}
               onChange={(e) => setPrioridad(e.target.value as PrioridadIncidencia)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-red-500"
+              className={tipoClases}
             >
               <option value="BAJA">Baja</option>
               <option value="MEDIA">Media</option>
@@ -116,14 +152,14 @@ export const ModalReportarIncidencia: React.FC<Props> = ({ isOpen, onClose, onGu
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-400 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-semibold text-slate-400 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={enviando}
-              className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-xl transition-all shadow-lg shadow-red-950/40"
+              className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-xl transition-all shadow-lg shadow-red-950/40 cursor-pointer"
             >
               {enviando ? 'Enviando...' : 'Enviar Reporte'}
             </button>

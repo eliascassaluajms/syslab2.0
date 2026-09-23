@@ -64,23 +64,27 @@ model Usuario {
   activo        Boolean  @default(true)
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
-  
-  rolId         Int?     @map("rol_id")
-  rol           Rol?     @relation(fields: [rolId], references: [id], onDelete: SetNull)
+
+  rolId Int? @map("rol_id")
+  rol   Rol? @relation(fields: [rolId], references: [id], onDelete: SetNull)
 
   asignacionesRoles AsignacionAmbito[]
 
-  designacionesMaterias DesignacionMateria[] @relation("DocenteDesignaciones")
-  incidenciasReportadas Incidencia[] @relation("IncidenciasReportadas")
-  incidenciasTecnico    Incidencia[] @relation("IncidenciasTecnico")
-  horariosDocente       Horario[]    @relation("HorariosDocente")
-  solicitudesDocente    SolicitudHorarioExtraordinario[] @relation("DocenteSolicitudes")
-  bitacorasDocente      SesionBitacora[]                 @relation("DocenteBitacoras")
-  asistenciasEstudiante AsistenciaEstudiante[]           @relation("AsistenciasEstudiante")
-  asistenciasModificadas AsistenciaEstudiante[]          @relation("AsistenciasModificadas")
-  inscripcionesMateria  InscripcionMateria[]              @relation("InscripcionesEstudiante")
-  trabajosEstudiante    TrabajoGrado[]                   @relation("EstudianteTrabajo")
-  designacionesTribunal DesignacionTribunal[]
+  designacionesMaterias  DesignacionMateria[]             @relation("DocenteDesignaciones")
+  incidenciasReportadas  Incidencia[]                     @relation("IncidenciasReportadas")
+  incidenciasTecnico     Incidencia[]                     @relation("IncidenciasTecnico")
+  incidenciaNotas        IncidenciaNota[]                 @relation("IncidenciaNotasAutor")
+  horariosDocente        Horario[]                        @relation("HorariosDocente")
+  solicitudesDocente     SolicitudHorarioExtraordinario[] @relation("DocenteSolicitudes")
+  bitacorasDocente       SesionBitacora[]                 @relation("DocenteBitacoras")
+  asistenciasEstudiante  AsistenciaEstudiante[]           @relation("AsistenciasEstudiante")
+  asistenciasModificadas AsistenciaEstudiante[]           @relation("AsistenciasModificadas")
+  inscripcionesMateria   InscripcionMateria[]             @relation("InscripcionesEstudiante")
+  trabajosEstudiante     TrabajoGrado[]                   @relation("EstudianteTrabajo")
+  designacionesTribunal  DesignacionTribunal[]
+  desafiosLiberados      DesafioDesbloqueo[]              @relation("DesafiosLiberados")
+  usosEquipos            UsoEquipo[]                      @relation("UsosEquipoEstudiante")
+  refreshTokens          RefreshToken[]
 
   @@map("usuarios")
 }
@@ -105,12 +109,14 @@ model Carrera {
   facultadId  Int     @map("facultad_id")
   activo      Boolean @default(true)
 
-  facultad      Facultad           @relation(fields: [facultadId], references: [id], onDelete: Cascade)
-  asignaciones  AsignacionAmbito[]
-  laboratorios  Laboratorio[]
-  planesEstudio PlanEstudio[]
+  facultad          Facultad            @relation(fields: [facultadId], references: [id], onDelete: Cascade)
+  asignaciones      AsignacionAmbito[]
+  laboratorios      Laboratorio[]
+  planesEstudio     PlanEstudio[]
   categoriasEventos CategoriaEvento[]
-  trabajosGrado TrabajoGrado[]
+  trabajosGrado     TrabajoGrado[]
+  memorandums       ControlMemorandum[]
+
   @@map("carreras")
 }
 
@@ -119,8 +125,8 @@ model AsignacionAmbito {
   id         Int  @id @default(autoincrement())
   usuarioId  Int  @map("usuario_id")
   rolId      Int  @map("rol_id")
-  facultadId Int? @map("facultad_id") 
-  carreraId  Int? @map("carrera_id")  
+  facultadId Int? @map("facultad_id")
+  carreraId  Int? @map("carrera_id")
 
   usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   rol      Rol       @relation(fields: [rolId], references: [id], onDelete: Cascade)
@@ -136,31 +142,32 @@ model AsignacionAmbito {
 // =========================================================================
 
 model PlanEstudio {
-  id          Int      @id @default(autoincrement())
-  carreraId   Int      @map("carrera_id")
-  gestion     Int      // Ej: 2024
-  descripcion String?  @db.VarChar(100) // Ej: "INF-2024" o "Técnico Superior"
-  activo      Boolean  @default(true)
-  
-  carrera     Carrera  @relation(fields: [carreraId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  materias    Materia[]
+  id          Int     @id @default(autoincrement())
+  carreraId   Int     @map("carrera_id")
+  gestion     Int // Ej: 2024
+  descripcion String? @db.VarChar(100) // Ej: "INF-2024" o "Técnico Superior"
+  activo      Boolean @default(true)
+
+  carrera  Carrera   @relation(fields: [carreraId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  materias Materia[]
 
   @@map("planes_estudio")
 }
 
 model Materia {
-  id          Int      @id @default(autoincrement())
-  codigo      String   @unique @db.VarChar(20) // Ej: "DIC112"
-  nombre      String   @db.VarChar(100)
-  planId      Int      @map("plan_id")
-  tipoPeriodo String   @default("Semestral") @map("tipo_periodo") // 'Semestral' o 'Anual'
+  id          Int    @id @default(autoincrement())
+  codigo      String @unique @db.VarChar(20) // Ej: "DIC112"
+  nombre      String @db.VarChar(100)
+  planId      Int    @map("plan_id")
+  tipoPeriodo String @default("Semestral") @map("tipo_periodo") // 'Semestral' o 'Anual'
   semestre    Int
-  
-  planEstudio PlanEstudio @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  horarios    Horario[]
-  bitacoras   SesionBitacora[]
+
+  planEstudio          PlanEstudio          @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  horarios             Horario[]
+  bitacoras            SesionBitacora[]
   inscripcionesMateria InscripcionMateria[]
-  designaciones DesignacionMateria[]
+  designaciones        DesignacionMateria[]
+
   @@map("materias")
 }
 
@@ -179,11 +186,11 @@ model Laboratorio {
   creadoEn      DateTime @default(now()) @map("creado_en")
   actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
-  facultadId    Int      @map("facultad_id")
-  facultad      Facultad @relation(fields: [facultadId], references: [id], onDelete: Restrict)
+  facultadId Int      @map("facultad_id")
+  facultad   Facultad @relation(fields: [facultadId], references: [id], onDelete: Restrict)
 
-  carreraId     Int?     @map("carrera_id")
-  carrera       Carrera? @relation(fields: [carreraId], references: [id], onDelete: SetNull)
+  carreraId Int?     @map("carrera_id")
+  carrera   Carrera? @relation(fields: [carreraId], references: [id], onDelete: SetNull)
 
   equipos                    Equipo[]
   horarios                   Horario[]
@@ -191,25 +198,29 @@ model Laboratorio {
   solicitudesExtraordinarias SolicitudHorarioExtraordinario[]
   bitacoras                  SesionBitacora[]
   incidencias                Incidencia[]
+  dispositivosEscritorio     DispositivoEscritorio[]
+  desafios                   DesafioDesbloqueo[]
+  usosEquipos                UsoEquipo[]
+
   @@map("laboratorios")
 }
 
 model Horario {
-  id            Int      @id @default(autoincrement())
-  laboratorioId Int      @map("laboratorio_id")
-  materiaId     Int      @map("materia_id")
-  docenteId     Int      @map("docente_id")
-  diaSemana     String   @map("dia_semana") // 'Lunes', 'Martes', 'Miércoles', etc.
-  horaInicio    String   @map("hora_inicio") @db.VarChar(10) // Formato "HH:MM"
-  horaFin       String   @map("hora_fin") @db.VarChar(10)       // Formato "HH:MM"
-  grupo         Int      @default(1)
-  totalGrupos   Int      @default(1) @map("total_grupos")
+  id            Int    @id @default(autoincrement())
+  laboratorioId Int    @map("laboratorio_id")
+  materiaId     Int    @map("materia_id")
+  docenteId     Int    @map("docente_id")
+  diaSemana     String @map("dia_semana") // 'Lunes', 'Martes', 'Miércoles', etc.
+  horaInicio    String @map("hora_inicio") @db.VarChar(10) // Formato "HH:MM"
+  horaFin       String @map("hora_fin") @db.VarChar(10) // Formato "HH:MM"
+  grupo         Int    @default(1)
+  totalGrupos   Int    @default(1) @map("total_grupos")
   semestre      Int
-  gestion       Int      // Ej: 2026
+  gestion       Int // Ej: 2026
 
-  laboratorio   Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
-  materia       Materia     @relation(fields: [materiaId], references: [id], onDelete: Cascade)
-  docente       Usuario     @relation("HorariosDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+  laboratorio Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+  materia     Materia     @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  docente     Usuario     @relation("HorariosDocente", fields: [docenteId], references: [id], onDelete: Cascade)
 
   @@index([laboratorioId, diaSemana, horaInicio, horaFin])
   @@index([docenteId, diaSemana, horaInicio, horaFin])
@@ -223,18 +234,18 @@ enum EstadoInscripcionMateria {
 }
 
 model InscripcionMateria {
-  id           Int                    @id @default(autoincrement())
-  estudianteId Int                    @map("estudiante_id")
-  materiaId    Int                    @map("materia_id")
-  grupo        Int                    @default(1)
-  semestre     Int
-  gestion      Int
-  estado       EstadoInscripcionMateria @default(ACTIVA)
-  creadoEn     DateTime               @default(now()) @map("creado_en")
-  actualizadoEn DateTime              @updatedAt @map("actualizado_en")
+  id            Int                      @id @default(autoincrement())
+  estudianteId  Int                      @map("estudiante_id")
+  materiaId     Int                      @map("materia_id")
+  grupo         Int                      @default(1)
+  semestre      Int
+  gestion       Int
+  estado        EstadoInscripcionMateria @default(ACTIVA)
+  creadoEn      DateTime                 @default(now()) @map("creado_en")
+  actualizadoEn DateTime                 @updatedAt @map("actualizado_en")
 
-  estudiante Usuario  @relation("InscripcionesEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade)
-  materia    Materia  @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  estudiante Usuario @relation("InscripcionesEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade)
+  materia    Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
 
   @@unique([estudianteId, materiaId, grupo, semestre, gestion])
   @@index([estudianteId, materiaId, estado])
@@ -263,9 +274,27 @@ enum EstadoActivo {
 
 enum EstadoIncidencia {
   PENDIENTE
+  EN_REVISION
   EN_PROCESO
   RESUELTO
-  RECHAZADO
+  DESCARTADO
+}
+
+enum TipoIncidencia {
+  HARDWARE
+  SOFTWARE
+  RED
+  INFRAESTRUCTURA
+}
+
+enum CategoriaEquipoIncidencia {
+  PC
+  PROYECTOR
+  AIRE_ACONDICIONADO
+  RED_INTERNET
+  PERIFERICO
+  SOFTWARE
+  OTRO
 }
 
 enum PrioridadIncidencia {
@@ -276,52 +305,77 @@ enum PrioridadIncidencia {
 }
 
 model Equipo {
-  id                Int              @id @default(autoincrement())
-  laboratorioId     Int              @map("laboratorio_id")
-  codigoPatrimonial String?          @unique @map("codigo_patrimonial")
+  id                Int             @id @default(autoincrement())
+  laboratorioId     Int             @map("laboratorio_id")
+  codigoPatrimonial String?         @unique @map("codigo_patrimonial")
   nombre            String
-  categoria         CategoriaActivo  @default(COMPUTO)
-  estado            EstadoActivo     @default(OPERATIVO)
+  categoria         CategoriaActivo @default(COMPUTO)
+  estado            EstadoActivo    @default(OPERATIVO)
   marca             String?
   modelo            String?
-  numeroSerie       String?          @map("numero_serie")
-  ubicacionDetalle  String?          @map("ubicacion_detalle")
-  descripcion       String?          @db.Text
+  numeroSerie       String?         @map("numero_serie")
+  ubicacionDetalle  String?         @map("ubicacion_detalle")
+  descripcion       String?         @db.Text
   especificaciones  Json?
-  fechaAdquisicion  DateTime?        @map("fecha_adquisicion")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
+  fechaAdquisicion  DateTime?       @map("fecha_adquisicion")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
 
-  laboratorio       Laboratorio      @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
-  incidencias       Incidencia[]
-  asistencias       AsistenciaEstudiante[]
+  laboratorio           Laboratorio            @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+  incidencias           Incidencia[]
+  asistencias           AsistenciaEstudiante[]
+  desafios              DesafioDesbloqueo[]
+  usosEquipos           UsoEquipo[]
+  dispositivoEscritorio DispositivoEscritorio?
 
   @@map("equipos")
 }
 
 model Incidencia {
-  id              Int                 @id @default(autoincrement())
-  laboratorioId   Int                 @map("laboratorio_id")
-  solicitanteId   Int                 @map("solicitante_id")
-  tecnicoId       Int?                @map("tecnico_id")
-  equipoId        Int?                @map("equipo_id")
+  id              Int                       @id @default(autoincrement())
+  folio           String                    @unique @db.VarChar(30)
+  clienteUuid     String?                   @map("cliente_uuid") @db.VarChar(64)
+  laboratorioId   Int                       @map("laboratorio_id")
+  solicitanteId   Int                       @map("solicitante_id")
+  tecnicoId       Int?                      @map("tecnico_id")
+  equipoId        Int?                      @map("equipo_id")
+  tipo            TipoIncidencia            @default(HARDWARE)
+  categoriaEquipo CategoriaEquipoIncidencia @default(PC) @map("categoria_equipo")
   titulo          String
-  descripcion     String              @db.Text
-  prioridad       PrioridadIncidencia @default(MEDIA)
-  estado          EstadoIncidencia    @default(PENDIENTE)
-  solucion        String?             @db.Text
-  fechaReporte    DateTime            @default(now()) @map("fecha_reporte")
-  fechaResolucion DateTime?           @map("fecha_resolucion")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  descripcion     String                    @db.Text
+  prioridad       PrioridadIncidencia       @default(MEDIA)
+  estado          EstadoIncidencia          @default(PENDIENTE)
+  solucion        String?                   @db.Text
+  evidenciaUrl    String?                   @map("evidencia_url")
+  fechaReporte    DateTime                  @default(now()) @map("fecha_reporte")
+  fechaResolucion DateTime?                 @map("fecha_resolucion")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
 
-  laboratorio     Laboratorio         @relation(fields: [laboratorioId], references: [id])
-  solicitante     Usuario             @relation("IncidenciasReportadas", fields: [solicitanteId], references: [id])
-  tecnicoAsignado Usuario?            @relation("IncidenciasTecnico", fields: [tecnicoId], references: [id])
-  equipo          Equipo?             @relation(fields: [equipoId], references: [id])
+  laboratorio     Laboratorio      @relation(fields: [laboratorioId], references: [id])
+  solicitante     Usuario          @relation("IncidenciasReportadas", fields: [solicitanteId], references: [id])
+  tecnicoAsignado Usuario?         @relation("IncidenciasTecnico", fields: [tecnicoId], references: [id])
+  equipo          Equipo?          @relation(fields: [equipoId], references: [id])
+  notas           IncidenciaNota[]
 
+  @@unique([solicitanteId, clienteUuid])
   @@map("incidencias")
 }
+
+model IncidenciaNota {
+  id           Int      @id @default(autoincrement())
+  incidenciaId Int      @map("incidencia_id")
+  autorId      Int?     @map("autor_id")
+  mensaje      String   @db.Text
+  esSistema    Boolean  @default(false) @map("es_sistema")
+  fecha        DateTime @default(now())
+
+  incidencia Incidencia @relation(fields: [incidenciaId], references: [id], onDelete: Cascade)
+  autor      Usuario?   @relation("IncidenciaNotasAutor", fields: [autorId], references: [id], onDelete: SetNull)
+
+  @@map("incidencias_notas")
+}
+
 // =========================================================================
 // MÓDULO DE GESTIÓN DE EVENTOS Y ACTIVIDADES
 // =========================================================================
@@ -338,11 +392,11 @@ model CategoriaEvento {
   tipo        TipoCategoriaEvento @default(ACADEMICO)
   activo      Boolean             @default(true)
 
-  carreraId   Int                 @map("carrera_id")
-  carrera     Carrera             @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+  carreraId Int     @map("carrera_id")
+  carrera   Carrera @relation(fields: [carreraId], references: [id], onDelete: Cascade)
 
-  creadoEn    DateTime            @default(now()) @map("creado_en")
-  actualizadoEn DateTime          @updatedAt @map("actualizado_en")
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
 
   @@index([carreraId])
   @@map("categorias_eventos")
@@ -367,6 +421,7 @@ enum RolTribunal {
   PRESIDENTE
   SECRETARIO
   VOCAL
+  TRIBUNAL
 }
 
 enum EstadoRevision {
@@ -376,108 +431,125 @@ enum EstadoRevision {
 }
 
 model TrabajoGrado {
-  id                   String             @id @default(uuid())
-  titulo               String             @db.VarChar(500)
-  modalidad            String             @db.VarChar(100)
-  gradoOptado          String             @db.VarChar(100)
-  carreraId            Int
-  carrera              Carrera            @relation(fields: [carreraId], references: [id], onDelete: Restrict)
+  id          String  @id @default(uuid())
+  titulo      String  @db.VarChar(500)
+  modalidad   String  @db.VarChar(100)
+  gradoOptado String  @db.VarChar(100)
+  carreraId   Int
+  carrera     Carrera @relation(fields: [carreraId], references: [id], onDelete: Restrict)
+  gestion     Int     @default(0) // Gestión académica (año). Ej: 2026
 
-  estudianteNombre     String             @db.VarChar(150)
-  estudianteCi         String             @db.VarChar(30)
-  estudianteRu         String             @db.VarChar(30)
-  estudianteEmail      String             @db.VarChar(150)
-  estudianteTelefono   String?            @db.VarChar(30)
-  estudianteUsuarioId  Int?               @unique @map("estudiante_usuario_id")
-  estudianteUsuario    Usuario?           @relation("EstudianteTrabajo", fields: [estudianteUsuarioId], references: [id])
+  estudianteNombre    String   @db.VarChar(150)
+  estudianteCi        String   @db.VarChar(30)
+  estudianteRu        String   @db.VarChar(30)
+  estudianteEmail     String   @db.VarChar(150)
+  estudianteTelefono  String?  @db.VarChar(30)
+  estudianteUsuarioId Int?     @unique @map("estudiante_usuario_id")
+  estudianteUsuario   Usuario? @relation("EstudianteTrabajo", fields: [estudianteUsuarioId], references: [id])
 
-  estado               EstadoTrabajoGrado @default(REGISTRADO)
+  estado EstadoTrabajoGrado @default(REGISTRADO)
 
-  tribunales           DesignacionTribunal[]
-  versionesDocumento   VersionDocumento[]
-  observaciones        ObservacionTribunal[]
-  actaDefensa          ActaDefensa?
+  tribunales         DesignacionTribunal[]
+  versionesDocumento VersionDocumento[]
+  observaciones      ObservacionTribunal[]
+  actaDefensa        ActaDefensa?
 
-  creadoEn             DateTime           @default(now())
-  actualizadoEn        DateTime           @updatedAt
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
 
+  @@index([carreraId, gestion])
   @@map("trabajos_grado")
 }
 
 model DesignacionTribunal {
-  id                    String              @id @default(uuid())
-  trabajoGradoId        String
-  trabajoGrado          TrabajoGrado        @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  trabajoGradoId String
+  trabajoGrado   TrabajoGrado @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
 
-  docenteId             Int
-  docente               Usuario             @relation(fields: [docenteId], references: [id])
+  docenteId Int
+  docente   Usuario @relation(fields: [docenteId], references: [id])
 
-  rol                   RolTribunal
-  esExterno             Boolean             @default(false)
-  institucionProcedencia String?            @db.VarChar(150)
+  rol                    RolTribunal @default(TRIBUNAL)
+  preside                Boolean     @default(false) // Preside el acto de defensa: Vicedecano o Director de Carrera
+  esExterno              Boolean     @default(false)
+  institucionProcedencia String?     @db.VarChar(150)
 
-  numeroMemorandum      String?             @db.VarChar(50)
-  fechaEmisionMemo      DateTime?
+  numeroMemorandum String?   @db.VarChar(50)
+  fechaEmisionMemo DateTime?
 
-  estadoRevision        EstadoRevision      @default(PENDIENTE)
-  fechaConformidad      DateTime?
-  cartaConformidadUrl   String?
+  estadoRevision           EstadoRevision @default(PENDIENTE)
+  fechaConformidad         DateTime?
+  cartaConformidadUrl      String?
+  fechaLimiteObservaciones DateTime?      @map("fecha_limite_observaciones")
 
   observacionesEmitidas ObservacionTribunal[]
 
-  creadoEn              DateTime            @default(now())
+  creadoEn DateTime @default(now())
 
   @@unique([trabajoGradoId, docenteId])
-  @@unique([trabajoGradoId, rol])
   @@map("designaciones_tribunal")
 }
 
 model VersionDocumento {
-  id                    String           @id @default(uuid())
-  trabajoGradoId        String
-  trabajoGrado          TrabajoGrado     @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
-  numeroVersion         Int              @default(1)
-  archivoUrl            String           @db.VarChar(500)
-  descripcionCambios    String?          @db.Text
-  fechaSubida           DateTime         @default(now())
+  id                 String       @id @default(uuid())
+  trabajoGradoId     String
+  trabajoGrado       TrabajoGrado @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+  numeroVersion      Int          @default(1)
+  archivoUrl         String       @db.VarChar(500)
+  descripcionCambios String?      @db.Text
+  fechaSubida        DateTime     @default(now())
 
   @@map("versiones_documento_grado")
 }
 
 model ObservacionTribunal {
-  id                    String              @id @default(uuid())
-  trabajoGradoId        String
-  trabajoGrado          TrabajoGrado        @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  trabajoGradoId String
+  trabajoGrado   TrabajoGrado @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
 
-  designacionId         String
-  designacion           DesignacionTribunal @relation(fields: [designacionId], references: [id], onDelete: Cascade)
+  designacionId String
+  designacion   DesignacionTribunal @relation(fields: [designacionId], references: [id], onDelete: Cascade)
 
-  numeroRevision        Int                 @default(1)
-  detalleObservacion     String              @db.Text
-  archivoCorreccionesUrl String?            @db.VarChar(500)
-  subsanada             Boolean             @default(false)
-  fechaSubsanacion      DateTime?
+  numeroRevision         Int       @default(1)
+  detalleObservacion     String    @db.Text
+  archivoCorreccionesUrl String?   @db.VarChar(500)
+  esExtraordinaria       Boolean   @default(false)
+  subsanada              Boolean   @default(false)
+  fechaSubsanacion       DateTime?
 
-  creadoEn              DateTime            @default(now())
+  creadoEn DateTime @default(now())
 
   @@map("observaciones_tribunal")
 }
 
 model ActaDefensa {
-  id                    String            @id @default(uuid())
-  trabajoGradoId        String            @unique
-  trabajoGrado          TrabajoGrado      @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  trabajoGradoId String       @unique
+  trabajoGrado   TrabajoGrado @relation(fields: [trabajoGradoId], references: [id], onDelete: Cascade)
 
-  codigoActa            String            @unique @db.VarChar(50)
-  fechaGeneracion       DateTime          @default(now())
+  codigoActa      String   @unique @db.VarChar(50)
+  fechaGeneracion DateTime @default(now())
 
-  calificacionEscrita   Float?
-  calificacionOral      Float?
-  calificacionFinal     Float?
-  calificacionLiteral   String?           @db.VarChar(100)
-  resultadoFinal        String?           @db.VarChar(50)
+  calificacionEscrita Float?
+  calificacionOral    Float?
+  calificacionFinal   Float?
+  calificacionLiteral String? @db.VarChar(100)
+  resultadoFinal      String? @db.VarChar(50)
 
   @@map("actas_defensa")
+}
+
+// Correlativo de memorándums de designación por carrera y gestión académica.
+// El último número se coordina con la secretaría de la carrera.
+model ControlMemorandum {
+  id           Int     @id @default(autoincrement())
+  carreraId    Int
+  carrera      Carrera @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+  gestion      Int
+  ultimoNumero Int     @default(0)
+
+  @@unique([carreraId, gestion])
+  @@map("controles_memorandum")
 }
 
 model Activity {
@@ -513,28 +585,28 @@ enum EstadoInscripcion {
 }
 
 model EventoParticipante {
-  id                String            @id @default(uuid())
-  nombre            String            @db.VarChar(100)
-  apellido          String            @db.VarChar(100)
-  correo            String            @db.VarChar(150) // Corrección: quitado @unique individual
-  telefono          String            @db.VarChar(30)
-  tipo              TipoParticipante  
-  estado            EstadoInscripcion @default(PRE_INSCRITO)
-  
+  id       String            @id @default(uuid())
+  nombre   String            @db.VarChar(100)
+  apellido String            @db.VarChar(100)
+  correo   String            @db.VarChar(150) // Corrección: quitado @unique individual
+  telefono String            @db.VarChar(30)
+  tipo     TipoParticipante
+  estado   EstadoInscripcion @default(PRE_INSCRITO)
+
   // Relación obligatoria o nula con la actividad
-  activityId        String?           @map("activity_id")
-  activity          Activity?         @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  activityId String?   @map("activity_id")
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   // Datos del pago
-  codigoTransaccion String?           @unique @map("codigo_transaccion") @db.VarChar(100)
-  montoPagado       Decimal           @default(0.00) @map("monto_pagado") @db.Decimal(10, 2)
-  montoBancoReal    Decimal?          @map("monto_banco_real") @db.Decimal(10, 2)
-  comprobanteUrl    String?           @map("comprobante_url") @db.Text
-  observaciones     String?           @db.Text
-  
+  codigoTransaccion String?  @unique @map("codigo_transaccion") @db.VarChar(100)
+  montoPagado       Decimal  @default(0.00) @map("monto_pagado") @db.Decimal(10, 2)
+  montoBancoReal    Decimal? @map("monto_banco_real") @db.Decimal(10, 2)
+  comprobanteUrl    String?  @map("comprobante_url") @db.Text
+  observaciones     String?  @db.Text
+
   // Control de fechas
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Índices para búsquedas rápidas en caja/operador y unicidad por evento
   @@unique([correo, activityId]) // Evita inscripciones dobles al MISMO evento
@@ -576,6 +648,7 @@ enum OrigenMarcado {
   PIN_ESTUDIANTE
   MANUAL_DOCENTE
   SISTEMA_FALTA_AUTOMATICA
+  DESBLOQUEO_PC
 }
 
 enum EstadoAsistencia {
@@ -587,71 +660,161 @@ enum EstadoAsistencia {
 
 // 1. Solicitudes de Horarios Extraordinarios
 model SolicitudHorarioExtraordinario {
-  id                    Int               @id @default(autoincrement())
+  id                    Int             @id @default(autoincrement())
   laboratorioId         Int
-  laboratorio           Laboratorio       @relation(fields: [laboratorioId], references: [id])
+  laboratorio           Laboratorio     @relation(fields: [laboratorioId], references: [id])
   docenteId             Int?
-  docente               Usuario?          @relation("DocenteSolicitudes", fields: [docenteId], references: [id])
-  solicitadoPorDirector Boolean           @default(false)
+  docente               Usuario?        @relation("DocenteSolicitudes", fields: [docenteId], references: [id])
+  solicitadoPorDirector Boolean         @default(false)
   nombreAyudante        String?
   materia               String
-  fecha                 DateTime          @db.Date
+  fecha                 DateTime        @db.Date
   horaInicio            String
   horaFin               String
   motivo                String
-  estado                EstadoSolicitud   @default(PENDIENTE)
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  estado                EstadoSolicitud @default(PENDIENTE)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 }
 
 // 2. Sesiones de Bitácora de Uso
 model SesionBitacora {
-  id                 Int                   @id @default(autoincrement())
-  laboratorioId      Int
-  laboratorio        Laboratorio           @relation(fields: [laboratorioId], references: [id])
-  materiaId          Int?
-  materia            Materia?              @relation(fields: [materiaId], references: [id])
-  docenteId          Int?
-  docente            Usuario?              @relation("DocenteBitacoras", fields: [docenteId], references: [id])
-  nombreAyudante     String?
-  materiaNombre      String?
-  fecha              DateTime              @db.Date
-  horaInicio         String
-  horaFin            String
-  practicaRealizada  String?
-  cumplio            Boolean               @default(false)
-  tipoUso            TipoUsoLaboratorio    @default(REGULAR)
-  grupo              Int                   @default(1)
-  semestre           Int                   @default(1)
-  gestion            Int                   @default(2026)
-  listaConfirmada    Boolean               @default(false)
+  id                     Int                    @id @default(autoincrement())
+  laboratorioId          Int
+  laboratorio            Laboratorio            @relation(fields: [laboratorioId], references: [id])
+  materiaId              Int?
+  materia                Materia?               @relation(fields: [materiaId], references: [id])
+  docenteId              Int?
+  docente                Usuario?               @relation("DocenteBitacoras", fields: [docenteId], references: [id])
+  nombreAyudante         String?
+  materiaNombre          String?
+  fecha                  DateTime               @db.Date
+  horaInicio             String
+  horaFin                String
+  practicaRealizada      String?
+  cumplio                Boolean                @default(false)
+  tipoUso                TipoUsoLaboratorio     @default(REGULAR)
+  grupo                  Int                    @default(1)
+  semestre               Int                    @default(1)
+  gestion                Int                    @default(2026)
+  listaConfirmada        Boolean                @default(false)
   fechaConfirmacionLista DateTime?
-  tokenQR            String                @unique
-  asistencias        AsistenciaEstudiante[]
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  tokenQR                String                 @unique
+  asistencias            AsistenciaEstudiante[]
+  usosEquipos            UsoEquipo[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
 }
 
 // 3. Registro de Asistencia de Estudiantes
 model AsistenciaEstudiante {
-  id                Int            @id @default(autoincrement())
-  sesionBitacoraId  Int
-  sesionBitacora    SesionBitacora @relation(fields: [sesionBitacoraId], references: [id], onDelete: Cascade)
-  estudianteId      Int
-  estudiante        Usuario        @relation("AsistenciasEstudiante", fields: [estudianteId], references: [id])
-  equipoId          Int?
-  equipo            Equipo?        @relation(fields: [equipoId], references: [id], onDelete: SetNull)
-  fechaHora         DateTime?
-  estado            EstadoAsistencia @default(PRESENTE)
-  origen            OrigenMarcado  @default(QR_ESTUDIANTE)
-  justificativo     String?        @db.VarChar(255)
-  modificadoPorId   Int?
-  modificadoPor     Usuario?       @relation("AsistenciasModificadas", fields: [modificadoPorId], references: [id], onDelete: SetNull)
+  id               Int              @id @default(autoincrement())
+  sesionBitacoraId Int
+  sesionBitacora   SesionBitacora   @relation(fields: [sesionBitacoraId], references: [id], onDelete: Cascade)
+  estudianteId     Int
+  estudiante       Usuario          @relation("AsistenciasEstudiante", fields: [estudianteId], references: [id])
+  equipoId         Int?
+  equipo           Equipo?          @relation(fields: [equipoId], references: [id], onDelete: SetNull)
+  fechaHora        DateTime?
+  estado           EstadoAsistencia @default(PRESENTE)
+  origen           OrigenMarcado    @default(QR_ESTUDIANTE)
+  justificativo    String?          @db.VarChar(255)
+  modificadoPorId  Int?
+  modificadoPor    Usuario?         @relation("AsistenciasModificadas", fields: [modificadoPorId], references: [id], onDelete: SetNull)
 
   // Evita que un estudiante marque asistencia más de una vez en la misma sesión
   @@unique([sesionBitacoraId, estudianteId])
   @@index([sesionBitacoraId, estado])
 }
+
+// =========================================================================
+// MÓDULO DE BLOQUEO DE EQUIPOS Y DESBLOQUEO CON CÓDIGO DINÁMICO
+// =========================================================================
+
+enum EstadoDesafio {
+  ESPERANDO
+  LIBERADO
+  EXPIRADO
+  CANCELADO
+}
+
+enum EstadoUsoEquipo {
+  ACTIVO
+  CERRADO
+}
+
+// 1. Dispositivo de escritorio emparejado a un equipo del laboratorio
+model DispositivoEscritorio {
+  id             Int       @id @default(autoincrement())
+  equipoId       Int       @unique @map("equipo_id")
+  laboratorioId  Int       @map("laboratorio_id")
+  deviceToken    String    @unique @map("device_token") @db.VarChar(255)
+  nombreEquipo   String?   @map("nombre_equipo") @db.VarChar(150)
+  activo         Boolean   @default(true)
+  ultimaConexion DateTime? @map("ultima_conexion")
+  creadoEn       DateTime  @default(now()) @map("creado_en")
+  actualizadoEn  DateTime  @updatedAt @map("actualizado_en")
+
+  equipo      Equipo      @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  laboratorio Laboratorio @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+
+  desafios DesafioDesbloqueo[]
+
+  @@index([laboratorioId])
+  @@map("dispositivos_escritorio")
+}
+
+// 2. Desafío de desbloqueo: código aleatorio de 2 dígitos de un solo uso
+model DesafioDesbloqueo {
+  id            Int           @id @default(autoincrement())
+  dispositivoId Int           @map("dispositivo_id")
+  equipoId      Int           @map("equipo_id")
+  laboratorioId Int           @map("laboratorio_id")
+  codigo        String        @db.VarChar(4)
+  estado        EstadoDesafio @default(ESPERANDO)
+  intentos      Int           @default(0)
+  expiraEn      DateTime      @map("expira_en")
+  liberadoPorId Int?          @map("liberado_por_id")
+  liberadoEn    DateTime?     @map("liberado_en")
+  creadoEn      DateTime      @default(now()) @map("creado_en")
+
+  dispositivo DispositivoEscritorio @relation(fields: [dispositivoId], references: [id], onDelete: Cascade)
+  equipo      Equipo                @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  laboratorio Laboratorio           @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+  liberadoPor Usuario?              @relation("DesafiosLiberados", fields: [liberadoPorId], references: [id], onDelete: SetNull)
+  usoEquipo   UsoEquipo?
+
+  @@index([equipoId, estado])
+  @@index([laboratorioId, estado])
+  @@index([codigo, estado])
+  @@map("desafios_desbloqueo")
+}
+
+// 3. Registro de uso efectivo del equipo (bloqueo → desbloqueo)
+model UsoEquipo {
+  id               Int             @id @default(autoincrement())
+  equipoId         Int             @map("equipo_id")
+  laboratorioId    Int             @map("laboratorio_id")
+  estudianteId     Int             @map("estudiante_id")
+  sesionBitacoraId Int?            @map("sesion_bitacora_id")
+  desafioId        Int?            @unique @map("desafio_id")
+  estado           EstadoUsoEquipo @default(ACTIVO)
+  fechaHoraInicio  DateTime        @default(now()) @map("fecha_hora_inicio")
+  fechaHoraFin     DateTime?       @map("fecha_hora_fin")
+  creadoEn         DateTime        @default(now()) @map("creado_en")
+
+  equipo         Equipo             @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  laboratorio    Laboratorio        @relation(fields: [laboratorioId], references: [id], onDelete: Cascade)
+  estudiante     Usuario            @relation("UsosEquipoEstudiante", fields: [estudianteId], references: [id], onDelete: Cascade)
+  sesionBitacora SesionBitacora?    @relation(fields: [sesionBitacoraId], references: [id], onDelete: SetNull)
+  desafio        DesafioDesbloqueo? @relation(fields: [desafioId], references: [id], onDelete: SetNull)
+
+  @@index([equipoId, estado])
+  @@index([estudianteId, estado])
+  @@index([sesionBitacoraId])
+  @@map("usos_equipos")
+}
+
 // =========================================================================
 // MÓDULO DE DESIGNACIÓN Y CARGA ACADÉMICA DOCENTE
 // =========================================================================
@@ -663,22 +826,43 @@ enum TipoPeriodoDesignacion {
 }
 
 model DesignacionMateria {
-  id          Int                    @id @default(autoincrement())
-  docenteId   Int                    @map("docente_id")
-  materiaId   Int                    @map("materia_id")
-  grupo       Int                    @default(1)
-  gestion     Int                    // Ej: 2026
-  periodo     TipoPeriodoDesignacion @default(SEMESTRE_1) // ANUAL, SEMESTRE_1, SEMESTRE_2
-  activo      Boolean                @default(true)
-  creadoEn    DateTime               @default(now()) @map("creado_en")
-  actualizadoEn DateTime             @updatedAt @map("actualizado_en")
+  id            Int                    @id @default(autoincrement())
+  docenteId     Int                    @map("docente_id")
+  materiaId     Int                    @map("materia_id")
+  grupo         Int                    @default(1)
+  gestion       Int // Ej: 2026
+  periodo       TipoPeriodoDesignacion @default(SEMESTRE_1) // ANUAL, SEMESTRE_1, SEMESTRE_2
+  activo        Boolean                @default(true)
+  creadoEn      DateTime               @default(now()) @map("creado_en")
+  actualizadoEn DateTime               @updatedAt @map("actualizado_en")
 
-  docente     Usuario                @relation("DocenteDesignaciones", fields: [docenteId], references: [id], onDelete: Cascade)
-  materia     Materia                @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  docente Usuario @relation("DocenteDesignaciones", fields: [docenteId], references: [id], onDelete: Cascade)
+  materia Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
 
   // Evita duplicar la misma designación para el mismo docente, materia, grupo y gestión
   @@unique([docenteId, materiaId, grupo, gestion, periodo])
   @@index([docenteId, gestion])
   @@index([materiaId, gestion])
   @@map("designaciones_materias")
+}
+
+// =========================================================================
+// MÓDULO DE REFRESH TOKENS ROTATIVOS
+// =========================================================================
+
+model RefreshToken {
+  id                 Int       @id @default(autoincrement())
+  tokenHash          String    @unique @map("token_hash") @db.VarChar(128)
+  usuarioId          Int       @map("usuario_id")
+  usuario            Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  dispositivoInfo    String?   @map("dispositivo_info") @db.VarChar(255)
+  revocado           Boolean   @default(false)
+  revocadoEn         DateTime? @map("revocado_en")
+  reemplazadoPorHash String?   @map("reemplazado_por_hash") @db.VarChar(128)
+  expiraEn           DateTime  @map("expira_en")
+  creadoEn           DateTime  @default(now()) @map("creado_en")
+
+  @@index([usuarioId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
 }

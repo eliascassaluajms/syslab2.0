@@ -86,6 +86,21 @@ export class HorarioController {
     }
   }
 
+  async miHorario(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const usuarioId = req.user?.id ? Number(req.user.id) : 0;
+      const horarios = await horarioService.listarMios(usuarioId);
+
+      res.status(200).json({
+        status: 'success',
+        results: horarios.length,
+        data: { horarios },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async actualizar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;

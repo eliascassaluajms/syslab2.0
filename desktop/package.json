@@ -1,0 +1,41 @@
+{
+  "name": "syslab-lock",
+  "version": "1.0.0",
+  "description": "App de escritorio SysLab 2.0 para el bloqueo y desbloqueo de equipos de laboratorio",
+  "main": "./out/main/index.js",
+  "author": "SysLab 2.0 - UAJMS",
+  "license": "MIT",
+  "homepage": "https://200.87.27.36:5173/descargas",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "lint": "npm run typecheck",
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "dist:win": "electron-vite build && electron-builder --win"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.17",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.0.0",
+    "postcss": "^8.4.49",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}

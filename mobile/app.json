@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "SysLab Estudiante",
+    "slug": "syslab-estudiante",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#020617",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#020617"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "La cámara se usa para escanear el código QR de la sesión y de los equipos de laboratorio."
+      }
+    },
+    "android": {
+      "package": "com.uajms.syslab.estudiante",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#020617",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir a SysLab Estudiante usar la cámara para escanear códigos QR de sesión y de desbloqueo de equipos.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

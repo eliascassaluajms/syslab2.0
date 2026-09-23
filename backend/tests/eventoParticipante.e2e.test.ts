@@ -1,12 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('postgres-db:5432')) {
-  process.env.DATABASE_URL = 'postgresql://admin_syslab:SecretPassword2026@127.0.0.1:5434/syslab_db?schema=public';
-}
-
-import app from '../src/app.js';
-import { prisma } from '../src/config/prisma.js';
+import { app, prisma } from './helpers/environment.js';
 
 let server: any;
 let baseUrl: string;
@@ -23,6 +18,9 @@ test.before(async () => {
 
 test.after(async () => {
   if (server) {
+    if (typeof server.closeAllConnections === 'function') {
+      server.closeAllConnections();
+    }
     await new Promise<void>((resolve) => server.close(resolve));
   }
   // Limpieza de datos creados en el test E2E

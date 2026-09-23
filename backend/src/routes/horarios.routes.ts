@@ -13,6 +13,7 @@ const upload = multer({
 router.use(verificarJWT);
 
 router.get('/', requirePermission('horarios:listar'), horarioController.listar);
+router.get('/mi-horario', requirePermission('horarios:listar'), horarioController.miHorario);
 router.get('/disponibilidad', requirePermission('horarios:listar'), horarioController.obtenerDisponibilidad);
 router.post('/importar-excel', requirePermission('horarios:crear'), upload.single('archivoExcel'), horarioController.importarExcel);
 router.get('/:id', requirePermission('horarios:ver'), horarioController.obtenerPorId);

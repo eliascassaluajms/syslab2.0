@@ -1,0 +1,492 @@
+UNIVERSIDAD AUTÓNOMA JUAN MISAEL SARACHO
+FACULTAD DE INGENIERÍA DE RECURSOS NATURALES Y TECNOLOGÍA
+DEPARTAMENTO DE INFORMÁTICA Y CIENCIAS EXACTAS
+CARRERA:
+INGENIERÍA INFORMÁTICA
+REGLAMENTO DE TITULACIÓN
+PARA LA MATERIA TALLER III
+02 ABRIL 2024
+1
+INTRODUCCIÓN
+La carrera de Ingeniería Informática de la Universidad Autónoma “Juan Misael
+Saracho”, Facultad de Ingeniería de Recursos Naturales y Tecnología, identificada
+con los anhelos de la Universidad Boliviana, tiene la misión de formar
+profesionales idóneos, identificados y comprometidos con nuestra realidad. Bajo
+este marco, es importante reconocer el papel protagónico que juega la Informática
+en nuestra sociedad y la necesidad de encarar estudios para lograr una racional
+utilización de la tecnología involucrada en esta ciencia en beneficio del desarrollo
+armónico de nuestra sociedad.
+OBJETIVO DEL REGLAMENTO
+El presente tiene como objetivo normar el desarrollo y evaluación de la materia de
+profesionalización INF-501 TALLER III.
+CAPITULO I.- NATURALEZA Y OBJETIVO
+La materia de INF-501 TALLER III, es una materia de profesionalización
+consignada como asignatura anual, correspondiente al Quinto año (noveno y
+décimo semestre) del plan de estudio de la carrera de Ingeniería Informática, que
+tiene la finalidad de integrar los conocimientos, habilidades, destrezas, actitudes y
+valores desarrollados por los estudiantes a lo largo de su formación profesional.
+Art 1. La asignatura de TALLER III, tiene por objeto la aplicación de los
+conocimientos científico-tecnológicos adquiridos por los estudiantes durante su
+formación académica, orientado a la solución de problemas del ámbito profesional
+mediante el análisis, diseño y/o implementación de un proyecto teórico y/o practico
+en el área de la mención seleccionada.
+CAPÍTULO II.- CONSIDERACIONES GENERALES
+La carrera de Ingeniería Informática contempla un plan de estudios con materias
+distribuidas en 10 semestres y 5 años, entre las que se encuentra la materia de
+TALLER III, considerada como materia de profesionalización. Al vencimiento de
+2
+todas las asignaturas, incluida esta última, el estudiante podrá optar el grado
+académico de LICENCIADO EN INGENIERÍA INFORMÁTICA.
+Dada esta particularidad de la materia de TALLER III, se hace necesario
+establecer procedimientos que faciliten el desarrollo de las actividades
+académicas orientadas al cumplimiento satisfactorio de la misma.
+CAPÍTULO III.- DE LOS REQUISITOS
+Art.2. El estudiante para cursar la materia de TALLER III, debe estar debidamente
+matriculado y programar la materia, además deberá haber aprobado todas las
+materias hasta el octavo semestre.
+CAPÍTULO IV: DE LAS FUNCIONES DEL DOCENTE
+Art. 3. La materia TALLER III, estará a cargo del (los) docente(s) designado(s) y
+será impartida en los ambientes universitarios, el docente tendrá a su cargo un
+número máximo de 20 estudiantes por grupo.
+Art. 4. El docente de la materia TALLER III tiene las siguientes funciones:
+1. Deberá presentar al director de carrera, en la primera semana de iniciado el
+periodo lectivo el plan de clases y cronograma respectivo.
+2. Orientar con clases teóricas a los alumnos, sobre la forma de realizar el
+Trabajo de acuerdo con el programa docente de la materia, así mismo dar a
+conocer el cronograma y su plan de clases.
+3. Deberá elevar un informe en un tiempo no mayor a 4 semanas de iniciado
+el periodo lectivo, al director de carrera de los perfiles de proyectos elegidos
+por los estudiantes, del banco de temas u otros a objeto de que se pueda
+designar la comisión de revisión/aprobación de perfil de proyecto.
+4. Presenciar la defensa de cada uno de los perfiles presentados por los
+estudiantes ante la Comisión de revisión de perfil. Y asegurarse de que se
+realicen las correcciones y coordinar una próxima defensa en caso de que
+el perfil de proyecto sea observado en un tiempo no mayor a 5 días hábiles.
+3
+5. Presentar informes escritos a requerimiento de autoridades de la Facultad
+de Ingeniería de Recursos Naturales y Tecnología.
+6. Llevar el control específico de cada estudiante de la materia a través de la
+elaboración de un expediente ordenado, donde constarán sus notas de
+evaluación continua. El incumplimiento de alguna actividad del cronograma
+sin justificación válida será motivo de reprobación de la materia.
+7. Deberá elevar un informe al director de carrera de los trabajos concluidos a
+objeto de que se pueda designar la comisión evaluadora para la defensa
+final de los mismos.
+8. Presenciar la defensa final de cada uno de los trabajos presentados por los
+estudiantes ante la comisión evaluadora.
+CAPÍTULO V.- DE LAS MODALIDADES Y AREAS DE CONOCIMIENTO
+Art. 5. Las modalidades de graduación que la carrera de Ingeniería Informática
+contempla son las siguientes:
+• TRABAJO DIRIGIDO
+• TRABAJO DE INVESTIGACIÓN
+• VÍA DIPLOMADO
+• PROYECTO DE GRADO
+Art. 6. La modalidad de Trabajo Dirigido: Es un trabajo realizado en instituciones
+públicas, privadas y/o organizaciones sin fines de lucro. Se trata de desarrollar un
+producto tecnológico, relacionado al área de conocimiento en la que debe integrar
+conocimientos teórico-prácticos adquiridos durante su formación académica, con
+la complejidad suficiente como para ser abordado en un trabajo de titulación,
+sobre la base de los términos de referencia de la institución beneficiaria, bajo la
+supervisión y coordinación del docente de la materia y un representante de la
+institución mismo que deber ser un profesional del área de informática.
+Art. 7. La modalidad de Trabajo de Investigación: es un proceso sistemático y
+metódico que tiene como objetivo principal generar nuevo conocimiento, resolver
+4
+problemas o desarrollar soluciones innovadoras en el ámbito de la informática y la
+presentación de conclusiones respaldadas por evidencias con la complejidad
+suficiente como para ser abordado en un trabajo de titulación, bajo la supervisión
+del docente de la materia.
+Art. 8. La modalidad Vía Diplomado: consiste en cursar y aprobar un programa de
+Diplomado, conducente a la obtención del acta de modalidad de graduación de los
+estudiantes para culminar con su plan de estudios.
+Art. 9. La modalidad de Proyecto de Grado: Es un trabajo realizado en
+instituciones públicas, privadas y/o organizaciones sin fines de lucro. Se trata de
+desarrollar un producto tecnológico a nivel de diseño, prototipo o implementación,
+relacionado al área de conocimiento en la que debe integrar conocimientos
+teórico-prácticos adquiridos durante su formación académica, con la complejidad
+suficiente como para ser abordado en un trabajo de titulación, sobre la base de los
+términos de referencia de la institución beneficiaria, bajo la supervisión y
+coordinación del docente de la materia y un representante de la institución.
+Art. 10. Las áreas de conocimiento para la elaboración del trabajo de grado
+deben estar en correspondencia con el área de especialización/mención y son las
+siguientes:
+• Sistemas de Información
+• Aplicaciones Multimedia
+• Inteligencia Artificial, Sistemas Expertos y análisis de datos
+• Arquitectura de Computadoras
+• Gestión de Redes de Computadoras y TI
+• Control automático e internet de las cosas
+• Otras aplicaciones en Informática
+5
+CAPITULO VI. - DEL PROCEDIMIENTO
+Art. 11. Al cursar la materia el estudiante debe seguir el siguiente procedimiento:
+a) Conocer el contenido teórico-practico de la materia TALLER III y su
+Reglamento específico.
+b) El estudiante debe elaborar el perfil de proyecto de acuerdo al formato
+establecido (anexo 2).
+c) El estudiante deberá presentar el perfil del proyecto al o los Docentes de la
+materia quien(es) realizará(n) la correspondiente valoración. En caso de
+aprobación por parte del docente elaborará un informe a la dirección de
+carrera para proceder con el siguiente paso.
+d) El estudiante debe aprobar el perfil de proyecto ante la comisión respectiva
+para proseguir con la siguiente etapa.
+e) El estudiante debe ejecutar el trabajo de acuerdo al cronograma propuesto
+en su perfil.
+f) Presentar los avances de la ejecución de su proyecto de acuerdo con el
+cronograma aprobado en su perfil.
+a) Elaborar el documento informe final de acuerdo con el formato establecido
+en el presente reglamento (anexo 4).
+b) Presentar informe del trabajo concluido en 3 ejemplares al menos 15 días
+antes de finalizar el periodo de evaluación continua a la dirección de carrera
+quien deberá derivar al Consejo de Carrera para la designación del tribunal
+evaluador.
+c) Solicitar mediante formulario con timbre respectivo al decano fecha y hora
+de la presentación y defensa final.
+CAPITULO VII: DEL BANCO DE TEMAS
+Art. 12. El banco de temas de trabajo de grado deberá ser entregado al Docente
+de la materia para que los estudiantes pueden elegir un tema.
+6
+Art. 13. La presentación del tema elegido por parte del estudiante deberá incluir
+los siguientes puntos establecidos en el anexo I.
+Art. 14 Con fines de mantenimiento del banco de temas cada docente de la
+carrera debe presentar al menos un nuevo tema en cada semestre.
+CAPITULO VIII.- DEL PERFIL DEL PROYECTO
+Art. 15. El Perfil del Proyecto debe ser presentado de forma individual.
+Art. 16. El estudiante debe aprobar el perfil de proyecto hasta la cuarta semana
+luego de haber iniciado la gestión académica.
+Art. 17. El estudiante que no haya defendido el perfil del Proyecto, se le otorgará
+una tolerancia máxima de dos semanas adicionales, de persistir el incumplimiento
+el Director del Departamento cancelará la asignatura mediante UNADA y
+comunicará esta determinación a Vicedecanatura.
+Art. 18. El docente deberá de comunicar al Director de Carrera y/o
+Vicedecanatura, el título de los perfiles de los proyectos presentados por los
+estudiantes.
+Art. 19. Si el estudiante decide cambiar el tema de su proyecto, debe enviar su
+solicitud mediante formulario ante el Director de Carrera, sin que esto implique una
+extensión de los plazos fijados en el cronograma.
+Art. 20. El perfil de proyecto una vez aprobado solo tiene vigencia de un año.
+Art. 21. Si el estudiante no logra aprobar su perfil de proyecto, el estudiante
+deberá recursar la materia, identificando una nueva temática o mejorando la
+rechazada en atención a la oferta de la asignatura programada por la carrera.
+Art. 22. La estructura referencial del perfil de proyecto se encuentra en anexo 2.
+Sin que esto implique su cumplimiento estricto.
+CAPITULO IX.- PRENTACIÓN DE AVANCES
+Art 23. La presentación y defensa de cada uno de los avances del trabajo de
+grado, quedará sujeta al cronograma de trabajo definido por el docente de la
+materia (ver anexo n°3) que no deberá ser menor a 3 fases considerando el
+7
+calendario académico aprobado para el periodo lectivo (un año) El incumplimiento
+de una de las fechas programadas inhabilitara al estudiante de continuar con el
+proyecto consiguientemente reprobar la materia.
+CAPITULO X.- DE LA DEFENSA FINAL
+Art. 24. Una vez que el estudiante ha aprobado las evaluaciones continuas y ha
+cumplido todas las observaciones realizadas por la comisión evaluadora, el
+docente de la materia presentará a la Dirección de Carrera un informe con una
+impresión del sistema Tariquia sobre la Evaluación Continua de la materia.
+Art. 25. Los estudiantes estarán en condiciones de efectuar la defensa final,
+después que hayan cubierto los siguientes requisitos.
+• Haber aprobado la totalidad de las asignaturas del plan de estudios de la
+carrera.
+• Haber aprobado la evaluación continua de la materia TALLER III.
+• Haber subsanado las observaciones por parte de la comisión evaluadora.
+Art.26. La autorización para presentar la defensa final quedará sujeta al siguiente
+procedimiento.
+• El estudiante podrá solicitar fecha y hora para la defensa final mediante una
+carta dirigida al Decano de la facultad, previo cumplimiento de las
+observaciones realizadas por la comisión evaluadora.
+• La Decanatura notificará al menos con 72 horas de anticipación, la fecha y
+hora de la defensa final, al estudiante y a los miembros de la comisión
+evaluadora.
+Art. 27. La defensa final se califica sobre el 50% de la nota y será presidida por el
+vicedecano o en su defecto por el Director de Carrera, que, junto al docente de la
+materia, formarán parte de la comisión evaluadora.
+Art. 28. La defensa final ante la comisión evaluadora consistirá en una exposición
+de trabajo realizado, la misma que no debe exceder los 40 minutos; en tanto que
+el periodo de defensa (para el intercambio de preguntas y respuestas) se sujetará
+8
+a lo exigido por la comisión evaluadora, considerando un tiempo máximo de 20
+minutos
+Art. 29. Al concluir la defensa la comisión evaluadora en sesión reservada
+deliberará sobre la calificación de la misma, se tomará en cuenta el desempeño
+académico del estudiante en el proceso de formación profesional, como así
+también la evaluación continua de la materia de trabajo de grado, por lo que para
+el efecto se debe contar con el historial académico del estudiante.
+Art. 30. La calificación obtenida en la defensa final se anotará en el acta
+correspondiente y será registrada en el sistema por el docente de la materia, la
+que podrá ser.
+a) Excelente (80 - 100 puntos)
+b) Distinguido (70 - 79 puntos)
+c) Suficiente (51 - 69 puntos)
+d) Reprobado (0 - 50 puntos)
+Art. 31. La materia de TALLER III se APRUEBA cuando la suma de los
+promedios de las calificaciones de la EVALUACION CONTINUA sobre el 50% y
+la DEFENSA FINAL sobre el 50% sea igual o superior a 51 puntos.
+Art. 32. Si el resultado de la defensa final no es satisfactorio, el estudiante deberá
+recursar la materia por lo cual, el estudiante debe identificar una nueva temática,
+elaborar un nuevo perfil de proyecto.
+Art. 33. Concluida la deliberación de la comisión evaluadora, se dará lectura al
+acta oficial de la defensa pública de los trabajos de acuerdo a las distintas
+modalidades.
+Art. 34. El presente reglamento entra en vigencia a partir de la fecha de su
+aprobación de la carrera de ingeniería Informática.
+Art. 35. La Dirección de Departamento presentará al Consejo de Planeamiento y
+Seguimiento Curricular la propuesta de designación de tribunales para la defensa
+9
+final (previa coordinación con el docente de la materia), para su revisión y
+aprobación por esta instancia facultativa.
+Art. 36. Previo a la defensa, el Presidente de la Comisión Evaluadora hará llegar
+al tribunal examinador, el formulario de calificación de la materia en el que
+constará la calificación de evaluación continua del estudiante.
+Art. 37. En caso de que el estudiante reprobara la materia, deberá cursar de
+nuevo la materia en una próxima gestión académica y cumplir con todo el
+procedimiento respectivo.
+Art. 38. Los Informes Finales aprobados, serán distribuidos de la siguiente
+manera:
+− 1 Ejemplar para la biblioteca especializada de la Carrera.
+− 1 Ejemplar para la biblioteca de la Facultad.
+− 1 Ejemplar para la Institución correspondiente.
+− 1 Ejemplar para el estudiante (Opcional).
+Art. 39. Si el Trabajo final incluye Software, deberá el estudiante presentar una
+copia de los mismos con cada ejemplar. En caso de contar con una producción de
+propiedad intelectual este pertenece exclusivamente al autor y el derecho lo tiene
+la Carrera y la Facultad.
+Art. 40. Los aspectos no contemplados en el presente reglamento se sujetarán a
+las disposiciones, que para el efecto establezca la normativa universitaria y el
+Consejo de carrera y/o Honorable Consejo Facultativo.
+ANEXO 1
+FORMULARIO DE SELECCIÓN DE TEMAFACULTAD: CARRERA:
+NOMBRE DEL TEMA:
+NOMBRE DEL POSTULANTE:
+MODALIDAD DE GRADUACIÓN:
+AREA DE CONOCIMIENTO:
+INSTITUCIÓN RECEPTORA (SI CORRESPONDE):
+PROBLEMÁTICA
+PROPUESTA DE SOLUCIÓN
+FECHA DE PRESENTACIÓN:
+REVISIÓN DE TRABAJOS DE GRADOS SIMILARES EN LA BIBLIOTECA:
+*
+*
+*
+*
+REVISIÓN BIBLIOGRÁFICA EN GENERAL:
+*
+*
+*
+*
+ANEXO 2
+FORMATO PERFIL DE PROYECTO
+1. Introducción
+1.1. Área de conocimiento
+1.2. Antecedentes
+1.2.1 Antecedentes institucionales
+1,2,2. Antecedentes de trabajos
+similares
+2. Análisis del problema
+2.1. Cuadro de involucrados
+2.2. Árbol de Problemas
+2.3. Hipótesis (en el caso de la
+modalidad de graduación Trabajo de
+Investigación)
+3. análisis de objetivos
+3.1. Árbol de Objetivos.
+3.2 Análisis de alternativas
+3.3. Objetivo General
+3.4. Objetivos Específicos
+4. Matriz de marco lógico
+5 Justificación
+5.1. Justificación Social
+5.2. Justificación Técnica
+5.3. Justificación Económica
+6. Alcances y Limitaciones
+7. Cronograma de actividades
+8. Presupuesto
+9. Marco Teórico
+9.1 Revisión bibliográfica preliminar
+9.2. Fundamentos teóricos
+10. Metodología de desarrollo
+11. Herramientas de desarrollo
+12. Bibliografía
+13. Anexos
+ANEXO 3
+FORMULARIO DE AVANCEFACULTAD: CARRERA:
+NOMBRE DEL TEMA:
+NOMBRE DEL POSTULANTE:
+MODALIDAD DE GRADUACIÓN:
+AREA DE CONOCIMIENTO:
+INSTITUCIÓN RECEPTORA (SI CORRESPONDE):
+PROBLEMÁTICA
+PROPUESTA DE SOLUCIÓN
+FECHA DE PRESENTACIÓN:
+REVISIÓN DE TRABAJOS DE GRADOS SIMILARES EN LA BIBLIOTECA:
+*
+*
+*
+*
+REVISIÓN BIBLIOGRÁFICA EN GENERAL:
+*
+*
+*
+*
+NOMBRE DEL DOCENTE EVALUADOR DEL AVANCE
+………………………………………………………………………………………………
+DESCRIPCIÓN DEL AVANCE
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+OBSERVACIONES
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+………………………………………………………………………………………………
+PORCENTAJE DE
+AVANCE
+%
+FECHA APROBACIÓN
+PERFIL
+….. /……/ …….
+FECHA DEL AVANCE
+….. /……/ …….
+NRO DE AVANCE
+ANEXO 4
+FORMATO DE PRESENTACIÓN DEL TRABAJO FINAL
+PRELIMINARES
+Hoja de aprobación
+Hoja de advertencia
+Dedicatoria
+Agradecimientos
+indice de contenidos
+Índice de tablas
+Índice de figuras
+Índice de anexos
+Resumen
+Abstract
+CAPITULO I
+Introduccion
+1. Marco Lógico
+1.1 Antecedentes
+1.2. Cuadro de involucrados
+1.3. Presentación del problema
+1.3.1. Descripción del problema
+1.3.2. Árbol de Problemas
+1.3.3. Formulación del problema
+1.4. Objetivos
+1.4.1. Árbol de Objetivos
+1.4.1. Objetivo General
+1.4.1. Objetivos Específicos
+1.5. Justificación
+1.5.1. Justificación Social
+1.5.2. Justificación Técnica
+1.5.3. Justificación Económica
+1.5.4. Análisis de alternativas
+1.6. Alcances y Limitaciones
+1.6.1. Matriz de marco lógico
+1.6.2. Limitación Temporal
+1.6.3. Limitación Económica
+1.7. Metodología de desarrollo
+CAPITULO II
+2. Marco Teórico
+2.1. Marco conceptual
+2.2. Revisión bibliográfica preliminar
+2.3. Versiones de herramientas a
+utilizar
+2.4. Teorías
+CAPITULO III
+3. Marco Aplicativo
+(según la metodología de desarrollo y
+los componentes del proyecto, ver
+anexo 5)
+CAPITULO IV
+4. Conclusiones y Recomendaciones
+4.1 Conclusiones
+4.2. Recomendaciones
+CAPITULO V
+5. Referencias Bibliográficas
+ANEXOS
+ANEXO 5
+PRESENTACIÓN DEL MARCO APLICATIVO SEGÚN AREA DE
+CONOCIMIENTO
+Area: Sistemas de Información.
+• Metodología de desarrollo
+• Artefactos
+• Diagrama de procesos institucionales
+• Resultados de la gestión
+• Capacitación
+• Manual de usuario e instalación
+• Manual de instalación
+• Código fuente (Enlace de descarga)
+• Instaladores y recursos necesarios
+(Enlace de descarga)
+Area: Aplicaciones Multimedia e
+Informática Educativa.
+• Metodología de desarrollo
+• Artefactos
+• Guiones multimedia técnico
+pedagógico
+• Listado de Recursos con derechos de
+autor
+• Capacitación
+• Manual de usuario
+• Manual de instalación
+• Código fuente (Enlace de descarga)
+• Instaladores y recursos necesarios
+(Enlace de descarga)
+Area: Inteligencia Artificial y Sistemas
+Expertos.
+• Metodología de desarrollo
+• Artefactos
+• Motores de inferencia y bases de
+conocimiento
+• Sistema de aprendizaje
+• Capacitación
+• Manual de usuario
+• Manual de instalación
+• Código fuente (Enlace de descarga)
+• Instaladores y recursos necesarios
+(Enlace de descarga)
+Area: Arquitectura de Computadoras.
+• Diagramas
+• Materiales y herramientas
+• Manual de ensamblado
+• Manual de instalación
+• Manual de mantenimiento
+• Manual de reparación
+• Metodología de desarrollo del
+controlador
+• Artefactos
+• Manual de usuario e instalación del
+controlador
+• Capacitación
+• Código fuente (Enlace de descarga)
+• Instaladores y recursos necesarios
+(Enlace de descarga)
+Area: Redes de Computadoras.
+• Metodología de desarrollo del
+software para la red
+• Artefactos
+• Planos de la red
+• Diseño de la red
+• Manual de configuración de la red
+• Pruebas de simulación
+• Pruebas reales
+• Capacitación
+• Manual de usuario e instalación del
+software de red
+• Código fuente (Enlace de descarga)
+• Instaladores y recursos necesarios
+(Enlace de descarga)
+Area: Robótica.
+• Metodología de desarrollo del
+controlador
+• Artefactos
+• Materiales y herramientas
+• Manual de ensamblado
+• Diseño de circuitos
+• Pruebas de simulación
+• Pruebas reales
+• Capacitación
+• Manual de usuario e instalación
+• Código fuente (Enlace de descarga)
+• Instaladores y recursos necesarios
+(Enlace de descarga)
