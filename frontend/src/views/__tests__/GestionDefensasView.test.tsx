@@ -5,10 +5,12 @@ import { ErrorBoundary } from '../../components/common/ErrorBoundary';
 import { defensasService } from '../../services/defensas.service';
 import { vi, describe, beforeEach, it, expect } from 'vitest';
 
+let mockUser: any = { id: 1, nombre: 'Admin', roles: ['ADMINISTRADOR'] };
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     tienePermiso: (permiso: string) => true,
-    user: { id: 1, nombre: 'Admin', roles: ['ADMINISTRADOR'] },
+    user: mockUser,
   }),
 }));
 
@@ -110,5 +112,31 @@ describe('Módulo de Defensas - GestionDefensasView', () => {
     expect(screen.getByText('Ocurrió un problema en la vista')).toBeDefined();
     expect(screen.getByText('Reintentar vista')).toBeDefined();
     expect(screen.getByText('Recargar página')).toBeDefined();
+  });
+
+  it('restringe la carrera asignada cuando la usuaria es Directora de Carrera', async () => {
+    mockUser = {
+      id: 2,
+      nombre: 'Yovana Sanchez',
+      rol: 'Director de Carrera',
+      roles: ['Director de Carrera'],
+      carreraId: 1,
+      carreras: [1],
+    };
+
+    (defensasService.listarTrabajos as any).mockResolvedValue([]);
+
+    render(<GestionDefensasView />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Dirección de Carrera · Defensas de Grado')).toBeDefined();
+    });
+
+    const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+    const selectCarrera = selects.find((s) => s.textContent?.includes('Ingeniería Informática'));
+    expect(selectCarrera).toBeDefined();
+    expect(selectCarrera?.disabled).toBe(true);
+    expect(selectCarrera?.textContent).not.toContain('Ingeniería Química');
+    expect(selectCarrera?.textContent).not.toContain('Todas');
   });
 });

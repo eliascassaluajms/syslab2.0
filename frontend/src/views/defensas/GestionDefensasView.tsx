@@ -19,7 +19,7 @@ const badgeByEstado: Record<string, string> = {
 const ESTADOS = ['REGISTRADO', 'TRIBUNAL_DESIGNADO', 'CON_OBSERVACIONES', 'APTO_PARA_DEFENSA', 'DEFENSA_PROGRAMADA'];
 
 export const GestionDefensasView: React.FC = () => {
-  const { tienePermiso } = useAuth();
+  const { user, tienePermiso } = useAuth();
   const { carreras } = useCatalogos();
   const { mostrarToast } = useToast();
   const [trabajos, setTrabajos] = useState<TrabajoGradoResumen[]>([]);
@@ -30,10 +30,53 @@ export const GestionDefensasView: React.FC = () => {
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
   const [trabajoSeleccionadoId, setTrabajoSeleccionadoId] = useState<string | null>(null);
 
+  // Detección de rol Director de Carrera y su carrera asignada
+  const esAdmin = useMemo(() => {
+    if (!user) return false;
+    let nombreRol = '';
+    if (typeof user.rol === 'string') {
+      nombreRol = user.rol;
+    } else if (user.rol && typeof user.rol === 'object' && 'nombre' in user.rol) {
+      nombreRol = user.rol.nombre;
+    }
+    return Boolean(user.esGlobal || nombreRol.toLowerCase().includes('admin'));
+  }, [user]);
+
+  const esDirector = useMemo(() => {
+    if (!user || esAdmin) return false;
+    const rolNombre = typeof user.rol === 'string' ? user.rol : user.rol?.nombre || '';
+    const rolesArr = Array.isArray(user.roles)
+      ? user.roles.map((r) => (typeof r === 'string' ? r : r.nombre))
+      : [];
+    return rolNombre.includes('Director de Carrera') || rolesArr.some((r) => r.includes('Director de Carrera'));
+  }, [user, esAdmin]);
+
+  const carreraDirectorId = useMemo(() => {
+    if (!esDirector || !user) return undefined;
+    if (user.carreraId) return user.carreraId;
+    if (user.carreras && user.carreras.length > 0) return user.carreras[0];
+    return undefined;
+  }, [esDirector, user]);
+
   const [gestion, setGestion] = useState<number>(new Date().getFullYear());
   const [estado, setEstado] = useState<string>('');
-  const [carreraId, setCarreraId] = useState<number | ''>('');
+  const [carreraId, setCarreraId] = useState<number | ''>(() => {
+    return carreraDirectorId || '';
+  });
   const [soloMios, setSoloMios] = useState(false);
+
+  useEffect(() => {
+    if (esDirector && carreraDirectorId) {
+      setCarreraId(carreraDirectorId);
+    }
+  }, [esDirector, carreraDirectorId]);
+
+  const carrerasVisibles = useMemo(() => {
+    if (esDirector && carreraDirectorId) {
+      return (carreras || []).filter((c) => c.id === carreraDirectorId);
+    }
+    return carreras || [];
+  }, [carreras, esDirector, carreraDirectorId]);
 
   const anios = useMemo(() => {
     const base = new Date().getFullYear();
@@ -71,6 +114,11 @@ export const GestionDefensasView: React.FC = () => {
   const totalTribunales = useMemo(
     () => trabajos.reduce((total, trabajo) => total + (trabajo.tribunales?.length ?? 0), 0),
     [trabajos]
+  );
+
+  const trabajoSeleccionado = useMemo(
+    () => trabajos.find((t) => t.id === trabajoSeleccionadoId) || null,
+    [trabajos, trabajoSeleccionadoId]
   );
 
   const abrirDesignacion = (id: string) => {
@@ -121,7 +169,11 @@ export const GestionDefensasView: React.FC = () => {
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200">FIRNT · Facultad de Ingenierías de Recursos Naturales y Tecnologías</p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Dirección de Carrera · Defensas de Grado</h1>
-              <p className="mt-2 text-sm text-slate-300">Gestión académica, designación de tribunales, revisión documental y emisión de actas.</p>
+              <p className="mt-2 text-sm text-slate-300">
+                {esDirector
+                  ? 'Gestión académica exclusiva de su carrera, designación de tribunales y titulación de estudiantes.'
+                  : 'Gestión académica, designación de tribunales, revisión documental y emisión de actas.'}
+              </p>
             </div>
           </div>
           {puedeCrear && (
@@ -148,10 +200,23 @@ export const GestionDefensasView: React.FC = () => {
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Carrera</span>
-          <select value={carreraId} onChange={(e) => setCarreraId(e.target.value ? Number(e.target.value) : '')} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500">
-            <option value="">Todas</option>
-            {(carreras || []).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Carrera {esDirector && carreraDirectorId ? '(Asignada)' : ''}
+          </span>
+          <select
+            value={carreraId}
+            onChange={(e) => setCarreraId(e.target.value ? Number(e.target.value) : '')}
+            disabled={esDirector && !!carreraDirectorId}
+            className={`rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500 ${
+              esDirector && carreraDirectorId ? 'opacity-85 cursor-not-allowed bg-slate-900/90' : ''
+            }`}
+          >
+            {!esDirector && <option value="">Todas</option>}
+            {carrerasVisibles.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
           </select>
         </label>
         <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200">
@@ -207,7 +272,15 @@ export const GestionDefensasView: React.FC = () => {
                   <tr key={trabajo.id} className="border-t border-slate-800 transition hover:bg-slate-800/40">
                     <td className="px-4 py-4 align-top">
                       <div className="font-semibold text-white">{trabajo.titulo}</div>
-                      <div className="mt-1 text-xs text-slate-400">{trabajo.modalidad || 'Trabajo dirigido'}{trabajo.esTribunal ? ' · 👤 su tribunal' : ''}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+                        <span>{trabajo.modalidad || 'Trabajo dirigido'}</span>
+                        {trabajo.materia && (
+                          <span className="rounded border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-200">
+                            {trabajo.materia.codigo ? `${trabajo.materia.codigo} · ` : ''}{trabajo.materia.nombre}
+                          </span>
+                        )}
+                        {trabajo.esTribunal ? <span className="text-cyan-400">· 👤 su tribunal</span> : null}
+                      </div>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <div className="text-white">{trabajo.estudianteNombre}</div>
@@ -273,16 +346,22 @@ export const GestionDefensasView: React.FC = () => {
         </div>
       )}
 
-      <ControlMemorandumCard />
+      <ControlMemorandumCard carreraDirectorId={carreraDirectorId} esDirector={esDirector} />
 
       <ModalNuevoTrabajo
         abierto={modalNuevoAbierto}
         onCerrar={() => setModalNuevoAbierto(false)}
         onCreado={cargarTrabajos}
+        carreraFijadaId={carreraDirectorId}
       />
 
       <ModalAsignarTribunal
         trabajoId={trabajoSeleccionadoId}
+        carreraId={
+          trabajoSeleccionado?.carreraId ||
+          trabajoSeleccionado?.carrera?.id ||
+          carreraDirectorId
+        }
         abierto={modalTribunalAbierto}
         onCerrar={() => {
           setModalTribunalAbierto(false);
@@ -304,17 +383,33 @@ export const GestionDefensasView: React.FC = () => {
   );
 };
 
-const ControlMemorandumCard: React.FC = () => {
+const ControlMemorandumCard: React.FC<{ carreraDirectorId?: number; esDirector?: boolean }> = ({
+  carreraDirectorId,
+  esDirector,
+}) => {
   const { tienePermiso } = useAuth();
   const { carreras } = useCatalogos();
   const { mostrarToast } = useToast();
   const gestionActual = new Date().getFullYear();
 
-  const [carreraId, setCarreraId] = useState<number | ''>('');
+  const [carreraId, setCarreraId] = useState<number | ''>(() => carreraDirectorId || '');
   const [gestion, setGestion] = useState<number>(gestionActual);
   const [ultimoNumero, setUltimoNumero] = useState<number>(0);
   const [cargado, setCargado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (esDirector && carreraDirectorId) {
+      setCarreraId(carreraDirectorId);
+    }
+  }, [esDirector, carreraDirectorId]);
+
+  const carrerasVisibles = useMemo(() => {
+    if (esDirector && carreraDirectorId) {
+      return (carreras || []).filter((c) => c.id === carreraDirectorId);
+    }
+    return carreras || [];
+  }, [carreras, esDirector, carreraDirectorId]);
 
   const cargarControl = async () => {
     if (carreraId === '') return;
@@ -351,10 +446,19 @@ const ControlMemorandumCard: React.FC = () => {
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Carrera</span>
-          <select value={carreraId} onChange={(e) => { setCarreraId(e.target.value ? Number(e.target.value) : ''); setCargado(false); }} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500">
-            <option value="">Seleccione</option>
-            {(carreras || []).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Carrera {esDirector && carreraDirectorId ? '(Asignada)' : ''}
+          </span>
+          <select
+            value={carreraId}
+            onChange={(e) => { setCarreraId(e.target.value ? Number(e.target.value) : ''); setCargado(false); }}
+            disabled={esDirector && !!carreraDirectorId}
+            className={`rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500 ${
+              esDirector && carreraDirectorId ? 'opacity-85 cursor-not-allowed bg-slate-900/90' : ''
+            }`}
+          >
+            {!esDirector && <option value="">Seleccione</option>}
+            {carrerasVisibles.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1">
