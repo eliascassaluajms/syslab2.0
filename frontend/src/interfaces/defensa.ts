@@ -61,11 +61,13 @@ export interface TrabajoGradoResumen {
   gradoOptado?: string | null;
   gestion?: number | null;
   carreraId?: number | null;
+  materiaId?: number | null;
   estudianteNombre: string;
   estudianteCi?: string | null;
   estudianteRu?: string | null;
   estudianteEmail?: string | null;
   estudianteTelefono?: string | null;
+  estudianteUsuarioId?: number | null;
   estado: EstadoTrabajoDefensa;
   creadoEn?: string;
   actualizadoEn?: string;
@@ -78,6 +80,11 @@ export interface TrabajoGradoResumen {
     id: number;
     nombre: string;
   };
+  materia?: {
+    id: number;
+    nombre: string;
+    codigo: string;
+  } | null;
 }
 
 export interface CrearTrabajoGradoPayload {
@@ -86,11 +93,37 @@ export interface CrearTrabajoGradoPayload {
   gradoOptado?: string;
   gestion?: number;
   carreraId: number;
+  materiaId?: number;
   estudianteNombre: string;
   estudianteCi?: string;
   estudianteRu?: string;
   estudianteEmail?: string;
   estudianteTelefono?: string;
+  estudianteUsuarioId?: number;
+}
+
+export interface EstudianteElegible {
+  id: number;
+  nombre: string;
+  apellido: string;
+  nombreCompleto: string;
+  correo: string;
+  ru: string;
+  ci: string;
+  telefono?: string;
+  materiaInscrita?: string;
+  materiaId?: number;
+  esTallerIII?: boolean;
+}
+
+export interface DocenteTribunalOption {
+  id: number;
+  nombre: string;
+  apellido: string;
+  nombreCompleto: string;
+  correo: string;
+  materiasEnOtrasCarreras: string[];
+  tieneMateriasEnOtrasCarreras: boolean;
 }
 
 export interface TribunalAsignacionPayload {

@@ -3,6 +3,8 @@ import {
   AsignacionTribunalesResultado,
   ControlMemorandum,
   CrearTrabajoGradoPayload,
+  DocenteTribunalOption,
+  EstudianteElegible,
   FiltrosListarTrabajos,
   TrabajoGradoResumen,
   TribunalAsignacionPayload,
@@ -141,5 +143,21 @@ export const defensasService = {
   ): Promise<ControlMemorandum> {
     const response = await httpClient.put('/defensas/control-memorandum', { carreraId, gestion, ultimoNumero });
     return extraerData<ControlMemorandum>(response);
+  },
+
+  async obtenerEstudiantesElegibles(params: {
+    carreraId: number;
+    materiaId?: number;
+    gestion?: number;
+    busqueda?: string;
+    todos?: boolean;
+  }): Promise<EstudianteElegible[]> {
+    const response = await httpClient.get('/defensas/estudiantes-elegibles', { params });
+    return extraerData<EstudianteElegible[]>(response);
+  },
+
+  async obtenerDocentesTribunal(carreraId: number): Promise<DocenteTribunalOption[]> {
+    const response = await httpClient.get('/defensas/docentes-tribunal', { params: { carreraId } });
+    return extraerData<DocenteTribunalOption[]>(response);
   },
 };

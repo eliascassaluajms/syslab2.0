@@ -11,6 +11,9 @@ export interface Usuario {
   rol?: string | Rol;
   roles?: (string | Rol)[];
   permisos?: string[];
+  carreraId?: number;
+  carreras?: number[];
+  esGlobal?: boolean;
 }
 
 export interface AuthContextType {
