@@ -11,6 +11,8 @@ router.use(verificarJWT);
 router.get('/', requirePermission('defensas:listar'), defensaController.listar);
 router.get('/trabajos', requirePermission('defensas:listar'), defensaController.listar);
 router.get('/mis-trabajos', requirePermission('defensas:listar'), defensaController.listar);
+router.get('/estudiantes-elegibles', requirePermission('defensas:crear'), defensaController.obtenerEstudiantesElegibles);
+router.get('/docentes-tribunal', requirePermission('defensas:designar'), defensaController.obtenerDocentesTribunal);
 router.post('/trabajos', requirePermission('defensas:crear'), defensaController.crear);
 router.get('/trabajos/:id', requirePermission('defensas:listar'), defensaController.obtenerPorId);
 router.put('/trabajos/:id', requirePermission('defensas:editar'), defensaController.actualizar);

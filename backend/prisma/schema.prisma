@@ -167,6 +167,7 @@ model Materia {
   bitacoras            SesionBitacora[]
   inscripcionesMateria InscripcionMateria[]
   designaciones        DesignacionMateria[]
+  trabajosGrado        TrabajoGrado[]
 
   @@map("materias")
 }
@@ -438,6 +439,9 @@ model TrabajoGrado {
   carreraId   Int
   carrera     Carrera @relation(fields: [carreraId], references: [id], onDelete: Restrict)
   gestion     Int     @default(0) // Gestión académica (año). Ej: 2026
+
+  materiaId   Int?     @map("materia_id")
+  materia     Materia? @relation(fields: [materiaId], references: [id], onDelete: SetNull)
 
   estudianteNombre    String   @db.VarChar(150)
   estudianteCi        String   @db.VarChar(30)

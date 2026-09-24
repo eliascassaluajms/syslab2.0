@@ -8,17 +8,73 @@ export class DefensaController {
   async listar(req: Request, res: Response, next: NextFunction) {
     try {
       const user = (req as any).user;
+      let carreraIdQuery = req.query.carreraId ? Number(req.query.carreraId) : undefined;
+      const carrerasFiltro = user?.carreras?.length ? user.carreras.map(Number) : (user?.carreraId ? [Number(user.carreraId)] : undefined);
+
+      const esDirector = !user?.esGlobal && (user?.rol === 'Director de Carrera' || user?.roles?.includes('Director de Carrera'));
+      if (esDirector && carrerasFiltro && carrerasFiltro.length > 0) {
+        if (carreraIdQuery && !carrerasFiltro.includes(carreraIdQuery)) {
+          carreraIdQuery = carrerasFiltro[0];
+        } else if (!carreraIdQuery) {
+          carreraIdQuery = carrerasFiltro[0];
+        }
+      }
+
       const trabajos = await defensaService.listarTrabajos({
-        carreraId: req.query.carreraId ? Number(req.query.carreraId) : undefined,
+        carreraId: carreraIdQuery,
         gestion: req.query.gestion ? Number(req.query.gestion) : undefined,
         estado: req.query.estado ? String(req.query.estado) : undefined,
         soloMios: req.query.soloMios === 'true' || req.query.mios === 'true',
         usuarioId: user?.id,
         roles: user?.roles,
-        carreras: user?.carreras?.length ? user.carreras.map(Number) : undefined,
+        carreras: carrerasFiltro,
       });
 
       res.status(200).json({ status: 'success', results: trabajos.length, data: trabajos });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async obtenerEstudiantesElegibles(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = (req as any).user;
+      let carreraId = req.query.carreraId ? Number(req.query.carreraId) : undefined;
+      const esDirector = !user?.esGlobal && (user?.rol === 'Director de Carrera' || user?.roles?.includes('Director de Carrera'));
+      const carrerasUsuario = user?.carreras?.length ? user.carreras.map(Number) : (user?.carreraId ? [Number(user.carreraId)] : []);
+
+      if (esDirector && carrerasUsuario.length > 0) {
+        if (!carreraId || !carrerasUsuario.includes(carreraId)) {
+          carreraId = carrerasUsuario[0];
+        }
+      }
+
+      if (!carreraId) {
+        throw new AppError('Debe especificar la carrera para listar los estudiantes.', 400);
+      }
+
+      const estudiantes = await defensaService.obtenerEstudiantesElegibles({
+        carreraId,
+        materiaId: req.query.materiaId ? Number(req.query.materiaId) : undefined,
+        gestion: req.query.gestion ? Number(req.query.gestion) : undefined,
+        busqueda: req.query.busqueda ? String(req.query.busqueda) : undefined,
+        todos: req.query.todos === 'true' || req.query.general === 'true',
+      });
+
+      res.status(200).json({ status: 'success', results: estudiantes.length, data: estudiantes });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async obtenerDocentesTribunal(req: Request, res: Response, next: NextFunction) {
+    try {
+      const carreraId = req.query.carreraId ? Number(req.query.carreraId) : undefined;
+      if (!carreraId) {
+        throw new AppError('Debe especificar la carrera para listar los docentes elegibles.', 400);
+      }
+      const docentes = await defensaService.obtenerDocentesTribunal(carreraId);
+      res.status(200).json({ status: 'success', results: docentes.length, data: docentes });
     } catch (error) {
       next(error);
     }
@@ -35,6 +91,17 @@ export class DefensaController {
 
   async crear(req: Request, res: Response, next: NextFunction) {
     try {
+      const user = (req as any).user;
+      const esDirector = !user?.esGlobal && (user?.rol === 'Director de Carrera' || user?.roles?.includes('Director de Carrera'));
+      const carrerasUsuario = user?.carreras?.length ? user.carreras.map(Number) : (user?.carreraId ? [Number(user.carreraId)] : []);
+
+      if (esDirector && carrerasUsuario.length > 0) {
+        const carreraSolicitada = Number(req.body.carreraId);
+        if (!carrerasUsuario.includes(carreraSolicitada)) {
+          throw new AppError('No tiene autorización para registrar trabajos de grado en otra carrera.', 403);
+        }
+      }
+
       const trabajo = await defensaService.crearTrabajo(req.body);
       res.status(201).json({ status: 'success', data: trabajo });
     } catch (error) {

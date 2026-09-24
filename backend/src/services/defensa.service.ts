@@ -30,11 +30,13 @@ export type TrabajoGradoCreateInput = {
   gradoOptado: string;
   carreraId: number;
   gestion?: number;
+  materiaId?: number;
   estudianteNombre: string;
   estudianteCi: string;
   estudianteRu: string;
   estudianteEmail: string;
   estudianteTelefono?: string;
+  estudianteUsuarioId?: number;
 };
 
 export const DIAS_HABILES_OBSERVACIONES = 5;
@@ -251,6 +253,7 @@ export const defensaService = {
       where,
       include: {
         carrera: true,
+        materia: true,
         tribunales: {
           include: { docente: { select: { id: true, nombre: true, apellido: true, correo: true } } },
         },
@@ -284,14 +287,16 @@ export const defensaService = {
         gradoOptado: data.gradoOptado?.trim() || 'Licenciatura en Ingeniería Informática',
         carreraId: Number(data.carreraId),
         gestion,
+        materiaId: data.materiaId ? Number(data.materiaId) : null,
         estudianteNombre,
         estudianteCi: data.estudianteCi?.trim() || 'Sin CI',
         estudianteRu: data.estudianteRu?.trim() || 'Sin RU',
         estudianteEmail: data.estudianteEmail?.trim() || 'sin-email@uajms.edu.bo',
         estudianteTelefono: data.estudianteTelefono?.trim() || null,
+        estudianteUsuarioId: data.estudianteUsuarioId ? Number(data.estudianteUsuarioId) : null,
         estado: 'REGISTRADO',
       },
-      include: { carrera: true },
+      include: { carrera: true, materia: true },
     });
 
     return trabajo;
@@ -847,6 +852,291 @@ export const defensaService = {
       create: { carreraId: Number(carreraId), gestion: Number(gestion), ultimoNumero: Number(ultimoNumero) },
     });
     return control;
+  },
+
+  async obtenerEstudiantesElegibles(filtros: {
+    carreraId: number;
+    materiaId?: number;
+    gestion?: number;
+    busqueda?: string;
+    todos?: boolean;
+  }) {
+    const { carreraId, materiaId, busqueda, todos } = filtros;
+    const cid = Number(carreraId);
+
+    // 1. Por defecto, buscar estudiantes que están cursando la materia de titulación (Taller III o similar)
+    if (!todos) {
+      let materiasFiltroIds: number[] = [];
+      if (materiaId) {
+        materiasFiltroIds = [Number(materiaId)];
+      } else {
+        const materiasTitulacion = await prisma.materia.findMany({
+          where: {
+            planEstudio: { carreraId: cid },
+            OR: [
+              { nombre: { contains: 'taller iii', mode: 'insensitive' } },
+              { nombre: { contains: 'taller 3', mode: 'insensitive' } },
+              { nombre: { contains: 'trabajo de grado', mode: 'insensitive' } },
+              { nombre: { contains: 'titulacion', mode: 'insensitive' } },
+              { codigo: { contains: '501', mode: 'insensitive' } },
+              { codigo: { contains: '801', mode: 'insensitive' } },
+              { codigo: { contains: '901', mode: 'insensitive' } },
+            ],
+          },
+          select: { id: true },
+        });
+        materiasFiltroIds = materiasTitulacion.map((m) => m.id);
+      }
+
+      const whereInscripcion: any = {
+        materia: { planEstudio: { carreraId: cid } },
+        estado: 'ACTIVA',
+      };
+      if (materiasFiltroIds.length > 0) {
+        whereInscripcion.materiaId = { in: materiasFiltroIds };
+      }
+
+      if (busqueda && busqueda.trim()) {
+        const term = busqueda.trim();
+        whereInscripcion.estudiante = {
+          OR: [
+            { nombre: { contains: term, mode: 'insensitive' } },
+            { apellido: { contains: term, mode: 'insensitive' } },
+            { correo: { contains: term, mode: 'insensitive' } },
+          ],
+        };
+      }
+
+      const inscripciones = await prisma.inscripcionMateria.findMany({
+        where: whereInscripcion,
+        include: {
+          estudiante: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido: true,
+              correo: true,
+              activo: true,
+            },
+          },
+          materia: {
+            select: {
+              id: true,
+              nombre: true,
+              codigo: true,
+            },
+          },
+        },
+        orderBy: [
+          { estudiante: { apellido: 'asc' } },
+          { estudiante: { nombre: 'asc' } },
+        ],
+      });
+
+      const estudiantesMap = new Map<number, any>();
+      for (const insc of inscripciones) {
+        if (!insc.estudiante || !insc.estudiante.activo) continue;
+        if (!estudiantesMap.has(insc.estudiante.id)) {
+          const u = insc.estudiante;
+          const ru = u.correo ? u.correo.split('@')[0] : '';
+          estudiantesMap.set(u.id, {
+            id: u.id,
+            nombre: u.nombre,
+            apellido: u.apellido || '',
+            nombreCompleto: `${u.nombre} ${u.apellido || ''}`.trim(),
+            correo: u.correo,
+            ru: /^\d+$/.test(ru) ? ru : '',
+            ci: '',
+            telefono: '',
+            materiaInscrita: `${insc.materia.codigo} - ${insc.materia.nombre}`,
+            materiaId: insc.materia.id,
+            esTallerIII: true,
+          });
+        }
+      }
+
+      const lista = Array.from(estudiantesMap.values());
+      if (lista.length > 0 || !busqueda) {
+        return lista;
+      }
+    }
+
+    // 2. Búsqueda excepcional / general en toda la base de datos de estudiantes
+    const whereUsuario: any = {
+      activo: true,
+      OR: [
+        { rol: { nombre: { contains: 'Estudiante', mode: 'insensitive' } } },
+        { asignacionesRoles: { some: { rol: { nombre: { contains: 'Estudiante', mode: 'insensitive' } } } } },
+      ],
+    };
+
+    if (busqueda && busqueda.trim()) {
+      const term = busqueda.trim();
+      whereUsuario.AND = [
+        {
+          OR: [
+            { nombre: { contains: term, mode: 'insensitive' } },
+            { apellido: { contains: term, mode: 'insensitive' } },
+            { correo: { contains: term, mode: 'insensitive' } },
+          ],
+        },
+      ];
+    }
+
+    const estudiantesGeneral = await prisma.usuario.findMany({
+      where: whereUsuario,
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+      },
+      orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
+      take: 50,
+    });
+
+    return estudiantesGeneral.map((u) => {
+      const ru = u.correo ? u.correo.split('@')[0] : '';
+      return {
+        id: u.id,
+        nombre: u.nombre,
+        apellido: u.apellido || '',
+        nombreCompleto: `${u.nombre} ${u.apellido || ''}`.trim(),
+        correo: u.correo,
+        ru: /^\d+$/.test(ru) ? ru : '',
+        ci: '',
+        telefono: '',
+        materiaInscrita: 'Búsqueda general de estudiantes',
+        esTallerIII: false,
+      };
+    });
+  },
+
+  async obtenerDocentesTribunal(carreraId: number) {
+    const cid = Number(carreraId);
+
+    // 1. Docentes que dan clases en esta carrera (por designacionesMaterias o asignacionesRoles)
+    let docentesDb = await prisma.usuario.findMany({
+      where: {
+        activo: true,
+        OR: [
+          {
+            designacionesMaterias: {
+              some: {
+                activo: true,
+                materia: { planEstudio: { carreraId: cid } },
+              },
+            },
+          },
+          {
+            asignacionesRoles: {
+              some: {
+                carreraId: cid,
+                rol: {
+                  nombre: { in: ['Docente', 'Director de Carrera', 'Vicedecano', 'Decano'] },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+        designacionesMaterias: {
+          where: { activo: true },
+          select: {
+            materia: {
+              select: {
+                planEstudio: {
+                  select: {
+                    carrera: { select: { id: true, nombre: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        asignacionesRoles: {
+          select: {
+            carreraId: true,
+            carrera: { select: { id: true, nombre: true } },
+          },
+        },
+      },
+      orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
+    });
+
+    // Fallback de contingencia si no hay docentes designados aún en la carrera
+    if (docentesDb.length === 0) {
+      docentesDb = await prisma.usuario.findMany({
+        where: {
+          activo: true,
+          OR: [
+            { rol: { nombre: { in: ['Docente', 'Director de Carrera', 'Vicedecano', 'Decano'] } } },
+            { asignacionesRoles: { some: { rol: { nombre: { in: ['Docente', 'Director de Carrera', 'Vicedecano', 'Decano'] } } } } },
+          ],
+        },
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          correo: true,
+          designacionesMaterias: {
+            where: { activo: true },
+            select: {
+              materia: {
+                select: {
+                  planEstudio: {
+                    select: {
+                      carrera: { select: { id: true, nombre: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          asignacionesRoles: {
+            select: {
+              carreraId: true,
+              carrera: { select: { id: true, nombre: true } },
+            },
+          },
+        },
+        orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
+      });
+    }
+
+    return docentesDb.map((docente) => {
+      const otrasCarrerasSet = new Set<string>();
+
+      docente.designacionesMaterias.forEach((d) => {
+        const c = d.materia?.planEstudio?.carrera;
+        if (c && c.id !== cid) {
+          otrasCarrerasSet.add(c.nombre);
+        }
+      });
+
+      docente.asignacionesRoles.forEach((a) => {
+        if (a.carrera && a.carreraId && a.carreraId !== cid) {
+          otrasCarrerasSet.add(a.carrera.nombre);
+        }
+      });
+
+      const materiasEnOtrasCarreras = Array.from(otrasCarrerasSet);
+
+      return {
+        id: docente.id,
+        nombre: docente.nombre,
+        apellido: docente.apellido || '',
+        nombreCompleto: `${docente.nombre} ${docente.apellido || ''}`.trim(),
+        correo: docente.correo,
+        materiasEnOtrasCarreras,
+        tieneMateriasEnOtrasCarreras: materiasEnOtrasCarreras.length > 0,
+      };
+    });
   },
 };
 

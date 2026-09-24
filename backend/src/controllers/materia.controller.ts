@@ -46,7 +46,8 @@ export class MateriaController {
 
   async listarTodas(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const materias = await materiaService.listarTodas();
+      const carreraId = req.query.carreraId ? Number(req.query.carreraId) : undefined;
+      const materias = await materiaService.listarTodas(carreraId);
 
       res.status(200).json({
         status: 'success',

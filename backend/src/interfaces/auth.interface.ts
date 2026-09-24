@@ -26,6 +26,7 @@ export interface IAuthResponse {
     rol?: string;
     roles?: string[];
     permisos?: string[];
+    carreras?: number[];
     carreraId?: number | null;
     facultadId?: number | null;
   };

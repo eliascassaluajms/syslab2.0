@@ -44,8 +44,13 @@ export class MateriaService {
     });
   }
 
-  async listarTodas() {
+  async listarTodas(carreraId?: number) {
+    const where: any = {};
+    if (carreraId) {
+      where.planEstudio = { carreraId: Number(carreraId) };
+    }
     return await prisma.materia.findMany({
+      where,
       include: {
         planEstudio: {
           include: {
